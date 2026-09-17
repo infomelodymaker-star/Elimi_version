@@ -1,0 +1,224 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A store or boutique product available for purchase.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the product" },
+        "name": { "type": "string", "description": "Name of the product" },
+        "category": { "type": "string", "description": "Product category" },
+        "subCategory": { "type": "string", "description": "Sub-category name" },
+        "badgeTag": { "type": "string", "description": "Category badge tag" },
+        "badge": { "type": "string", "description": "Optional ribbon badge" },
+        "priceBIF": { "type": "number", "description": "Price in Burundian Francs" },
+        "priceUSD": { "type": "number", "description": "Price in USD" },
+        "originalPriceUSD": { "type": "number", "description": "Original price before discount" },
+        "discountPercentage": { "type": "number", "description": "Discount percentage" },
+        "seller": { "type": "string", "description": "Seller store name" },
+        "stockQuantity": { "type": "number", "description": "Available stock count" },
+        "inStock": { "type": "boolean", "description": "Whether item is in stock" },
+        "sizes": { "type": "array", "description": "Available sizes for fashion items" },
+        "rating": { "type": "number", "description": "Average review rating" },
+        "reviewsCount": { "type": "number", "description": "Total review count" },
+        "image": { "type": "string", "description": "Main product image URL" },
+        "gallery": { "type": "array", "description": "Gallery images array for details page carousel" },
+        "description": { "type": "string", "description": "Product description" },
+        "descriptionFit": { "type": "string", "description": "Fit and technical specifications" },
+        "shipping": { "type": "object", "description": "Shipping package and delivery specifications" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Last update timestamp" }
+      },
+      "required": ["id", "name", "category", "priceBIF", "priceUSD", "image", "description"]
+    },
+    "ProductReview": {
+      "title": "ProductReview",
+      "description": "Customer review and rating for a product.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the review" },
+        "productId": { "type": "string", "description": "Target product ID" },
+        "author": { "type": "string", "description": "Author name" },
+        "avatar": { "type": "string", "description": "Author avatar URL" },
+        "rating": { "type": "number", "description": "Rating score between 1 and 5" },
+        "comment": { "type": "string", "description": "Review comment text" },
+        "date": { "type": "string", "description": "Display date string" },
+        "verified": { "type": "boolean", "description": "Whether reviewer is a verified buyer" },
+        "createdAt": { "type": "string", "description": "Review creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Review last updated timestamp" }
+      },
+      "required": ["id", "author", "rating", "comment"]
+    },
+    "NewsletterSubscriber": {
+      "title": "NewsletterSubscriber",
+      "description": "Registered subscriber for the ELIMI boutique newsletter.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "description": "Lowercase normalized email address" },
+        "subscribedAt": { "type": "string", "description": "Subscription ISO timestamp" },
+        "source": { "type": "string", "description": "Signup source page" },
+        "active": { "type": "boolean", "description": "Subscription active status" }
+      },
+      "required": ["email", "subscribedAt"]
+    },
+    "BoutiqueOrder": {
+      "title": "BoutiqueOrder",
+      "description": "An encrypted customer checkout order wrapping cart items, delivery fees, and order status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique order identifier e.g. ELM-ORD-XXXXX" },
+        "orderNumber": { "type": "string", "description": "Human readable order reference" },
+        "items": { "type": "array", "description": "List of purchased items with product metadata, quantity, and size" },
+        "deliveryMethod": { "type": "string", "description": "Delivery method: home_delivery or pickup" },
+        "deliveryCostUSD": { "type": "number", "description": "Summed delivery cost in USD" },
+        "deliveryCostBIF": { "type": "number", "description": "Summed delivery cost in BIF" },
+        "subtotalUSD": { "type": "number", "description": "Subtotal in USD" },
+        "subtotalBIF": { "type": "number", "description": "Subtotal in BIF" },
+        "discountUSD": { "type": "number", "description": "Discount in USD" },
+        "discountBIF": { "type": "number", "description": "Discount in BIF" },
+        "discountCode": { "type": "string", "description": "Applied promo code" },
+        "totalUSD": { "type": "number", "description": "Grand total in USD" },
+        "totalBIF": { "type": "number", "description": "Grand total in BIF" },
+        "pickupBureau": { "type": "string", "description": "Bureau location for pickup" },
+        "customerNotes": { "type": "string", "description": "Additional order comments or delivery requests" },
+        "status": { "type": "string", "description": "Order status: pending, finished, cancelled" },
+        "createdAt": { "type": "string", "description": "Order placement ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "Last status change ISO timestamp" }
+      },
+      "required": ["id", "items", "deliveryMethod", "totalUSD", "totalBIF", "status", "createdAt"]
+    },
+    "Car": {
+      "title": "Car",
+      "description": "A VIP escort, luxury mobility fleet, or rental vehicle.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique car identifier" },
+        "title": { "type": "string", "description": "Vehicle title and model name" },
+        "description": { "type": "string", "description": "Vehicle description" },
+        "price": { "type": "number", "description": "Sale price in USD" },
+        "rentPrice": { "type": "number", "description": "Daily rental price in USD" },
+        "sales": { "type": "boolean", "description": "Whether vehicle is for sale" },
+        "rent": { "type": "boolean", "description": "Whether vehicle is available for rent" },
+        "address": { "type": "string", "description": "Mobility hub or showroom address" },
+        "location": { "type": "object", "description": "Geographical coordinates {lat, lng}" },
+        "mapsLink": { "type": "string", "description": "Google Maps link" },
+        "seats": { "type": "number", "description": "Number of seats" },
+        "transmission": { "type": "string", "description": "Transmission type" },
+        "fuelType": { "type": "string", "description": "Fuel and powertrain type" },
+        "year": { "type": "number", "description": "Model year" },
+        "mileage": { "type": "string", "description": "Mileage string" },
+        "modelTrim": { "type": "string", "description": "Model trim package" },
+        "imageUrl": { "type": "string", "description": "Cover photo URL" },
+        "photos": { "type": "array", "description": "Gallery photo URLs" },
+        "amenities": { "type": "array", "description": "List of amenities and specs" },
+        "availableUnits": { "type": "array", "description": "Fleet unit availability records" }
+      },
+      "required": ["id", "title", "price", "sales", "rent", "imageUrl"]
+    },
+    "House": {
+      "title": "House",
+      "description": "A luxury residential real estate property, villa, or apartment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique house identifier" },
+        "title": { "type": "string", "description": "Property title" },
+        "description": { "type": "string", "description": "Detailed property description" },
+        "price": { "type": "number", "description": "Sale price in USD" },
+        "rentPrice": { "type": "number", "description": "Monthly rent price in USD" },
+        "sales": { "type": "boolean", "description": "Whether property is for sale" },
+        "rent": { "type": "boolean", "description": "Whether property is for rent" },
+        "address": { "type": "string", "description": "Street address or enclave" },
+        "location": { "type": "object", "description": "Geographical coordinates {lat, lng}" },
+        "mapsLink": { "type": "string", "description": "Google Maps link" },
+        "bedrooms": { "type": "number", "description": "Number of bedrooms" },
+        "bathrooms": { "type": "number", "description": "Number of bathrooms" },
+        "sqft": { "type": "number", "description": "Total square feet" },
+        "floorPlanName": { "type": "string", "description": "Floor plan name" },
+        "imageUrl": { "type": "string", "description": "Cover photo URL" },
+        "photos": { "type": "array", "description": "Gallery photo URLs" },
+        "amenities": { "type": "array", "description": "List of property amenities" },
+        "availableUnits": { "type": "array", "description": "Unit availability records" }
+      },
+      "required": ["id", "title", "price", "sales", "rent", "imageUrl"]
+    },
+    "RentalCategory": {
+      "title": "RentalCategory",
+      "description": "A category for items and staff offered for rent / other allocations.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique category identifier" },
+        "name": { "type": "string", "description": "Category display name" },
+        "slug": { "type": "string", "description": "URL slug" },
+        "imageUrl": { "type": "string", "description": "Category visual hero cover image" },
+        "description": { "type": "string", "description": "Category short description" },
+        "itemCount": { "type": "number", "description": "Number of items in category" },
+        "order": { "type": "number", "description": "Display order index" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Last update timestamp" }
+      },
+      "required": ["id", "name", "imageUrl"]
+    },
+    "RentalItem": {
+      "title": "RentalItem",
+      "description": "An allocation / rental item offered for rent with sizing, fit guide, and multi-photo gallery.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique rental item identifier" },
+        "name": { "type": "string", "description": "Item name" },
+        "brand": { "type": "string", "description": "Brand, designer, or sub-label" },
+        "categoryId": { "type": "string", "description": "Parent category ID" },
+        "categoryName": { "type": "string", "description": "Parent category name" },
+        "pricePerDay": { "type": "number", "description": "Rental price per day in USD or EUR" },
+        "originalPrice": { "type": "number", "description": "Original retail value" },
+        "badge": { "type": "string", "description": "Optional badge like Populaire, De retour !" },
+        "rating": { "type": "number", "description": "Average review rating" },
+        "reviewsCount": { "type": "number", "description": "Total review count" },
+        "imageUrl": { "type": "string", "description": "Primary high-resolution image" },
+        "gallery": { "type": "array", "description": "Photo gallery URLs for detail view and zoom" },
+        "sizes": { "type": "array", "description": "Available rental sizes e.g. S/M, M/L, L/XL" },
+        "fitScore": { "type": "object", "description": "Fit feedback distribution {small, accurate, large}" },
+        "clientPhotos": { "type": "array", "description": "Photos of clients wearing or using the item" },
+        "description": { "type": "string", "description": "Detailed item description" },
+        "details": { "type": "string", "description": "Styling advice, fabric, rental conditions" },
+        "available": { "type": "boolean", "description": "Whether item is currently available for rent" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Last update timestamp" }
+      },
+      "required": ["id", "name", "categoryId", "categoryName", "pricePerDay", "imageUrl"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of all boutique products for real-time shop display."
+    },
+    "/products/{productId}/reviews/{reviewId}": {
+      "schema": "ProductReview",
+      "description": "Customer reviews collection for each individual product."
+    },
+    "/newsletter_subscribers/{email}": {
+      "schema": "NewsletterSubscriber",
+      "description": "Subscribers collection storing lowercased emails and subscription timestamps."
+    },
+    "/orders/{orderId}": {
+      "schema": "BoutiqueOrder",
+      "description": "Collection of customer checkout orders with items, pricing, delivery mode, and admin fulfillment status."
+    },
+    "/cars/{carId}": {
+      "schema": "Car",
+      "description": "Collection of VIP mobility vehicles, protocol cars, and chauffeur fleet."
+    },
+    "/houses/{houseId}": {
+      "schema": "House",
+      "description": "Collection of luxury real estate properties, villas, and apartments."
+    },
+    "/rental_categories/{categoryId}": {
+      "schema": "RentalCategory",
+      "description": "Collection of categories for other allocations and rentals."
+    },
+    "/rental_items/{itemId}": {
+      "schema": "RentalItem",
+      "description": "Collection of items and equipment offered for rent with live infinite scroll catalog."
+    }
+  }
+}
