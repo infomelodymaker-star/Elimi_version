@@ -69,12 +69,12 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: "welcome-msg",
     sender: "ai",
-    text: `Muraho! 👋 I am **Monica**, your **ELIMI AI Assistant**.\n\nHow can I assist you today with our luxury services in Burundi?\n\n- 👑 **Protocol Staffing & VIP Escort**\n- 🛍️ **Elimi Boutique & Tech Shop**\n- 🖨️ **PrintBe Banners & Custom Branding**\n- 🎬 **Elimi Média Shows & Live Streams**\n- 📞 **Direct WhatsApp Concierge Dispatch**`,
+    text: `Muraho! 👋 I am **Monica**, your **ELIMI AI Assistant**.\n\nHow can I assist you today with our luxury services in Burundi?\n\n- 👑 **Protocol Staffing & VIP Escort**\n- 🛍️ **Elimi Boutique & Tech Shop**\n- 🖨️ **Print Banners & Custom Branding**\n- 🎬 **Elimi Média Shows & Live Streams**\n- 📞 **Direct WhatsApp Concierge Dispatch**`,
     timestamp: "Just now",
     actions: [
       { label: "👑 Protocol Staffing", href: "/protocol" },
       { label: "🛍️ Shop Boutique", href: "/shop" },
-      { label: "🖨️ PrintBe Solutions", href: "/printbe" },
+      { label: "🖨️ Print Solutions", href: "/print" },
       { label: "🎬 Elimi Média", href: "/media" },
       {
         label: "💬 WhatsApp Desk",
@@ -88,7 +88,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
 const SUGGESTIONS = [
   "👑 How do I book Protocol VIP hostesses?",
   "🛍️ What luxury products are in Elimi Shop?",
-  "🖨️ PrintBe roll-up banners & prices",
+  "🖨️ Print roll-up banners & prices",
   "🚗 How to rent a Mercedes V-Class or Prado?",
   "🎬 Tell me about Elimi Media YouTube shows",
 ];
@@ -273,7 +273,7 @@ export default function AIChatAssistant() {
       const data = await response.json();
       const replyText =
         data.text ||
-        "I am ready to assist you. How can I help with Protocol, Shop, or PrintBe?";
+        "I am ready to assist you. How can I help with Protocol, Shop, or Print?";
 
       // Detect relevant action links
       const actions: Array<{
@@ -292,8 +292,8 @@ export default function AIChatAssistant() {
       ) {
         actions.push({ label: "🛍️ Elimi Shop", href: "/shop" });
       }
-      if (lower.includes("/printbe") || lower.includes("print")) {
-        actions.push({ label: "🖨️ PrintBe", href: "/printbe" });
+      if (lower.includes("/print") || lower.includes("print")) {
+        actions.push({ label: "🖨️ Print Hub", href: "/print" });
       }
       if (
         lower.includes("/media") ||

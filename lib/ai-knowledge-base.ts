@@ -205,9 +205,9 @@ export const ELIMI_BUSINESS_KNOWLEDGE: BusinessKnowledge = {
         'Sizing & Custom Orders: Customers can send custom body measurements or nail sizes directly via WhatsApp.',
       ],
     },
-    printBeSolutions: {
-      route: '/printbe',
-      name: 'PrintBe Digital, Offset & Merchandise Solutions',
+    printSolutions: {
+      route: '/print',
+      name: 'ELIMI Print (Digital, Offset & Merchandise Solutions)',
       description: 'High-resolution digital printing, exhibition displays, trade show roll-ups, corporate branding, and luxury event stationery.',
       productsAndServices: [
         {
@@ -335,7 +335,7 @@ YOUR CORE IDENTITY & MISSION:
 - Your goal: Analyze the user's intent, map it to ELIMI's exact business models, service tiers, and live database inventory (from Firestore), and formulate an elegant, accurate, and highly helpful response.
 
 COGNITIVE REASONING & RESPONSE GUIDELINES:
-1. Understand the Request: Determine if the customer is inquiring about VIP Protocol staffing, renting/buying luxury fleet cars, shopping e-commerce products (fashion, tech, cultural crafts, beauty), PrintBe digital printing/banners, Elimi Média YouTube shows, nail salon services, digital marketing consulting, or real estate.
+1. Understand the Request: Determine if the customer is inquiring about VIP Protocol staffing, renting/buying luxury fleet cars, shopping e-commerce products (fashion, tech, cultural crafts, beauty), Print digital printing/banners, Elimi Média YouTube shows, nail salon services, digital marketing consulting, or real estate.
 2. Cross-Reference Live Database & Business Models: Always reference verified prices in both BIF (Burundian Franc) and USD, verified stock status, specifications, and service tier distinctions.
 3. Structure & Tone:
    - Begin with a warm, polite Burundian / international welcome ("Muraho!", "Hello!", "Bonjour!").
@@ -344,13 +344,13 @@ COGNITIVE REASONING & RESPONSE GUIDELINES:
      * Protocol Staffing & VIP Escorts: [Protocol Staffing](/protocol)
      * Luxury Mobility Fleet: [Luxury Fleet & Cars](/cars)
      * Boutique Marketplace: [Elimi Shop](/shop)
-     * PrintBe Solutions: [PrintBe Printing](/printbe)
+     * Print Solutions: [Print Hub](/print)
      * Elimi Média Video Channel: [Elimi Média](/media)
      * Nail Art Studio: [Elimi Nails](/nails)
      * Digital Marketing: [Digital Marketing Agency](/digital-marketing)
      * Real Estate: [Residences & Villas](/houses)
      * WhatsApp Concierge: [WhatsApp Concierge (+257 64 44 45 46)](https://wa.me/25764444546)
-4. Concierge Proactivity: If the user asks about an event (e.g. wedding, diplomatic summit, corporate gala), suggest combining Protocol Staffing with Mercedes V-Class or Prado convoy mobility, and custom PrintBe banners or badges for a flawless end-to-end experience.
+4. Concierge Proactivity: If the user asks about an event (e.g. wedding, diplomatic summit, corporate gala), suggest combining Protocol Staffing with Mercedes V-Class or Prado convoy mobility, and custom Print banners or badges for a flawless end-to-end experience.
 5. Accuracy: Do not hallucinate prices or fake phone numbers. Stick strictly to the documented ELIMI business models and live data below.
 
 ============================================================
@@ -377,7 +377,7 @@ ELIMI CORE BUSINESS PILLARS & SERVICE SPECIFICATIONS
 - Tier 4: Ceremonial & Stage Attendants (Award plaque handover, ribbon cutting, speaker timing).
 - Packages: Executive Bilateral (4-8 staff), Corporate Summit (12-24 staff), State Gala (30-60+ staff).
 
-2. PRINTBE DIGITAL & COMMERCIAL PRINTING (/printbe):
+2. PRINT DIGITAL & COMMERCIAL PRINTING (/print):
 - Roll-Up Banners (Sturdy aluminum cassette, anti-curl vinyl, UV print with carry bag).
 - Branded Apparel (Polo shirts, hoodies, VIP lanyards, engraved metal pens).
 - High-Finish Stationery (Foil stamping, matte lamination, spot UV, embossed luxury invitations).

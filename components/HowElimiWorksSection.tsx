@@ -2,11 +2,14 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'motion/react';
+import Link from 'next/link';
+import { motion } from 'motion/react';
 import PartnerCards from '@/components/PartnerCards';
 import BuildYourPerfectEventSection from '@/components/BuildYourPerfectEventSection';
 import ElimiMediaSection from '@/components/ElimiMediaSection';
 import OurServicesSection from '@/components/OurServicesSection';
+import { useSettings } from '@/components/SettingsProvider';
+import { generateClientWhatsAppGreetingUrl } from '@/lib/firestore-orders';
 import {
   Shield,
   ShieldCheck,
@@ -18,23 +21,21 @@ import {
   Search,
   Calculator,
   MessageCircle,
-  MessageSquare,
   ArrowRight,
-  Star,
   CheckCircle2,
-  PhoneCall,
-  ExternalLink,
-  ChevronLeft,
   ChevronRight,
-  X,
   CreditCard,
-  Building2,
   Check,
-  Smartphone,
-  Laptop
+  Star,
 } from 'lucide-react';
 
 export default function HowElimiWorksSection() {
+  const settings = useSettings();
+  const whatsappUrl = generateClientWhatsAppGreetingUrl(
+    "Hello Elimi Team! I would like to confirm my booking or make an inquiry.",
+    settings.whatsappNumber
+  );
+
   // Active Testimonial Index for Carousel
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
@@ -49,16 +50,11 @@ export default function HowElimiWorksSection() {
     'https://images.unsplash.com/photo-1556742049-0a670f4a45a7?auto=format&fit=crop&w=1000&q=80'
   );
 
-  // Interactive AI search demo state inside Step 1
-  const [aiPromptInput, setAiPromptInput] = useState('');
-  const [activeQuery, setActiveQuery] = useState('Find me a Prado in Bujumbura for 2 days');
-  const [showAiModal, setShowAiModal] = useState(false);
-
-  // Interactive Package modal state for Step 2
-  const [showPackageModal, setShowPackageModal] = useState(false);
-
-  // WhatsApp modal state for Step 3
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const openElimiAi = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-elimi-ai'));
+    }
+  };
 
   // Testimonials Data
   const testimonials = [
@@ -131,8 +127,8 @@ export default function HowElimiWorksSection() {
             {/* Quick Action Button */}
             <div className="hidden lg:block">
               <button
-                onClick={() => setShowAiModal(true)}
-                className="bg-[#0D52FF] hover:bg-[#0B44D8] text-white font-bold px-6 py-3 rounded-full text-sm shadow-md transition-all flex items-center gap-2 group"
+                onClick={openElimiAi}
+                className="bg-[#0D52FF] hover:bg-[#0B44D8] text-white font-bold px-6 py-3 rounded-full text-sm shadow-md transition-all flex items-center gap-2 group cursor-pointer"
               >
                 <Bot className="w-4 h-4" />
                 <span>Ask Elimi AI Assistant</span>
@@ -238,15 +234,15 @@ export default function HowElimiWorksSection() {
                 {/* CTAs */}
                 <div className="flex flex-wrap items-center gap-2 pt-2">
                   <button
-                    onClick={() => setShowAiModal(true)}
-                    className="bg-[#0D52FF] hover:bg-[#0B44D8] text-white text-xs font-bold px-4 py-2.5 rounded-full transition shadow-xs flex items-center gap-1.5"
+                    onClick={openElimiAi}
+                    className="bg-[#0D52FF] hover:bg-[#0B44D8] text-white text-xs font-bold px-4 py-2.5 rounded-full transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <Bot className="w-3.5 h-3.5" />
                     <span>Try Elimi AI</span>
                   </button>
                   <button
-                    onClick={() => setShowAiModal(true)}
-                    className="border border-slate-200 hover:bg-slate-50 text-[#181B25] text-xs font-bold px-3.5 py-2.5 rounded-full transition flex items-center gap-1.5"
+                    onClick={openElimiAi}
+                    className="border border-slate-200 hover:bg-slate-50 text-[#181B25] text-xs font-bold px-3.5 py-2.5 rounded-full transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <Search className="w-3.5 h-3.5 text-[#525866]" />
                     <span>Search Now</span>
@@ -305,20 +301,15 @@ export default function HowElimiWorksSection() {
                   Select dates, locations, or custom event options with real-time price estimation in BIF or USD.
                 </p>
 
-                {/* Feature Tags Row */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-2">
-                  <span className="inline-flex items-center gap-1 bg-[#F8FAFC] text-[#181B25] px-2.5 py-1 rounded-full text-[11px] font-bold border border-slate-200">
-                    <Zap className="w-3 h-3 text-[#0D52FF]" />
-                    <span>Real-time Estimation</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1 bg-[#F8FAFC] text-[#181B25] px-2.5 py-1 rounded-full text-[11px] font-bold border border-slate-200">
-                    <CheckCircle2 className="w-3 h-3 text-[#0D52FF]" />
-                    <span>Multiple Options</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1 bg-[#F8FAFC] text-[#181B25] px-2.5 py-1 rounded-full text-[11px] font-bold border border-slate-200">
-                    <Lock className="w-3 h-3 text-[#0D52FF]" />
-                    <span>BIF & USD Pricing</span>
-                  </span>
+                {/* Feature Tags / Calculator Redirect CTA */}
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <Link
+                    href="/#build-event"
+                    className="bg-[#0D52FF] hover:bg-[#0B44D8] text-white text-xs font-bold px-4 py-2.5 rounded-full transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Calculator className="w-3.5 h-3.5" />
+                    <span>Calculate Event Cost</span>
+                  </Link>
                 </div>
               </div>
 
@@ -376,10 +367,10 @@ export default function HowElimiWorksSection() {
                 {/* Double CTAs */}
                 <div className="flex flex-wrap items-center gap-2 pt-2">
                   <a
-                    href="https://wa.me/25764444546?text=Hello%20Elimi%20Team!%20I%20would%20like%20to%20confirm%20my%20booking."
+                    href={whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-bold px-4 py-2.5 rounded-full transition shadow-xs flex items-center gap-1.5"
+                    className="bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-bold px-4 py-2.5 rounded-full transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <Image
                       src="/assets/icons/social/whatsapp-150x150.png"
@@ -392,13 +383,6 @@ export default function HowElimiWorksSection() {
                     />
                     <span>Chat on WhatsApp</span>
                   </a>
-                  <button
-                    onClick={() => setShowWhatsAppModal(true)}
-                    className="border border-slate-200 hover:bg-slate-50 text-[#181B25] text-xs font-bold px-3.5 py-2.5 rounded-full transition flex items-center gap-1.5"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#0D52FF]" />
-                    <span>Pay Securely</span>
-                  </button>
                 </div>
               </div>
             </motion.div>
@@ -591,146 +575,20 @@ export default function HowElimiWorksSection() {
               </p>
             </div>
 
-            <button
-              onClick={() => setShowWhatsAppModal(true)}
-              className="bg-[#0D52FF] hover:bg-[#0B44D8] text-white text-xs sm:text-sm font-extrabold px-6 py-3 rounded-full shadow-md transition whitespace-nowrap flex items-center gap-2 shrink-0 group"
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#0D52FF] hover:bg-[#0B44D8] text-white text-xs sm:text-sm font-extrabold px-6 py-3 rounded-full shadow-md transition whitespace-nowrap flex items-center gap-2 shrink-0 group cursor-pointer"
             >
               <span>Explore Elimi</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
+            </a>
           </div>
 
         </div>
 
       </div>
-
-      {/* ==================== INTERACTIVE MODALS ==================== */}
-
-      {/* 1. AI Search Assistant Modal */}
-      <AnimatePresence>
-        {showAiModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative border border-slate-100"
-            >
-              <button
-                onClick={() => setShowAiModal(false)}
-                className="absolute top-5 right-5 text-slate-400 hover:text-slate-800 p-1 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-2xl bg-[#0D52FF] text-white flex items-center justify-center shadow-md">
-                  <Bot className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-extrabold text-xl text-[#181B25]">Elimi AI Assistant</h4>
-                  <p className="text-xs text-[#525866]">Ask anything about vehicles, protocol, or shopping in Burundi</p>
-                </div>
-              </div>
-
-              <div className="space-y-4 mb-6">
-                <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-slate-200/80 space-y-2 text-xs">
-                  <p className="font-bold text-[#181B25]">Try sample prompt:</p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setAiPromptInput('Find me a Prado in Bujumbura for 2 days')}
-                      className="bg-white hover:bg-slate-100 text-[#0D52FF] font-semibold border border-slate-200 px-3 py-1.5 rounded-full text-xs"
-                    >
-                      &quot;Find me a Prado in Bujumbura for 2 days&quot;
-                    </button>
-                    <button
-                      onClick={() => setAiPromptInput('I need 4 protocol guards for a VIP reception')}
-                      className="bg-white hover:bg-slate-100 text-[#0D52FF] font-semibold border border-slate-200 px-3 py-1.5 rounded-full text-xs"
-                    >
-                      &quot;I need 4 protocol guards&quot;
-                    </button>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={aiPromptInput}
-                    onChange={(e) => setAiPromptInput(e.target.value)}
-                    placeholder="Type your request here..."
-                    className="w-full bg-[#F8FAFC] border border-slate-200 rounded-2xl py-3 pl-4 pr-12 text-xs font-medium text-[#181B25] focus:outline-none focus:border-[#0D52FF]"
-                  />
-                  <button
-                    onClick={() => {
-                      if (aiPromptInput) setActiveQuery(aiPromptInput);
-                      setShowAiModal(false);
-                    }}
-                    className="absolute right-2 top-2 bg-[#0D52FF] text-white p-1.5 rounded-xl hover:bg-[#0B44D8] transition"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowAiModal(false)}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-[#181B25] font-bold rounded-full py-3 text-xs transition"
-              >
-                Close Assistant
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* 2. WhatsApp Direct Connect Modal */}
-      <AnimatePresence>
-        {showWhatsAppModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative border border-slate-100"
-            >
-              <button
-                onClick={() => setShowWhatsAppModal(false)}
-                className="absolute top-5 right-5 text-slate-400 hover:text-slate-800 p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-[#25D366]/10 text-[#25D366] rounded-2xl flex items-center justify-center font-bold">
-                  <MessageCircle className="w-6 h-6 fill-[#25D366]" />
-                </div>
-                <div>
-                  <h4 className="font-extrabold text-xl text-[#181B25]">ELIMI WhatsApp Booking</h4>
-                  <p className="text-xs text-[#525866]">Instant Response Team</p>
-                </div>
-              </div>
-
-              <div className="space-y-3 bg-[#F8FAFC] p-4 rounded-2xl text-xs text-[#525866] mb-6 border border-slate-200/80">
-                <p className="font-bold text-[#181B25]">How WhatsApp payment works:</p>
-                <p>1. Our agent reviews your request immediately.</p>
-                <p>2. We generate an Lumicash or Ecocash payment prompt.</p>
-                <p>3. Your booking is instantly locked with 100% money-back guarantee.</p>
-              </div>
-
-              <a
-                href="https://wa.me/25764444546?text=Hello%20Elimi%20Team!%20I%20would%20like%20to%20confirm%20my%20booking."
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setShowWhatsAppModal(false)}
-                className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white font-extrabold rounded-full py-3.5 px-6 shadow-md transition flex items-center justify-center gap-2 text-xs"
-              >
-                <MessageCircle className="w-4 h-4 fill-white" />
-                <span>Continue to WhatsApp (+257 64 44 45 46)</span>
-              </a>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
     </section>
   );

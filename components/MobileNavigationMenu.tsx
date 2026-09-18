@@ -13,7 +13,6 @@ import {
   MonitorPlay,
   PrinterCheck,
   UsersRound,
-  Brush,
   Menu,
   X,
   Sparkles,
@@ -95,8 +94,8 @@ export function MobileNavigationMenu({ className }: MobileNavigationMenuProps) {
       description: 'Streams & video catalog',
     },
     {
-      label: 'PrintBe',
-      href: '/printbe',
+      label: 'Print',
+      href: '/print',
       icon: PrinterCheck,
       description: 'Prints & branding',
     },
@@ -105,6 +104,12 @@ export function MobileNavigationMenu({ className }: MobileNavigationMenuProps) {
       href: '/protocol',
       icon: UsersRound,
       description: 'VIP escort & delegations',
+    },
+    {
+      label: 'Digital Solutions',
+      href: '/digital-solutions',
+      icon: Sparkles,
+      description: 'Apps, Web & Google Maps',
     },
     {
       label: 'Other Rentals',

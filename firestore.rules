@@ -2,51 +2,58 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read and write to products collection for real-time shop syncing
+    // Public collections for store and website visitors
     match /products/{productId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null || true;
       
       match /reviews/{reviewId} {
         allow read, write: if true;
       }
     }
     
-    // Newsletter subscribers
     match /newsletter_subscribers/{subscriberId} {
       allow read, write: if true;
     }
     
-    // Boutique orders
     match /orders/{orderId} {
       allow read, write: if true;
     }
     
-    // Mobility and chauffeur fleet cars
     match /cars/{carId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null || true;
     }
     
-    // Luxury real estate houses
     match /houses/{houseId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null || true;
     }
     
-    // Other allocations and rental items
     match /rental_categories/{categoryId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null || true;
     }
 
     match /rental_items/{itemId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null || true;
     }
 
-    // Registered users management and auth quota
+    match /cms_pages/{pageId} {
+      allow read: if true;
+      allow write: if request.auth != null || true;
+    }
+
+    // Admin users management & system metadata
     match /users/{userId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null || true;
     }
 
     match /system_metadata/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null || true;
     }
 
     match /{document=**} {
@@ -54,3 +61,4 @@ service cloud.firestore {
     }
   }
 }
+

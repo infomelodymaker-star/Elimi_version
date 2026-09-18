@@ -20,8 +20,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import ElimiHeader from '@/components/ElimiHeader';
-import Footer from '@/components/Footer';
-import { useCurrency } from '@/components/SettingsProvider';
+import { useCurrency, useSettings } from '@/components/SettingsProvider';
 import {
   CartItem,
   getSavedCart,
@@ -109,6 +108,7 @@ export default function CartPage() {
   };
 
   const { toBIF, formatBIF, formatUSD } = useCurrency();
+  const { whatsappNumber } = useSettings();
 
   // Calculations
   const subtotalUSD = cartItems.reduce(
@@ -218,7 +218,7 @@ export default function CartPage() {
         setShowSuccessModal(true);
 
         // 4. Open WhatsApp cleanly in a new window/tab
-        const whatsappUrl = generateClientWhatsAppGreetingUrl(result.orderId);
+        const whatsappUrl = generateClientWhatsAppGreetingUrl(result.orderId, whatsappNumber);
         if (typeof window !== 'undefined') {
           try {
             window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
@@ -703,8 +703,6 @@ export default function CartPage() {
         </div>
       </main>
 
-      <Footer />
-
       {/* Order Success Modal */}
       {showSuccessModal && placedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
@@ -745,7 +743,7 @@ export default function CartPage() {
 
             <div className="space-y-2.5 pt-2">
               <a
-                href={generateClientWhatsAppGreetingUrl(placedOrder.id)}
+                href={generateClientWhatsAppGreetingUrl(placedOrder.id, whatsappNumber)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold rounded-full py-3.5 px-6 transition flex items-center justify-center gap-2 text-sm shadow-md cursor-pointer"

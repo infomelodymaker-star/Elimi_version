@@ -6,6 +6,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  deleteDoc,
   onSnapshot,
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
@@ -26,6 +27,8 @@ export interface RegisteredAccount {
   createdAt: string;
   authProvider: 'password' | 'google' | 'other';
   slotNumber: number; // 1 to 5
+  status?: 'approved' | 'pending';
+  isSuperAdmin?: boolean;
 }
 
 interface AuthRegistryDoc {
@@ -303,6 +306,9 @@ export async function registerUserWithQuotaCheck(
       }
     }
 
+    const isSuperAdmin = nextSlot === 1 || allAccounts.length === 0;
+    const initialStatus: 'approved' | 'pending' = isSuperAdmin ? 'approved' : 'pending';
+
     const newAccount: RegisteredAccount = {
       uid: user.uid,
       email: user.email || 'no-email@elimi.app',
@@ -311,6 +317,8 @@ export async function registerUserWithQuotaCheck(
       createdAt: new Date().toISOString(),
       authProvider,
       slotNumber: nextSlot,
+      status: initialStatus,
+      isSuperAdmin,
     };
 
     // Store the new authorized account in Firestore
@@ -407,4 +415,58 @@ export function useRegisteredAccounts() {
     loading,
     error,
   };
+}
+
+/**
+ * Approve a pending admin account (Super Admin capability)
+ */
+export async function approveAdminUser(uid: string): Promise<boolean> {
+  try {
+    const userDocRef = doc(db, USERS_COLLECTION, uid);
+    await setDoc(userDocRef, { status: 'approved' }, { merge: true });
+    const cached = getLocalCachedAccounts();
+    const updated = cached.map((u) => (u.uid === uid ? { ...u, status: 'approved' as const } : u));
+    saveLocalCachedAccounts(updated);
+    await syncRegistry(updated);
+    return true;
+  } catch (err) {
+    console.error('Failed to approve admin user:', err);
+    return false;
+  }
+}
+
+/**
+ * Revoke an approved admin account back to pending (Super Admin capability)
+ */
+export async function revokeAdminUser(uid: string): Promise<boolean> {
+  try {
+    const userDocRef = doc(db, USERS_COLLECTION, uid);
+    await setDoc(userDocRef, { status: 'pending' }, { merge: true });
+    const cached = getLocalCachedAccounts();
+    const updated = cached.map((u) => (u.uid === uid ? { ...u, status: 'pending' as const } : u));
+    saveLocalCachedAccounts(updated);
+    await syncRegistry(updated);
+    return true;
+  } catch (err) {
+    console.error('Failed to revoke admin user:', err);
+    return false;
+  }
+}
+
+/**
+ * Delete / remove an admin user from Firestore and registry (Super Admin capability)
+ */
+export async function deleteAdminUser(uid: string): Promise<boolean> {
+  try {
+    const userDocRef = doc(db, USERS_COLLECTION, uid);
+    await deleteDoc(userDocRef);
+    const cached = getLocalCachedAccounts();
+    const updated = cached.filter((u) => u.uid !== uid);
+    saveLocalCachedAccounts(updated);
+    await syncRegistry(updated);
+    return true;
+  } catch (err) {
+    console.error('Failed to delete admin user:', err);
+    return false;
+  }
 }

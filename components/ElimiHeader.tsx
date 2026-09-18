@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { ArrowLeft, ArrowUpRight, Bell, Bot, ShoppingCart } from 'lucide-react';
 import DesktopNavMenu from '@/components/DesktopNavMenu';
 import { MobileNavigationMenu } from '@/components/MobileNavigationMenu';
+import RentHeaderDropdown from '@/components/RentHeaderDropdown';
 import { getSavedCart } from '@/lib/cart';
 
 interface ElimiHeaderProps {
@@ -61,13 +62,7 @@ export default function ElimiHeader({
 
         {/* Right Section: Rent Button & Cart Button at the very right */}
         <div className="flex items-center gap-3 shrink-0">
-          <Link
-            href="/protocol"
-            className="bg-white hover:bg-slate-50 text-[#0F172A] font-semibold py-2.5 px-6 sm:px-8 text-xs sm:text-sm rounded-full flex items-center gap-2 transition-all border border-[#1D4ED8] cursor-pointer shrink-0 shadow-xs"
-          >
-            <span>Rent</span>
-            <ArrowUpRight className="w-4 h-4 text-[#0B57FF]" />
-          </Link>
+          <RentHeaderDropdown />
 
           {shouldShowCart && (
             <Link

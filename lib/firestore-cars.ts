@@ -72,14 +72,14 @@ export const SAMPLE_CARS: Car[] = [
     rentPrice: 350,
     sales: true,
     rent: true,
-    location: { lat: 34.0736, lng: -118.4004 },
-    address: 'Beverly Hills Showroom, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_car_1',
+    location: { lat: -3.3845, lng: 29.3635 },
+    address: 'Rohero VIP Showroom, Boulevard du 28 Novembre, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/BujumburaRohero',
     seats: 7,
     transmission: 'Automatic',
     fuelType: 'Diesel / Hybrid',
     year: 2024,
-    mileage: '12,500 miles',
+    mileage: '12,500 km',
     modelTrim: 'V300d Extra Long Luxury',
     availableUnits: [
       { unitId: 'VC-01', availableDate: 'Available Today', price: 350, isRent: true },
@@ -101,14 +101,14 @@ export const SAMPLE_CARS: Car[] = [
     rentPrice: 200,
     sales: true,
     rent: true,
-    location: { lat: 34.0407, lng: -118.2468 },
-    address: 'Downtown Hub, Los Angeles, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_car_2',
+    location: { lat: -3.3768, lng: 29.3812 },
+    address: 'Kiriri Diplomatic Station, Avenue Belvédère, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/BujumburaKiriri',
     seats: 7,
     transmission: 'Automatic 4WD',
     fuelType: 'Turbo Diesel',
     year: 2024,
-    mileage: '8,200 miles',
+    mileage: '8,200 km',
     modelTrim: 'TX-L Premium Package',
     availableUnits: [
       { unitId: 'PR-10', availableDate: 'Available Now', price: 200, isRent: true },
@@ -137,14 +137,14 @@ export const SAMPLE_CARS: Car[] = [
     rentPrice: 650,
     sales: true,
     rent: true,
-    location: { lat: 34.0259, lng: -118.5155 },
-    address: 'Coastal Mobility Center, Santa Monica, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_car_3',
+    location: { lat: -3.3985, lng: 29.3540 },
+    address: 'Kinindo Executive Hub, Avenue du Large, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/BujumburaKinindo',
     seats: 5,
     transmission: 'Automatic',
     fuelType: 'Twin-Turbo V8',
     year: 2024,
-    mileage: '5,100 miles',
+    mileage: '5,100 km',
     modelTrim: 'Autobiography Long Wheelbase',
     availableUnits: [
       { unitId: 'RR-01', availableDate: 'Available Now', price: 650, isRent: true },
@@ -158,48 +158,67 @@ export const SAMPLE_CARS: Car[] = [
     id: 'car-4',
     title: 'Porsche 911 Carrera GTS',
     description: 'Iconic sports car delivering adrenaline-fueled handling, timeless design, and precision performance.',
-    price: 155000,
+    price: 160000,
+    rentPrice: 500,
     sales: true,
     rent: false,
-    location: { lat: 34.1425, lng: -118.2551 },
-    address: 'Glendale Performance Showroom, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_car_4',
+    location: { lat: -3.3812, lng: 29.3668 },
+    address: 'Boulevard de l\'Uprona, Rohero I, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/BujumburaCentre',
     seats: 4,
-    transmission: '8-Speed PDK',
-    fuelType: 'Twin-Turbo Boxer 6',
-    year: 2023,
-    mileage: '3,800 miles',
+    transmission: 'PDK Automatic',
+    fuelType: 'Twin-Turbo Flat-6',
+    year: 2024,
+    mileage: '3,400 km',
     modelTrim: 'Carrera GTS Coupe',
     availableUnits: [
-      { unitId: 'PO-911', availableDate: 'Available Now', price: 155000, isRent: false }
+      { unitId: '911-01', availableDate: 'Available Now', price: 160000, isRent: false }
     ],
-    amenities: [
-      'Sport Chrono Package',
-      'Sport Exhaust System',
-      'PASM Sport Suspension',
-      'Carbon Ceramic Brakes',
-      'Bose Surround Sound',
-      'Alcantara Interior'
-    ],
+    amenities: DEFAULT_CAR_FEATURES,
     photos: DEFAULT_CAR_PHOTOS,
     imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800',
   },
   {
     id: 'car-5',
+    title: 'Toyota Land Cruiser 300 GR Sport',
+    description: 'The master of all terrains, featuring twin-turbo diesel power and Gazoo Racing suspension tuning for VIP protocol.',
+    price: 135000,
+    rentPrice: 300,
+    sales: true,
+    rent: true,
+    location: { lat: -3.3615, lng: 29.3885 },
+    address: 'Gihosha Diplomatic Route, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/BujumburaGihosha',
+    seats: 7,
+    transmission: '10-Speed Automatic',
+    fuelType: '3.3L Twin-Turbo Diesel',
+    year: 2024,
+    mileage: '6,800 km',
+    modelTrim: 'LC300 GR-Sport VIP Armor Ready',
+    availableUnits: [
+      { unitId: 'LC-301', availableDate: 'Available Now', price: 300, isRent: true },
+      { unitId: 'LC-302', availableDate: 'Ready for delivery', price: 135000, isRent: false }
+    ],
+    amenities: DEFAULT_CAR_FEATURES,
+    photos: DEFAULT_CAR_PHOTOS,
+    imageUrl: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    id: 'car-6',
     title: 'Mercedes-Maybach S 580 4MATIC',
     description: 'Presidential comfort with extended legroom, reclining first-class airline style seats, and noise-cancelling cabin.',
     price: 230000,
     rentPrice: 800,
     sales: true,
     rent: true,
-    location: { lat: 34.0522, lng: -118.2437 },
-    address: 'Financial District VIP Terminal, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_car_5',
+    location: { lat: -3.3830, lng: 29.3590 },
+    address: 'Mutanga Nord Executive Hub, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/BujumburaMutanga',
     seats: 4,
     transmission: 'Automatic 9G-TRONIC',
     fuelType: 'V8 Biturbo Mild Hybrid',
     year: 2024,
-    mileage: '2,900 miles',
+    mileage: '2,900 km',
     modelTrim: 'Maybach S 580 Executive',
     availableUnits: [
       { unitId: 'MB-580', availableDate: 'Available Today', price: 800, isRent: true },
@@ -208,112 +227,6 @@ export const SAMPLE_CARS: Car[] = [
     amenities: DEFAULT_CAR_FEATURES,
     photos: DEFAULT_CAR_PHOTOS,
     imageUrl: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=800',
-  },
-  {
-    id: 'car-6',
-    title: 'Cadillac Escalade ESV Platinum',
-    description: 'Commanding full-size luxury SUV with curved OLED display, Super Cruise, and generous luggage capacity.',
-    price: 125000,
-    rentPrice: 400,
-    sales: true,
-    rent: true,
-    location: { lat: 34.2506, lng: -118.1887 },
-    address: 'North Hills Showroom, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_car_6',
-    seats: 7,
-    transmission: '10-Speed Automatic',
-    fuelType: '6.2L V8',
-    year: 2024,
-    mileage: '9,400 miles',
-    modelTrim: 'ESV Platinum Luxury',
-    availableUnits: [
-      { unitId: 'CD-88', availableDate: 'Available Now', price: 400, isRent: true },
-      { unitId: 'CD-89', availableDate: 'Available Now', price: 125000, isRent: false }
-    ],
-    amenities: DEFAULT_CAR_FEATURES,
-    photos: DEFAULT_CAR_PHOTOS,
-    imageUrl: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=800',
-  },
-  {
-    id: 'car-7',
-    title: 'BMW X7 M60i xDrive',
-    description: 'Dynamic 3-row performance SUV with M Sport styling, panoramic Sky Lounge LED roof, and brisk acceleration.',
-    price: 118000,
-    rentPrice: 380,
-    sales: true,
-    rent: true,
-    location: { lat: 34.0195, lng: -118.4912 },
-    address: 'Venice Auto Pavilion, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_car_7',
-    seats: 6,
-    transmission: '8-Speed Sport Automatic',
-    fuelType: '4.4L BMW M TwinPower Turbo V8',
-    year: 2024,
-    mileage: '6,200 miles',
-    modelTrim: 'M60i Performance Package',
-    availableUnits: [
-      { unitId: 'BM-X7', availableDate: 'Available Now', price: 380, isRent: true }
-    ],
-    amenities: DEFAULT_CAR_FEATURES,
-    photos: DEFAULT_CAR_PHOTOS,
-    imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=800',
-  },
-  {
-    id: 'car-8',
-    title: 'Audi RS6 Avant Performance',
-    description: 'The ultimate super-wagon combining sports car acceleration with everyday practicality and Quattro all-wheel drive.',
-    price: 135000,
-    rentPrice: 420,
-    sales: true,
-    rent: true,
-    location: { lat: 34.1478, lng: -118.1445 },
-    address: 'Pasadena High-End Motors, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_car_8',
-    seats: 5,
-    transmission: '8-Speed Tiptronic',
-    fuelType: 'Twin-Turbo V8 Hybrid',
-    year: 2024,
-    mileage: '4,000 miles',
-    modelTrim: 'RS6 Avant Performance',
-    availableUnits: [
-      { unitId: 'AU-66', availableDate: 'Available Now', price: 420, isRent: true },
-      { unitId: 'AU-67', availableDate: 'Available Now', price: 135000, isRent: false }
-    ],
-    amenities: DEFAULT_CAR_FEATURES,
-    photos: DEFAULT_CAR_PHOTOS,
-    imageUrl: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&q=80&w=800',
-  },
-  {
-    id: 'car-9',
-    title: 'Tesla Model X Plaid',
-    description: 'Tri-motor all-electric SUV featuring Falcon Wing doors, rapid 0-60 in 2.5s, and cutting-edge Autopilot tech.',
-    price: 98000,
-    rentPrice: 290,
-    sales: true,
-    rent: true,
-    location: { lat: 34.0224, lng: -118.2851 },
-    address: 'University Park EV Station, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_car_9',
-    seats: 6,
-    transmission: 'Single-Speed Electric AWD',
-    fuelType: '100% Electric (1020 HP)',
-    year: 2023,
-    mileage: '11,000 miles',
-    modelTrim: 'Plaid Tri-Motor',
-    availableUnits: [
-      { unitId: 'TS-XP', availableDate: 'Available Now', price: 290, isRent: true },
-      { unitId: 'TS-XQ', availableDate: 'Available Now', price: 98000, isRent: false }
-    ],
-    amenities: [
-      'Tri-Motor All-Wheel Drive',
-      'Falcon Wing Doors with Sensors',
-      'Full Self-Driving Capability',
-      '17-inch Cinematic Display',
-      'Yoke Steering Controller',
-      'HEPA Air Filtration System'
-    ],
-    photos: DEFAULT_CAR_PHOTOS,
-    imageUrl: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=800',
   }
 ];
 
@@ -349,15 +262,19 @@ export const CARS_STORAGE_KEY = 'elimi_cars_storage';
 export const CARS_SYNC_EVENT = 'elimi_sync_cars';
 
 export function useRealtimeCars() {
-  const [cars, setCars] = useState<Car[]>(() =>
-    getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS)
-  );
+  const [cars, setCars] = useState<Car[]>(SAMPLE_CARS);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
-    // 1. Listen to custom sync events
+    // 1. Hydrate from local storage on client mount
+    queueMicrotask(() => {
+      const initialStored = getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS);
+      setCars(initialStored);
+    });
+
+    // 2. Listen to custom sync events
     const handleSync = () => {
       const updated = getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS);
       setCars(updated);

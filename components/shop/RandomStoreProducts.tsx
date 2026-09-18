@@ -24,6 +24,7 @@ import { Product, BOUTIQUE_PRODUCTS } from './ProductGrid';
 import { useRealtimeProducts } from '@/lib/firestore-products';
 import { createCheckoutOrder, generateClientWhatsAppGreetingUrl } from '@/lib/firestore-orders';
 import { getEffectiveShippingCost } from '@/lib/products';
+import { useSettings } from '@/components/SettingsProvider';
 
 interface RandomStoreProductsProps {
   count?: number;
@@ -56,6 +57,7 @@ export default function RandomStoreProducts({
 }: RandomStoreProductsProps) {
   const router = useRouter();
   const { products: realtimeProducts } = useRealtimeProducts();
+  const { whatsappNumber } = useSettings();
   const [isMounted, setIsMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>(() => BOUTIQUE_PRODUCTS.slice(0, count));
   const [isShuffling, setIsShuffling] = useState(false);
@@ -123,11 +125,11 @@ export default function RandomStoreProducts({
 
     const result = await createCheckoutOrder(orderPayload as any);
     if (result.success && result.orderId) {
-      const url = generateClientWhatsAppGreetingUrl(result.orderId);
+      const url = generateClientWhatsAppGreetingUrl(result.orderId, whatsappNumber);
       window.open(url, '_blank');
       setSelectedProductForModal(null);
     } else {
-      window.open(`https://wa.me/25769000000?text=${encodeURIComponent(
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
         `Hello ELIMI Concierge, I would like to order: ${product.name} (${product.priceBIF.toLocaleString()} BIF)`
       )}`, '_blank');
       setSelectedProductForModal(null);

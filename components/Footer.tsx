@@ -1,13 +1,28 @@
-import {
-  ArrowUpRight,
-  Mail,
-} from "lucide-react";
+"use client";
 
+import React, { useState } from "react";
+import { ArrowUpRight, Mail, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { useSettings } from "@/components/SettingsProvider";
+import { db } from "@/lib/firebase";
+import { collection, addDoc } from "firebase/firestore";
+import { runFirestoreTaskSafe } from "@/lib/firestore-sync";
+import LegacyPoliciesModal from "@/components/LegacyPoliciesModal";
 
-const links: { title: string; items: { label: string; href: string }[] }[] = [
+interface FooterLinkItem {
+  label: string;
+  href: string;
+  policyTab?: 'legacy' | 'terms' | 'privacy' | 'refund' | 'license';
+}
+
+interface FooterColumn {
+  title: string;
+  items: FooterLinkItem[];
+}
+
+const links: FooterColumn[] = [
   {
     title: "Services",
     items: [
@@ -22,8 +37,8 @@ const links: { title: string; items: { label: string; href: string }[] }[] = [
     items: [
       { label: "Shop", href: "/shop" },
       { label: "Houses", href: "/houses" },
-      { label: "PrintBe", href: "/printbe" },
-      { label: "Nails", href: "/nails" },
+      { label: "Print", href: "/print" },
+      { label: "Other Rentals", href: "/allocations" },
     ],
   },
   {
@@ -31,43 +46,99 @@ const links: { title: string; items: { label: string; href: string }[] }[] = [
     items: [
       { label: "About", href: "/#about" },
       { label: "Contact", href: "/#contact" },
+      { label: "Legacy", href: "#legacy", policyTab: 'legacy' },
     ],
   },
   {
     title: "Legal",
     items: [
-      { label: "License", href: "/#license" },
-      { label: "Privacy", href: "/#privacy" },
-      { label: "Terms", href: "/#terms" },
+      { label: "Legacy & Policies", href: "#legacy", policyTab: 'legacy' },
+      { label: "License", href: "#license", policyTab: 'license' },
+      { label: "Privacy", href: "#privacy", policyTab: 'privacy' },
+      { label: "Terms", href: "#terms", policyTab: 'terms' },
     ],
-  },
-];
-
-const socials = [
-  {
-    label: "WhatsApp",
-    icon: "/assets/icons/social/whatsapp-150x150.png",
-    href: "https://wa.me/25764444546",
-  },
-  {
-    label: "Facebook",
-    icon: "/assets/icons/social/facebook-150x150.png",
-    href: "https://facebook.com/elimiofficiel",
-  },
-  {
-    label: "Instagram",
-    icon: "/assets/icons/social/instagram-150x150.png",
-    href: "https://instagram.com/elimiofficiel",
-  },
-  {
-    label: "YouTube",
-    icon: "/assets/icons/social/Youtube.png",
-    href: "https://youtube.com/@elimiofficiel",
   },
 ];
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const settings = useSettings();
+
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Policy Modal state
+  const [isPoliciesOpen, setIsPoliciesOpen] = useState(false);
+  const [policyTab, setPolicyTab] = useState<'legacy' | 'terms' | 'privacy' | 'refund' | 'license'>('legacy');
+
+  const handleOpenPolicy = (tab: 'legacy' | 'terms' | 'privacy' | 'refund' | 'license') => {
+    setPolicyTab(tab);
+    setIsPoliciesOpen(true);
+  };
+
+  const whatsappNum = settings?.whatsappNumber || "25779123456";
+  const whatsappLink = `https://wa.me/${whatsappNum.replace(/\+/g, "")}`;
+
+  const socials = [
+    {
+      label: "WhatsApp",
+      icon: "/assets/icons/social/whatsapp-150x150.png",
+      href: whatsappLink,
+    },
+    {
+      label: "Facebook",
+      icon: "/assets/icons/social/facebook-150x150.png",
+      href: "https://facebook.com/elimiofficiel",
+    },
+    {
+      label: "Instagram",
+      icon: "/assets/icons/social/instagram-150x150.png",
+      href: "https://instagram.com/elimiofficiel",
+    },
+    {
+      label: "YouTube",
+      icon: "/assets/icons/social/Youtube.png",
+      href: "https://youtube.com/@elimiofficiel",
+    },
+  ];
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    // Store locally
+    try {
+      const stored = JSON.parse(localStorage.getItem("elimi_newsletter_subscribers") || "[]");
+      if (!stored.includes(cleanEmail)) {
+        stored.push(cleanEmail);
+        localStorage.setItem("elimi_newsletter_subscribers", JSON.stringify(stored));
+      }
+    } catch {
+      // Ignore local storage error
+    }
+
+    // Save to Firestore asynchronously
+    runFirestoreTaskSafe(async () => {
+      await addDoc(collection(db, "newsletter_subscribers"), {
+        email: cleanEmail,
+        subscribedAt: new Date().toISOString(),
+        source: "footer",
+      });
+    }, 1500, "Footer Newsletter Subscription");
+
+    setSubmitting(false);
+    setSubscribed(true);
+    setEmail("");
+  };
 
   return (
     <footer className="bg-white text-[#0F172A] border-t border-[#0F172A]/8 mt-auto">
@@ -91,20 +162,45 @@ export default function Footer() {
             </span>
           </div>
 
-          <form className="flex w-full items-center gap-2 rounded-full border border-[#0F172A]/10 bg-[#F8F9FA] p-1.5 sm:w-auto sm:min-w-[340px] focus-within:border-[#0B57FF] focus-within:ring-2 focus-within:ring-[#0B57FF]/10 transition-all">
-            <Mail className="ml-3 size-4 text-[#64748B]" />
-            <Input
-              type="email"
-              placeholder="Join our newsletter"
-              className="h-9 flex-1 border-0 bg-transparent px-2 text-sm text-[#0F172A] placeholder:text-[#64748B] shadow-none focus-visible:outline-none focus-visible:ring-0"
-            />
-            <Button
-              size="sm"
-              className="rounded-full bg-[#0B57FF] text-white hover:bg-[#0948d9] px-5 text-xs font-semibold shadow-none transition-all active:scale-95"
-            >
-              Subscribe
-            </Button>
-          </form>
+          {/* Newsletter Form */}
+          <div className="w-full sm:w-auto">
+            {subscribed ? (
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                <Check className="size-4 text-emerald-600" />
+                <span>Thank you for subscribing to ELIMI!</span>
+              </div>
+            ) : (
+              <form
+                onSubmit={handleSubscribe}
+                className="flex w-full items-center gap-2 rounded-full border border-[#0F172A]/10 bg-[#F8F9FA] p-1.5 sm:w-auto sm:min-w-[340px] focus-within:border-[#0B57FF] focus-within:ring-2 focus-within:ring-[#0B57FF]/10 transition-all"
+              >
+                <Mail className="ml-3 size-4 text-[#64748B] shrink-0" />
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  placeholder="Join our newsletter"
+                  className="h-9 flex-1 border-0 bg-transparent px-2 text-sm text-[#0F172A] placeholder:text-[#64748B] shadow-none focus-visible:outline-none focus-visible:ring-0"
+                />
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  size="sm"
+                  className="rounded-full bg-[#0B57FF] text-white hover:bg-[#0948d9] px-5 text-xs font-semibold shadow-none transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    "Subscribe"
+                  )}
+                </Button>
+              </form>
+            )}
+            {error && <p className="text-[11px] text-rose-600 mt-1 pl-3 font-medium">{error}</p>}
+          </div>
         </div>
 
         <div className="mt-12 grid grid-cols-2 gap-x-10 gap-y-10 sm:grid-cols-4">
@@ -116,12 +212,22 @@ export default function Footer() {
               <ul className="flex flex-col gap-2.5">
                 {column.items.map((item) => (
                   <li key={item.label}>
-                    <a
-                      href={item.href}
-                      className="text-sm text-[#0F172A]/80 transition-colors hover:text-[#0B57FF]"
-                    >
-                      {item.label}
-                    </a>
+                    {item.policyTab ? (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPolicy(item.policyTab!)}
+                        className="text-sm text-[#0F172A]/80 transition-colors hover:text-[#0B57FF] text-left cursor-pointer"
+                      >
+                        {item.label}
+                      </button>
+                    ) : (
+                      <a
+                        href={item.href}
+                        className="text-sm text-[#0F172A]/80 transition-colors hover:text-[#0B57FF]"
+                      >
+                        {item.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -156,6 +262,7 @@ export default function Footer() {
                   aria-label={s.label}
                   className="grid size-8 place-items-center rounded-full text-[#64748B] bg-[#F8F9FA] border border-[#0F172A]/6 transition-all hover:bg-white hover:border-[#0B57FF]/30 hover:scale-105 p-1.5 shadow-xs"
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={s.icon}
                     alt={s.label}
@@ -179,6 +286,12 @@ export default function Footer() {
           ELIMI
         </p>
       </div>
+
+      <LegacyPoliciesModal
+        isOpen={isPoliciesOpen}
+        onClose={() => setIsPoliciesOpen(false)}
+        defaultTab={policyTab}
+      />
     </footer>
   );
 }

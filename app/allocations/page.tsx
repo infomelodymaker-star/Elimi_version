@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCurrency } from "@/components/SettingsProvider";
 import ElimiHeader from '@/components/ElimiHeader';
-import Footer from '@/components/Footer';
+import { useCmsPage } from '@/lib/firestore-cms';
 import {
   useRealtimeRentalCategories,
   useRealtimeRentalItems,
@@ -32,6 +32,12 @@ export default function AllocationsPage() {
   const { formatUSD } = useCurrency();
   const { categories, loading: loadingCategories } = useRealtimeRentalCategories();
   const { items, loading: loadingItems } = useRealtimeRentalItems();
+  const { data: cmsAllocationsPage } = useCmsPage('allocations');
+
+  const heroContent = cmsAllocationsPage?.sections?.find(s => s.id === 'hero' || s.type === 'hero')?.content;
+  const heroBadge = heroContent?.badge || 'Catalogue & Staff à Louer';
+  const heroTitle = heroContent?.title || 'Catalogue de Location';
+  const heroDescription = heroContent?.description || 'Trouvez la tenue idéale, nos équipements de prestige et nos équipes d\'experts pour tous vos événements, galas et séjours d\'exception.';
 
   // Search & Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -207,14 +213,13 @@ export default function AllocationsPage() {
           <div>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#0D52FF] border border-blue-100 mb-2">
               <Sparkles className="w-3.5 h-3.5" />
-              Catalogue & Staff à Louer
+              {heroBadge}
             </span>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
-              Catalogue de Location
+              {heroTitle}
             </h1>
             <p className="text-sm sm:text-base text-slate-600 max-w-2xl mt-1.5">
-              Trouvez la tenue idéale, nos équipements de prestige et nos équipes d&apos;experts pour
-              tous vos événements, galas et séjours d&apos;exception.
+              {heroDescription}
             </p>
           </div>
 
@@ -698,9 +703,6 @@ export default function AllocationsPage() {
           <span className="text-sm font-semibold">{toastMessage}</span>
         </div>
       )}
-
-      {/* Platform Footer */}
-      <Footer />
     </div>
   );
 }

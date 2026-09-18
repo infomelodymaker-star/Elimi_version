@@ -178,15 +178,19 @@ export const PRODUCTS_SYNC_EVENT = 'elimi_sync_products';
  * Hook to subscribe to real-time products collection from Firestore.
  */
 export function useRealtimeProducts() {
-  const [products, setProducts] = useState<Product[]>(() =>
-    getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS)
-  );
+  const [products, setProducts] = useState<Product[]>(BOUTIQUE_PRODUCTS);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
-    // 1. Listen to custom sync events
+    // 1. Hydrate from local storage on client mount
+    queueMicrotask(() => {
+      const initialStored = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
+      setProducts(initialStored);
+    });
+
+    // 2. Listen to custom sync events
     const handleSync = () => {
       const updated = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
       setProducts(updated);

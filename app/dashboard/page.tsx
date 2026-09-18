@@ -19,6 +19,7 @@ import HousesManagementView from "@/components/dashboard/HousesManagementView";
 import AllocationsManagementView from "@/components/dashboard/AllocationsManagementView";
 import CmsManagementView from "@/components/dashboard/CmsManagementView";
 import SettingsManagementView from "@/components/dashboard/SettingsManagementView";
+import UserManagementView from "@/components/dashboard/UserManagementView";
 import { useRealtimeProducts } from "@/lib/firestore-products";
 import { useRealtimeRentalItems } from "@/lib/firestore-rentals";
 
@@ -233,7 +234,21 @@ export default function DashboardPage() {
 
   // Navigation & layout state
   const [activeNav, setActiveNav] = useState<"dashboard" | "products" | "orders" | "cars" | "houses" | "allocations" | "cms" | "settings">("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setSidebarOpen(window.innerWidth >= 1024);
+    }
+  }, []);
+
+  const selectNav = (nav: typeof activeNav) => {
+    setActiveNav(nav);
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  };
+
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("outline");
   const [selectedTimeRange, setSelectedTimeRange] =
@@ -513,18 +528,26 @@ export default function DashboardPage() {
 
       {/* Main Full-Viewport Dashboard Container */}
       <div className="acme-dashboard fixed inset-0 z-40 bg-[#F8F9FA] text-[#0F172A] antialiased selection:bg-[#E0EBFF] selection:text-[#0B57FF] min-h-screen overflow-hidden flex">
+        {/* Mobile Backdrop Overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* =========================================================================
             SIDEBAR (Light Theme System with Electric Cobalt Accents)
            ========================================================================= */}
         <aside
           className={`${
-            sidebarOpen ? "flex" : "hidden"
-          } lg:flex flex-col justify-between h-screen w-64 p-3 border-r border-[#0F172A]/8 bg-white z-40 shrink-0 select-none transition-all duration-200 shadow-[0px_4px_24px_0px_rgba(15,23,42,0.02)]`}
+            sidebarOpen ? "fixed inset-y-0 left-0 z-50 flex shadow-2xl" : "hidden"
+          } lg:static lg:flex flex-col justify-between h-screen w-64 p-3 border-r border-[#0F172A]/8 bg-white shrink-0 select-none transition-all duration-200`}
         >
           {/* Top Section & Navigation */}
           <div className="flex flex-col space-y-4 overflow-y-auto custom-scrollbar">
             {/* Brand Header */}
-            <div className="flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-[#F8F9FA] transition-colors cursor-pointer">
+            <div className="flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-[#F8F9FA] transition-colors">
               <div className="flex items-center space-x-2.5">
                 <div className="w-8 h-8 rounded-lg bg-[#0B57FF] flex items-center justify-center text-white shadow-sm shadow-[#0B57FF]/25">
                   <span className="material-symbols-outlined text-white text-[18px]">
@@ -540,9 +563,16 @@ export default function DashboardPage() {
                   </span>
                 </div>
               </div>
-              <span className="material-symbols-outlined text-[#64748B] text-[16px]">
-                unfold_more
-              </span>
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden p-1 text-[#64748B] hover:text-[#0F172A] rounded-lg hover:bg-slate-100 cursor-pointer"
+                aria-label="Close sidebar"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  close
+                </span>
+              </button>
             </div>
 
             {/* Quick Action Buttons */}
@@ -576,7 +606,7 @@ export default function DashboardPage() {
               {/* Dashboard */}
               <button
                 type="button"
-                onClick={() => setActiveNav("dashboard")}
+                onClick={() => selectNav("dashboard")}
                 className={`w-full font-medium rounded-xl px-3 py-2 flex items-center justify-between group transition-all cursor-pointer ${
                   activeNav === "dashboard"
                     ? "bg-[#E0EBFF] text-[#0B57FF] font-semibold"
@@ -600,7 +630,7 @@ export default function DashboardPage() {
               {/* Products (Replaced Lifecycle menu item) */}
               <button
                 type="button"
-                onClick={() => setActiveNav("products")}
+                onClick={() => selectNav("products")}
                 className={`w-full font-medium rounded-xl px-3 py-2 flex items-center justify-between group transition-all cursor-pointer ${
                   activeNav === "products"
                     ? "bg-[#E0EBFF] text-[#0B57FF] font-semibold"
@@ -628,7 +658,7 @@ export default function DashboardPage() {
               {/* Orders (Replaced Analytics menu item) */}
               <button
                 type="button"
-                onClick={() => setActiveNav("orders")}
+                onClick={() => selectNav("orders")}
                 className={`w-full font-medium rounded-xl px-3 py-2 flex items-center justify-between group transition-all cursor-pointer ${
                   activeNav === "orders"
                     ? "bg-[#E0EBFF] text-[#0B57FF] font-semibold"
@@ -656,7 +686,7 @@ export default function DashboardPage() {
               {/* Cars (Replaced Projects tab) */}
               <button
                 type="button"
-                onClick={() => setActiveNav("cars")}
+                onClick={() => selectNav("cars")}
                 className={`w-full font-medium rounded-xl px-3 py-2 flex items-center justify-between group transition-all cursor-pointer ${
                   activeNav === "cars"
                     ? "bg-[#E0EBFF] text-[#0B57FF] font-semibold"
@@ -684,7 +714,7 @@ export default function DashboardPage() {
               {/* Houses (Replaced Team tab) */}
               <button
                 type="button"
-                onClick={() => setActiveNav("houses")}
+                onClick={() => selectNav("houses")}
                 className={`w-full font-medium rounded-xl px-3 py-2 flex items-center justify-between group transition-all cursor-pointer ${
                   activeNav === "houses"
                     ? "bg-[#E0EBFF] text-[#0B57FF] font-semibold"
@@ -724,7 +754,7 @@ export default function DashboardPage() {
               <div className="pl-1 space-y-0.5">
                 <button
                   type="button"
-                  onClick={() => setActiveNav("allocations")}
+                  onClick={() => selectNav("allocations")}
                   className={`w-full flex items-center justify-between rounded-xl px-3 py-2 cursor-pointer text-[13px] transition-all ${
                     activeNav === "allocations"
                       ? "bg-[#E0EBFF] text-[#0B57FF] font-semibold"
@@ -751,7 +781,34 @@ export default function DashboardPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveNav("settings")}
+                  onClick={() => selectNav("cms")}
+                  className={`w-full flex items-center justify-between rounded-xl px-3 py-2 cursor-pointer text-[13px] transition-all ${
+                    activeNav === "cms"
+                      ? "bg-[#E0EBFF] text-[#0B57FF] font-semibold"
+                      : "text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8F9FA]"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className={`material-symbols-outlined text-[16px] ${
+                        activeNav === "cms" ? "text-[#0B57FF]" : "text-[#64748B]"
+                      }`}
+                    >
+                      auto_stories
+                    </span>
+                    <span>CMS & Services</span>
+                  </div>
+                  {activeNav === "cms" ? (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0B57FF]"></span>
+                  ) : (
+                    <span className="font-mono text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200/60 px-2 py-0.5 rounded-full font-semibold">
+                      Builder
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectNav("settings")}
                   className={`w-full flex items-center justify-between rounded-xl px-3 py-2 cursor-pointer text-[13px] transition-all ${
                     activeNav === "settings"
                       ? "bg-[#E0EBFF] text-[#0B57FF] font-semibold"
@@ -776,43 +833,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Bottom Secondary Navigation & Profile */}
-          <div className="space-y-2 border-t border-[#0F172A]/8 pt-3">
-            <div className="space-y-0.5">
-              <a
-                href="#settings"
-                className="text-[#64748B] font-normal rounded-xl px-3 py-1.5 hover:bg-[#F8F9FA] hover:text-[#0F172A] transition-colors flex items-center space-x-2.5 text-[13px]"
-              >
-                <span className="material-symbols-outlined text-[18px] text-[#64748B]">
-                  settings
-                </span>
-                <span>Settings</span>
-              </a>
-              <a
-                href="#help"
-                className="text-[#64748B] font-normal rounded-xl px-3 py-1.5 hover:bg-[#F8F9FA] hover:text-[#0F172A] transition-colors flex items-center space-x-2.5 text-[13px]"
-              >
-                <span className="material-symbols-outlined text-[18px] text-[#64748B]">
-                  help
-                </span>
-                <span>Get Help</span>
-              </a>
-              <a
-                href="#search"
-                className="text-[#64748B] font-normal rounded-xl px-3 py-1.5 hover:bg-[#F8F9FA] hover:text-[#0F172A] transition-colors flex items-center justify-between text-[13px]"
-              >
-                <div className="flex items-center space-x-2.5">
-                  <span className="material-symbols-outlined text-[18px] text-[#64748B]">
-                    search
-                  </span>
-                  <span>Search</span>
-                </div>
-                <kbd className="font-mono text-[11px] px-2 py-0.5 rounded-full border border-[#0F172A]/8 bg-[#F8F9FA] text-[#64748B]">
-                  ⌘K
-                </kbd>
-              </a>
-            </div>
-
+          {/* Bottom Profile Widget */}
+          <div className="border-t border-[#0F172A]/8 pt-3">
             {/* User Profile Widget */}
             <div className="border-t border-[#0F172A]/8 pt-2">
               <div className="flex items-center justify-between p-1.5 rounded-xl hover:bg-[#F8F9FA] transition-colors group">
@@ -1310,287 +1332,8 @@ export default function DashboardPage() {
                 </div>
               </section>
 
-              {/* SECTION 3: Comprehensive Data Table (DataTable) */}
-              <section className="rounded-2xl border border-[#0F172A]/8 bg-white overflow-hidden shadow-[0px_4px_24px_0px_rgba(15,23,42,0.04)]">
-                {/* Tabs & Actions Toolbar */}
-                <div className="p-5 border-b border-[#0F172A]/8 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white">
-                  {/* Table Tabs Header */}
-                  <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 md:pb-0">
-                    {TABS.map((tab) => (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer ${
-                          activeTab === tab.id
-                            ? "bg-[#0B57FF] text-white shadow-xs font-semibold"
-                            : "text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8F9FA]"
-                        }`}
-                      >
-                        <span>{tab.label}</span>
-                        {tab.count !== null && (
-                          <span className={`font-mono text-[11px] px-1.5 py-0.2 rounded-full font-semibold ${
-                            activeTab === tab.id ? "bg-white/20 text-white" : "bg-[#E0EBFF] text-[#0B57FF]"
-                          }`}>
-                            {tab.count}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Actions Toolbar */}
-                  <div className="flex items-center space-x-2 self-end md:self-auto">
-                    {/* Search in table */}
-                    <div className="relative">
-                      <span className="material-symbols-outlined absolute left-3 top-2 text-[15px] text-[#64748B]">
-                        search
-                      </span>
-                      <input
-                        value={filterQuery}
-                        onChange={(e) => setFilterQuery(e.target.value)}
-                        className="h-8.5 pl-8.5 pr-3.5 rounded-full border border-[#0F172A]/8 bg-white text-[12px] text-[#0F172A] placeholder:text-[#64748B] focus:outline-none focus:border-[#0B57FF] w-40 sm:w-56 shadow-xs"
-                        placeholder="Filter sections..."
-                        type="text"
-                      />
-                    </div>
-
-                    {/* Customize Columns */}
-                    <div className="relative">
-                      <button
-                        type="button"
-                        className="h-8.5 px-3.5 rounded-full border border-[#0F172A]/8 bg-white hover:bg-[#F8F9FA] text-[#0F172A] text-[12px] flex items-center space-x-1.5 transition-colors cursor-pointer font-medium"
-                      >
-                        <span className="material-symbols-outlined text-[16px] text-[#64748B]">
-                          tune
-                        </span>
-                        <span className="hidden sm:inline">
-                          Customize Columns
-                        </span>
-                        <span className="material-symbols-outlined text-[14px] text-[#64748B]">
-                          expand_more
-                        </span>
-                      </button>
-                    </div>
-
-                    {/* Add Section Button */}
-                    <button
-                      type="button"
-                      onClick={() => setIsAddModalOpen(true)}
-                      className="h-8.5 px-4 rounded-full bg-[#0B57FF] hover:bg-[#0B57FF]/90 text-white text-[12px] font-semibold flex items-center space-x-1.5 transition-all active:scale-95 shadow-sm shadow-[#0B57FF]/20 cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">
-                        add
-                      </span>
-                      <span>Add Section</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Table Container */}
-                <div className="overflow-x-auto custom-scrollbar">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#0F172A]/8 bg-[#F8F9FA] text-[#64748B] text-[11px] uppercase tracking-wider font-semibold">
-                        <th className="w-10 p-3.5 text-center">
-                          <span className="material-symbols-outlined text-[16px] text-[#64748B]">
-                            drag_indicator
-                          </span>
-                        </th>
-                        <th className="w-10 p-3.5">
-                          <input
-                            checked={allChecked}
-                            onChange={toggleAllChecked}
-                            className="rounded border-[#0F172A]/20 bg-white text-[#0B57FF] accent-[#0B57FF] focus:ring-[#0B57FF] cursor-pointer w-4 h-4"
-                            type="checkbox"
-                          />
-                        </th>
-                        <th className="p-3.5 font-semibold text-[#0F172A]">
-                          Header
-                        </th>
-                        <th className="p-3.5 font-semibold text-[#0F172A]">
-                          Section Type
-                        </th>
-                        <th className="p-3.5 font-semibold text-[#0F172A]">
-                          Status
-                        </th>
-                        <th className="p-3.5 font-semibold text-[#0F172A] text-right">
-                          Target
-                        </th>
-                        <th className="p-3.5 font-semibold text-[#0F172A] text-right">
-                          Limit
-                        </th>
-                        <th className="p-3.5 font-semibold text-[#0F172A]">
-                          Reviewer
-                        </th>
-                        <th className="w-10 p-3.5 text-center" />
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#0F172A]/8 text-[13px] bg-white">
-                      {filteredRows.map((row) => {
-                        const isSelected = row.id === selectedRowId;
-                        return (
-                          <tr
-                            key={row.id}
-                            onClick={() => handleSelectRow(row)}
-                            className={`hover:bg-[#F8F9FA] transition-colors group cursor-pointer ${
-                              isSelected ? "bg-[#E0EBFF]/30 border-l-3 border-l-[#0B57FF]" : ""
-                            }`}
-                          >
-                            <td className="p-3.5 text-center text-[#64748B]/60 group-hover:text-[#64748B]">
-                              <span className="material-symbols-outlined text-[16px] cursor-grab">
-                                drag_indicator
-                              </span>
-                            </td>
-                            <td className="p-3.5">
-                              <input
-                                checked={row.checked}
-                                onChange={(e) => toggleRowChecked(row.id, e)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="rounded border-[#0F172A]/20 bg-white text-[#0B57FF] accent-[#0B57FF] focus:ring-[#0B57FF] cursor-pointer w-4 h-4"
-                                type="checkbox"
-                              />
-                            </td>
-                            <td className="p-3.5 font-medium text-[#0F172A] group-hover:text-[#0B57FF] transition-colors">
-                              {row.header}
-                            </td>
-                            <td className="p-3.5">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full font-mono text-[11px] border border-[#0F172A]/8 text-[#0F172A] bg-[#F8F9FA] font-medium">
-                                {row.sectionType}
-                              </span>
-                            </td>
-                            <td className="p-3.5">
-                              {row.status === "Done" ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold">
-                                  <span className="material-symbols-outlined text-[12px]">
-                                    check_circle
-                                  </span>{" "}
-                                  Done
-                                </span>
-                              ) : row.status === "In Process" ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[11px] text-[#0B57FF] bg-[#E0EBFF] border border-[#0B57FF]/20 font-semibold">
-                                  <span className="material-symbols-outlined text-[12px] animate-spin">
-                                    progress_activity
-                                  </span>{" "}
-                                  In Process
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[11px] text-[#64748B] bg-[#F8F9FA] border border-[#0F172A]/8 font-medium">
-                                  {row.status}
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-3.5 text-right font-mono text-[12px] tabular-nums text-[#64748B]">
-                              {row.target}
-                            </td>
-                            <td className="p-3.5 text-right font-mono text-[12px] tabular-nums text-[#64748B]">
-                              {row.limit}
-                            </td>
-                            <td className="p-3.5">
-                              {row.reviewerInitials ? (
-                                <span className="inline-flex items-center gap-2 text-[12px] text-[#0F172A] font-medium">
-                                  <span className="w-5.5 h-5.5 rounded-full bg-[#E0EBFF] text-[#0B57FF] border border-[#0B57FF]/20 flex items-center justify-center text-[10px] font-semibold">
-                                    {row.reviewerInitials}
-                                  </span>
-                                  {row.reviewer}
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[12px] text-[#64748B] hover:text-[#0F172A]">
-                                  <span className="material-symbols-outlined text-[15px]">
-                                    person_add
-                                  </span>
-                                  {row.reviewer}
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-3.5 text-center text-[#64748B] hover:text-[#0F172A]">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectRow(row);
-                                }}
-                                className="p-1 rounded-full hover:bg-[#F8F9FA] cursor-pointer"
-                              >
-                                <span className="material-symbols-outlined text-[16px]">
-                                  more_vert
-                                </span>
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Table Pagination Bar */}
-                <div className="px-5 py-3.5 border-t border-[#0F172A]/8 flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] text-[#64748B] bg-white">
-                  <div className="font-mono text-[11px]">
-                    <span className="text-[#0B57FF] font-semibold">
-                      {checkedCount}
-                    </span>{" "}
-                    of{" "}
-                    <span className="text-[#0F172A] font-semibold">
-                      {rows.length}
-                    </span>{" "}
-                    row(s) selected.
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <span>Rows per page</span>
-                      <select className="h-7.5 px-2.5 rounded-full border border-[#0F172A]/8 bg-white text-[#0F172A] text-xs focus:outline-none focus:border-[#0B57FF] font-medium">
-                        <option>10</option>
-                        <option>20</option>
-                        <option>50</option>
-                      </select>
-                    </div>
-                    <div className="text-xs font-medium text-[#0F172A]">
-                      Page 1 of 7
-                    </div>
-                    <div className="flex items-center space-x-1.5">
-                      <button
-                        type="button"
-                        disabled
-                        className="w-7.5 h-7.5 flex items-center justify-center rounded-full border border-[#0F172A]/8 bg-white hover:bg-[#F8F9FA] text-[#64748B] disabled:opacity-40"
-                        title="First page"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">
-                          first_page
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        disabled
-                        className="w-7.5 h-7.5 flex items-center justify-center rounded-full border border-[#0F172A]/8 bg-white hover:bg-[#F8F9FA] text-[#64748B] disabled:opacity-40"
-                        title="Previous page"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">
-                          chevron_left
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="w-7.5 h-7.5 flex items-center justify-center rounded-full border border-[#0F172A]/8 bg-white hover:bg-[#F8F9FA] text-[#0F172A] cursor-pointer"
-                        title="Next page"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">
-                          chevron_right
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="w-7.5 h-7.5 flex items-center justify-center rounded-full border border-[#0F172A]/8 bg-white hover:bg-[#F8F9FA] text-[#0F172A] cursor-pointer"
-                        title="Last page"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">
-                          last_page
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </section>
+              {/* SECTION 3: Admin User Management System (Strict 5-User Cap & Super Admin Approval Gate) */}
+              <UserManagementView currentUserEmail={userEmail} currentUserId={user?.uid} />
                 </>
               )}
             </main>

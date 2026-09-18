@@ -5,9 +5,22 @@ import { motion } from 'motion/react';
 
 interface ServicesSectionProps {
   onSelectCategory: (categoryName: string) => void;
+  content?: {
+    title?: string;
+    subtitle?: string;
+    badge?: string;
+    items?: Array<{
+      id: string;
+      title: string;
+      subtitle: string;
+      image: string;
+      tags?: string[];
+      badge?: string;
+    }>;
+  };
 }
 
-const services = [
+const defaultServices = [
   {
     id: 'apparel',
     title: 'Custom Apparel',
@@ -42,8 +55,13 @@ const services = [
   },
 ];
 
-export default function ServicesSection({ onSelectCategory }: ServicesSectionProps) {
+export default function ServicesSection({ onSelectCategory, content }: ServicesSectionProps) {
   const [activeDot, setActiveDot] = useState(0);
+
+  const title = content?.title || 'Premier Custom Print Solutions';
+  const subtitle = content?.subtitle || 'Select a category to explore instant configuration, material choices, and digital proofing options.';
+  const badge = content?.badge || 'Specialized Categories';
+  const items = content?.items && content.items.length > 0 ? content.items : defaultServices;
 
   return (
     <section id="services" className="py-16 lg:py-24 bg-[#F8F9FA] border-y border-[#0F172A]/8 text-[#0F172A]">
@@ -51,19 +69,19 @@ export default function ServicesSection({ onSelectCategory }: ServicesSectionPro
         {/* Section Header */}
         <div className="text-center mb-12 sm:mb-16 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E0EBFF] text-[#0B57FF] text-xs font-semibold uppercase tracking-wider mb-3 border border-[#0B57FF]/20">
-            <span>Specialized Categories</span>
+            <span>{badge}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-medium text-[#0F172A] leading-tight font-heading tracking-[-0.02em]">
-            Premier Custom <span className="text-[#0B57FF] font-semibold">Print Solutions</span>
+            {title}
           </h2>
           <p className="text-[#64748B] text-sm sm:text-base mt-3 max-w-lg mx-auto font-normal">
-            Select a category to explore instant configuration, material choices, and digital proofing options.
+            {subtitle}
           </p>
         </div>
 
         {/* 4 Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {services.map((item, idx) => (
+          {items.map((item, idx) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 15 }}

@@ -128,17 +128,16 @@ export const SERVICES_LIST: ElimiService[] = [
     link: "/printbe",
   },
   {
-    id: "elimi-nails",
-    name: "NAILS & BEAUTY STUDIO",
-    category: "Salon & Beauty Care",
+    id: "elimi-allocations",
+    name: "OTHER RENTALS",
+    category: "Staff & Equipment",
     description:
-      "Professional gel nail art, manicures, pedicures, and executive beauty care services.",
-    image:
-      "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80",
-    badge: "Beauty",
+      "Rent protocol staff, hostesses, suits, sound systems, staging gear, and event equipment.",
+    image: "/assets/elimi-images/regenerated_image_1787570734240.webp",
+    badge: "Rentals",
     detailText:
-      "Luxury salon experience offering bespoke nail designs, hand and foot spa treatments, and beauty care.",
-    link: "/nails",
+      "Turnkey rental solutions for hostesses, protocol teams, event equipment, and custom logistics.",
+    link: "/allocations",
   },
   {
     id: "elimi-events",

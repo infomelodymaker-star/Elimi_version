@@ -127,9 +127,11 @@ export async function updateOrderStatus(orderId: string, status: 'pending' | 'fi
   return true;
 }
 
-export function generateClientWhatsAppGreetingUrl(orderId: string): string {
+export function generateClientWhatsAppGreetingUrl(orderId: string, customPhone?: string): string {
+  const cleanPhone = customPhone ? customPhone.replace(/[^0-9]/g, '') : WHATSAPP_NUMBER;
+  const phone = cleanPhone || WHATSAPP_NUMBER;
   const message = `Hello ELIMI Boutique! I would like to confirm my order ID: *${orderId}*. Please verify my order details and confirm availability!`;
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 
 export function generateWhatsAppOrderConfirmationText(order: BoutiqueOrder): string {

@@ -38,6 +38,8 @@ import {
 } from "lucide-react";
 import { BOUTIQUE_PRODUCTS, Product } from "@/components/shop/ProductGrid";
 import { useRealtimeProducts } from "@/lib/firestore-products";
+import { useRealtimeCars } from "@/lib/firestore-cars";
+import { useRealtimeHouses } from "@/lib/firestore-houses";
 
 function getLatest20Products(items: Product[]): Product[] {
   if (!items || items.length === 0) return [];
@@ -77,6 +79,8 @@ export default function FourPillarsSection() {
   const shouldReduceMotion = useReducedMotion();
   // Realtime products from Firestore database
   const { products: allFirestoreProducts } = useRealtimeProducts();
+  const { cars: allCars } = useRealtimeCars();
+  const { houses: allHouses } = useRealtimeHouses();
 
   // Realtime YouTube video data from channel
   const [mediaVideo, setMediaVideo] =
@@ -115,10 +119,73 @@ export default function FourPillarsSection() {
     "Rent",
   );
 
-  // Background image state with fallbacks for high reliability
-  const [pillar1Img, setPillar1Img] = useState(
-    "/assets/elimi-images/4-pillar-section/PRADO.webp",
-  );
+  const rentCars = React.useMemo(() => allCars.filter((c) => c.rent), [allCars]);
+  const saleCars = React.useMemo(() => allCars.filter((c) => c.sales), [allCars]);
+  const rentHouses = React.useMemo(() => allHouses.filter((h) => h.rent), [allHouses]);
+
+  const currentPillar1Data = React.useMemo(() => {
+    if (pillar1Tab === "Buy") {
+      const topSaleCar = saleCars[0] || allCars[0];
+      return {
+        title: topSaleCar?.title || "Toyota Land Cruiser Prado",
+        price: `$${(topSaleCar?.price || 65000).toLocaleString()}`,
+        unit: " Buy",
+        availability: "Direct Ownership",
+        badge: "In Stock",
+        image: topSaleCar?.photos?.[0] || topSaleCar?.imageUrl || "/assets/elimi-images/4-pillar-section/PRADO.webp",
+        link: topSaleCar ? `/cars/${topSaleCar.id}` : "/cars",
+        ctaText: "Explore Vehicles For Sale",
+        ctaLink: "/cars",
+        checklist: [
+          `${saleCars.length > 0 ? saleCars.length : "12+"} Inspected Vehicles in Stock`,
+          "Direct Import, Cleared & Certified",
+          "Guaranteed Ownership Transfer",
+        ],
+      };
+    }
+    if (pillar1Tab === "Real Estate") {
+      const topHouse = allHouses[0];
+      const isRentHouse = Boolean(topHouse?.rent);
+      return {
+        title: topHouse?.title || "Executive Residence Villa",
+        price: isRentHouse
+          ? `$${(topHouse?.rentPrice || 3200).toLocaleString()}`
+          : `$${(topHouse?.price ? (topHouse.price >= 1000000 ? `${(topHouse.price / 1000000).toFixed(1)}M` : `${Math.round(topHouse.price / 1000)}k`) : "450k")}`,
+        unit: isRentHouse ? "/mo" : " Buy",
+        availability: isRentHouse ? "For Long/Short Stay" : "Verified Title",
+        badge: isRentHouse ? "For Rent" : "For Sale",
+        image: topHouse?.photos?.[0] || topHouse?.imageUrl || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200",
+        link: topHouse ? `/houses/${topHouse.id}` : "/houses",
+        ctaText: "Explore Real Estate",
+        ctaLink: "/houses",
+        checklist: [
+          `${allHouses.length > 0 ? allHouses.length : "15+"} Prime Villas & Residences`,
+          `${rentHouses.length > 0 ? rentHouses.length : "8+"} Short & Long-Stay Rentals`,
+          "Full Legal Audit & Secure Verification",
+        ],
+      };
+    }
+    // Default: Rent
+    const topRentCar = rentCars[0] || allCars[0];
+    const minRentPrice = rentCars.length > 0 ? Math.min(...rentCars.map((c) => c.rentPrice || 60)) : 60;
+    return {
+      title: topRentCar?.title || "Toyota Prado TX-L 2020",
+      price: `$${topRentCar?.rentPrice || 60}`,
+      unit: "/day",
+      availability: "Available Today",
+      badge: "Fleet Ready",
+      image: topRentCar?.photos?.[0] || topRentCar?.imageUrl || "/assets/elimi-images/4-pillar-section/PRADO.webp",
+      link: topRentCar ? `/cars/${topRentCar.id}` : "/cars",
+      ctaText: "Explore Rental Fleet",
+      ctaLink: "/cars",
+      checklist: [
+        `${rentCars.length > 0 ? rentCars.length : "20+"} Verified Fleet Vehicles for Rent`,
+        `Rates from $${minRentPrice}/day with Chauffeur`,
+        "Instant Diplomatic & VIP Booking",
+      ],
+    };
+  }, [pillar1Tab, allCars, saleCars, rentCars, allHouses, rentHouses]);
+
   const [pillar2Img, setPillar2Img] = useState(
     "/assets/protocol/PROTOCOL_SECTION.webp",
   );
@@ -160,24 +227,6 @@ export default function FourPillarsSection() {
     setTimeout(() => setIsShufflingShop(false), 200);
   };
 
-  const getChecklistItems = () => {
-    if (pillar1Tab === "Buy") {
-      return [
-        "Inspected Vehicles",
-        "Direct Import & Transfer",
-        "Guaranteed Titles",
-      ];
-    }
-    if (pillar1Tab === "Real Estate") {
-      return [
-        "Furnished VIP Villas",
-        "Prime Land Plots",
-        "Legal Audit Included",
-      ];
-    }
-    return ["Cars, SUVs, Vans", "Verified Listings", "Best Prices"];
-  };
-
   return (
     <section className="w-full bg-[#F2F4F8] py-10 sm:py-12 lg:py-14 px-3 sm:px-4 lg:px-6 text-[#181B25] font-sans antialiased">
       <div className="max-w-[1400px] mx-auto space-y-8 sm:space-y-10">
@@ -212,17 +261,13 @@ export default function FourPillarsSection() {
             {/* Background Full-bleed Image */}
             <div className="absolute inset-0 z-0 overflow-hidden">
               <Image
-                src={pillar1Img}
-                alt="Toyota Prado 2020 - Mobility & Living"
+                src={currentPillar1Data.image}
+                alt={`${currentPillar1Data.title} - Mobility & Living`}
                 fill
                 priority
                 unoptimized
                 referrerPolicy="no-referrer"
-                onError={() =>
-                  setPillar1Img(
-                    "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80",
-                  )
-                }
+                onError={() => {}}
                 className="object-cover object-right lg:object-center group-hover:scale-105 transition-transform duration-700"
               />
               {/* Content Overlay Gradient: Left-to-right gradient overlay fading to transparent */}
@@ -231,24 +276,24 @@ export default function FourPillarsSection() {
 
             {/* Glassmorphism Floating Card (Top-Right) */}
             <div className="absolute top-5 right-5 sm:top-6 sm:right-6 z-20 hidden sm:block">
-              <div className="bg-white/75 backdrop-blur-[12px] border border-white/50 rounded-[18px] p-4 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.08)] w-[180px] sm:w-[190px] space-y-1.5">
-                <div className="text-[#181B25] text-[11px] font-medium tracking-tight">
-                  Toyota Prado 2020
+              <div className="bg-white/85 backdrop-blur-[12px] border border-white/60 rounded-[18px] p-4 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.08)] w-[190px] sm:w-[200px] space-y-1.5">
+                <div className="text-[#181B25] text-[11px] font-medium tracking-tight truncate">
+                  {currentPillar1Data.title}
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-extrabold text-[#181B25] tracking-tight">
-                    $60
+                    {currentPillar1Data.price}
                   </span>
                   <span className="text-[13px] font-normal text-[#525866]">
-                    /day
+                    {currentPillar1Data.unit}
                   </span>
                 </div>
-                <button
-                  onClick={() => (window.location.href = "/cars")}
+                <Link
+                  href={currentPillar1Data.link}
                   className="w-full bg-[#0D52FF] hover:bg-[#0B44D8] active:scale-95 text-white text-[11px] font-semibold py-[5px] px-[14px] rounded-full shadow-sm transition-all text-center block mt-1.5 cursor-pointer"
                 >
-                  Available Today
-                </button>
+                  {currentPillar1Data.availability}
+                </Link>
               </div>
             </div>
 
@@ -264,7 +309,7 @@ export default function FourPillarsSection() {
                 <div className="text-[11px] font-bold uppercase tracking-wider text-[#181B25]">
                   PILLAR 1
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-[#181B25] tracking-tight leading-tight">
+                <h3 className="text-xl sm:text-3xl font-extrabold text-[#181B25] tracking-tight leading-tight truncate sm:whitespace-normal">
                   Mobility & Living
                 </h3>
                 <p className="text-[#525866] text-xs sm:text-sm leading-relaxed">
@@ -318,12 +363,12 @@ export default function FourPillarsSection() {
                     transition={{ duration: 0.18, ease: EMIL_EASINGS.easeOut }}
                     className="space-y-2"
                   >
-                    {getChecklistItems().map((item, idx) => (
+                    {currentPillar1Data.checklist.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded-full bg-[#0D52FF] text-white flex items-center justify-center shrink-0 shadow-sm">
                           <Check className="w-2.5 h-2.5 text-white stroke-[3]" />
                         </div>
-                        <span className="text-xs font-semibold text-[#181B25]">
+                        <span className="text-xs font-semibold text-[#181B25]" suppressHydrationWarning>
                           {item}
                         </span>
                       </div>
@@ -332,14 +377,14 @@ export default function FourPillarsSection() {
                 </AnimatePresence>
               </div>
 
-              {/* Primary WhatsApp CTA */}
+              {/* Primary Dynamic CTA */}
               <div className="pt-1">
                 <Link
-                  href="/cars"
+                  href={currentPillar1Data.ctaLink}
                   className="bg-white hover:bg-slate-50 active:scale-95 text-[#181B25] font-extrabold rounded-full py-3 px-5 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.08)] border border-slate-100/80 transition-all flex items-center gap-2.5 text-xs group/btn cursor-pointer"
                 >
                   <Car className="w-4 h-4 shrink-0" />
-                  <span>Explore Vehicles</span>
+                  <span>{currentPillar1Data.ctaText}</span>
                   <ChevronRight className="w-3.5 h-3.5 text-[#0D52FF] group-hover/btn:translate-x-1 transition-transform" />
                 </Link>
               </div>
@@ -347,23 +392,23 @@ export default function FourPillarsSection() {
 
             {/* Mobile Glassmorphism Floating Card */}
             <div className="sm:hidden relative z-10 mt-4">
-              <div className="bg-white/80 backdrop-blur-[12px] border border-white/50 rounded-[18px] p-3.5 shadow-lg flex items-center justify-between">
+              <div className="bg-white/85 backdrop-blur-[12px] border border-white/50 rounded-[18px] p-3.5 shadow-lg flex items-center justify-between">
                 <div>
-                  <div className="text-[#181B25] text-xs font-medium">
-                    Toyota Prado 2020
+                  <div className="text-[#181B25] text-xs font-medium truncate max-w-[150px]">
+                    {currentPillar1Data.title}
                   </div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-xl font-extrabold text-[#181B25]">
-                      $60
+                      {currentPillar1Data.price}
                     </span>
-                    <span className="text-xs text-[#525866]">/day</span>
+                    <span className="text-xs text-[#525866]">{currentPillar1Data.unit}</span>
                   </div>
                 </div>
                 <Link
-                  href="/cars"
+                  href={currentPillar1Data.link}
                   className="bg-[#0D52FF] active:scale-95 transition-transform text-white text-xs font-semibold py-1.5 px-3.5 rounded-full shadow-sm"
                 >
-                  Available Today
+                  {currentPillar1Data.availability}
                 </Link>
               </div>
             </div>
@@ -402,7 +447,7 @@ export default function FourPillarsSection() {
             {/* Left Content Block */}
             <div className="relative z-10 max-w-[270px] sm:max-w-xs lg:max-w-[280px] xl:max-w-xs space-y-4">
               {/* Badge: 36x36px rounded-xl square in #0D52FF */}
-              <div className="w-[36px] h-[36px] min-w-[36px] min-h-[36px] rounded-xl bg-[#0D52FF] text-white font-extrabold text-sm flex items-center justify-center shadow-md">
+              <div className="hidden sm:flex w-[36px] h-[36px] min-w-[36px] min-h-[36px] rounded-xl bg-[#0D52FF] text-white font-extrabold text-sm items-center justify-center shadow-md">
                 02
               </div>
 
@@ -440,7 +485,7 @@ export default function FourPillarsSection() {
               {/* CTA Button */}
               <div className="pt-1">
                 <Link
-                  href="/#events"
+                  href="/#build-event"
                   className="bg-[#0D52FF] hover:bg-[#0B44D8] active:scale-95 text-white font-bold rounded-full py-3 px-5 shadow-sm transition-all flex items-center gap-2 text-xs group/btn cursor-pointer"
                 >
                   <span>Configure Your Package</span>

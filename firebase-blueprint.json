@@ -185,6 +185,23 @@
         "updatedAt": { "type": "string", "description": "Last update timestamp" }
       },
       "required": ["id", "name", "categoryId", "categoryName", "pricePerDay", "imageUrl"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "An authorized administration account subject to the 5-user capacity limit and Super Admin approval gate.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth user ID" },
+        "email": { "type": "string", "description": "Admin email address" },
+        "displayName": { "type": "string", "description": "Display name" },
+        "photoURL": { "type": "string", "description": "Profile picture URL" },
+        "createdAt": { "type": "string", "description": "Registration ISO timestamp" },
+        "authProvider": { "type": "string", "description": "Auth provider: password or google" },
+        "slotNumber": { "type": "number", "description": "Slot index 1 to 5" },
+        "status": { "type": "string", "description": "Approval status: approved or pending" },
+        "isSuperAdmin": { "type": "boolean", "description": "Whether user is Super Admin (slot 1)" }
+      },
+      "required": ["uid", "email", "createdAt", "slotNumber"]
     }
   },
   "firestore": {
@@ -219,6 +236,10 @@
     "/rental_items/{itemId}": {
       "schema": "RentalItem",
       "description": "Collection of items and equipment offered for rent with live infinite scroll catalog."
+    },
+    "/users/{userId}": {
+      "schema": "AdminUser",
+      "description": "Collection of administration accounts capped at 5 slots."
     }
   }
 }

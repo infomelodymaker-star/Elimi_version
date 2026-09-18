@@ -100,7 +100,7 @@ export async function compressImageFile(
  * 4. If ImgBB succeeds, returns hosted CDN URL.
  * 5. If ImgBB fails (missing key, Cloudflare block, offline), falls back to compressed data URL.
  */
-export async function uploadImageSafely(file: File, namePrefix: string): Promise<UploadResult> {
+export async function uploadImageSafely(file: File, namePrefix = 'upload'): Promise<UploadResult> {
   let compressed: { blob: Blob; dataUrl: string };
   try {
     compressed = await compressImageFile(file, 1600, 0.85);

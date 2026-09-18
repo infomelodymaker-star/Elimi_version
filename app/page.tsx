@@ -27,7 +27,7 @@ import {
   MonitorPlay,
   PrinterCheck,
   UsersRound,
-  Brush,
+  Sparkles,
   Bot,
   ArrowRight,
   ArrowLeft,
@@ -132,6 +132,23 @@ const defaultHeroSlides = [
     bgImage: "/assets/media/media_hero_presenter.jpg",
   },
   {
+    id: "digital",
+    subtitle: "MOBILE. WEB. GOOGLE MAPS.",
+    title: (
+      <>
+        Digital <br />
+        Solutions & <br />
+        <span className="text-[#0D52FF] whitespace-nowrap">Engineering.</span>
+      </>
+    ),
+    description:
+      "High-impact mobile apps, custom websites, business dashboards, inventory systems, and verified Google Maps integration.",
+    ctaText: "Explore Digital",
+    ctaLink: "/digital-solutions",
+    bgImage:
+      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1600",
+  },
+  {
     id: "printbe",
     subtitle: "DESIGN. PRINT. DELIVER.",
     title: (
@@ -219,12 +236,12 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen w-full bg-slate-50 text-slate-900 overflow-x-hidden whitespace-nowrap">
+    <div className="flex flex-col min-h-screen w-full bg-slate-50 text-slate-900 overflow-x-hidden">
       {/* Hero Section Container */}
-      <div className="p-2 sm:p-4 lg:p-5 flex justify-center w-full h-[750px] lg:h-[900px] min-h-[650px] lg:min-h-[900px] whitespace-nowrap">
-        <main className="relative w-full max-w-[1400px] h-full rounded-[2rem] sm:rounded-5xl overflow-hidden shadow-2xl bg-gray-900 whitespace-nowrap">
+      <div className="p-2 sm:p-4 lg:p-5 flex justify-center w-full h-[670px] min-h-[670px] sm:h-[670px] sm:min-h-[670px] md:h-[670px] md:min-h-[670px] lg:h-[900px] lg:min-h-[900px]">
+        <main className="relative w-full max-w-[1400px] h-full rounded-[1.75rem] sm:rounded-3xl lg:rounded-5xl overflow-hidden shadow-2xl bg-gray-900 flex flex-col">
           {/* Background Image */}
-          <div className="absolute inset-0 z-0 bg-gray-900 whitespace-nowrap">
+          <div className="absolute inset-0 z-0 bg-gray-900">
             <AnimatePresence>
               <motion.img
                 key={currentSlide}
@@ -237,17 +254,21 @@ export default function Home() {
                 src={heroSlides[currentSlide].bgImage}
               />
             </AnimatePresence>
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/40 to-transparent whitespace-nowrap"></div>
+            <div className={`absolute inset-0 transition-opacity duration-700 ${
+              currentSlide === 0
+                ? "bg-gradient-to-r from-gray-900/95 via-gray-900/60 to-transparent"
+                : "bg-gradient-to-b from-gray-900/85 via-gray-900/65 to-gray-900/85"
+            }`}></div>
           </div>
 
           {/* BEGIN: Top Navigation Bar */}
-          <nav className="hidden lg:flex absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 w-[94%] sm:w-[90%] max-w-5xl z-20 items-center justify-between gap-2 sm:gap-4 whitespace-nowrap">
+          <nav className="hidden lg:flex absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 w-[94%] sm:w-[90%] max-w-5xl z-20 items-center justify-between gap-2 sm:gap-4">
             {/* Buy Button */}
             <Link
               href="/shop"
               className="bg-white hover:bg-slate-50 text-slate-900 font-semibold py-2.5 px-6 sm:px-8 text-xs sm:text-sm rounded-full flex items-center gap-2 transition-all shadow-lg hover:shadow-xl hover:scale-102 cursor-pointer shrink-0 border border-white/60"
             >
-              <ArrowLeft className="w-4 h-4 whitespace-nowrap" />
+              <ArrowLeft className="w-4 h-4" />
               <span>Buy</span>
             </Link>
 
@@ -260,16 +281,16 @@ export default function Home() {
               className="bg-white hover:bg-slate-50 text-slate-900 font-semibold py-2.5 px-6 sm:px-8 text-xs sm:text-sm rounded-full flex items-center gap-2 transition-all shadow-lg hover:shadow-xl hover:scale-102 cursor-pointer shrink-0 border border-white/60"
             >
               <span>Rent</span>
-              <ArrowUpRight className="w-4 h-4 whitespace-nowrap" />
+              <ArrowUpRight className="w-4 h-4" />
             </Link>
           </nav>
           {/* END: Top Navigation Bar */}
 
           {/* BEGIN: Mobile Top Navigation Bar */}
-          <nav className="lg:hidden relative w-full bg-white px-5 py-4 flex items-center justify-between z-30 shadow-sm whitespace-nowrap">
+          <nav className="lg:hidden relative w-full bg-white px-4 sm:px-5 py-3.5 flex items-center justify-between z-30 shadow-sm">
             <MobileNavigationMenu />
-            <div className="flex items-center whitespace-nowrap">
-              <div className="relative w-8 h-8 mr-2 whitespace-nowrap">
+            <div className="flex items-center">
+              <div className="relative w-8 h-8 mr-2">
                 <Image
                   src="/assets/icons/ELIMI_LOGO.svg"
                   alt="Elimi Logo"
@@ -277,23 +298,23 @@ export default function Home() {
                   className="object-contain"
                 />
               </div>
-              <div className="flex flex-col -space-y-0.5 whitespace-nowrap">
-                <span className="text-[20px] font-black text-[#0D52FF] leading-none tracking-tight font-sans whitespace-nowrap">
+              <div className="flex flex-col -space-y-0.5">
+                <span className="text-[18px] sm:text-[20px] font-black text-[#0D52FF] leading-none tracking-tight font-sans">
                   ELIMI
                 </span>
-                <span className="text-[12px] text-gray-400 italic font-serif leading-none whitespace-nowrap">
+                <span className="text-[11px] sm:text-[12px] text-gray-400 italic font-serif leading-none">
                   Protocol
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-3 whitespace-nowrap">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
                 className="text-[#0D52FF] relative p-1.5 hover:bg-slate-50 rounded-full transition-colors cursor-pointer"
                 aria-label="Notifications"
               >
-                <Bell className="w-6 h-6 stroke-[1.5] whitespace-nowrap" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white whitespace-nowrap"></span>
+                <Bell className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.5]" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
               </button>
 
               {/* Elimi AI Assistant (Monica) Trigger in Header */}
@@ -304,7 +325,7 @@ export default function Home() {
                     window.dispatchEvent(new CustomEvent("open-elimi-ai"));
                   }
                 }}
-                className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-[#0D52FF] bg-gray-50 shrink-0 cursor-pointer hover:scale-105 transition-all shadow-sm group"
+                className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-[#0D52FF] bg-gray-50 shrink-0 cursor-pointer hover:scale-105 transition-all shadow-sm group"
                 title="Chat with Monica (Elimi AI Assistant)"
                 aria-label="Open Elimi AI Assistant (Monica)"
               >
@@ -313,8 +334,8 @@ export default function Home() {
                   alt="Monica - Elimi AI Assistant"
                   className="w-full h-full object-cover"
                 />
-                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#0D52FF] rounded-full flex items-center justify-center text-white border border-white shadow-xs whitespace-nowrap">
-                  <Bot className="w-2.5 h-2.5 whitespace-nowrap" />
+                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#0D52FF] rounded-full flex items-center justify-center text-white border border-white shadow-xs">
+                  <Bot className="w-2.5 h-2.5" />
                 </span>
               </button>
             </div>
@@ -443,26 +464,34 @@ export default function Home() {
               <UsersRound className="w-5 h-5 whitespace-nowrap" />
             </Link>
 
-            {/* 8. Nails */}
+            {/* 8. Other Rentals */}
             <Link
-              href="/nails"
-              title="Nails"
-              aria-label="Nails"
+              href="/allocations"
+              title="Other Rentals"
+              aria-label="Other Rentals"
               className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-2xs ${
-                pathname === "/nails"
+                pathname === "/allocations" || pathname === "/other-rents"
                   ? "bg-[#0D52FF] text-white shadow-md scale-105"
                   : "text-slate-800 hover:bg-white/80 hover:text-[#0D52FF]"
               }`}
             >
-              <Brush className="w-5 h-5 whitespace-nowrap" />
+              <Sparkles className="w-5 h-5 whitespace-nowrap" />
             </Link>
           </aside>
           {/* END: Left Sidebar Quick Navigation */}
 
           {/* BEGIN: Hero Content Area */}
-          <div className="relative z-10 w-full h-full flex flex-col justify-between p-6 pt-6 sm:pt-12 lg:px-12 md:pl-28 lg:pl-32 lg:pt-28 pb-4 lg:pb-14 whitespace-nowrap">
+          <div className={`relative z-10 w-full h-full flex flex-col p-4 sm:p-6 lg:p-12 ${
+            currentSlide === 0
+              ? "justify-between pb-4 lg:pb-14 md:pl-28 lg:pl-32 lg:pt-28"
+              : "justify-center items-center text-center my-auto md:pl-0 lg:pl-0"
+          }`}>
             {/* Main Typography & CTA */}
-            <div className="flex flex-col max-w-2xl lg:mt-0 relative min-h-[280px] lg:min-h-[300px] whitespace-nowrap">
+            <div className={`flex flex-col relative w-full ${
+              currentSlide === 0
+                ? "min-h-[260px] sm:min-h-[280px] lg:min-h-[300px] max-w-2xl lg:mt-0 text-left items-start"
+                : "max-w-2xl text-center items-center justify-center mx-auto my-auto"
+            }`}>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentSlide}
@@ -470,39 +499,51 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.4 }}
-                  className="flex flex-col"
+                  className={`flex flex-col w-full ${
+                    currentSlide === 0 ? "items-start text-left" : "items-center text-center mx-auto"
+                  }`}
                 >
-                  <p className="text-[#0D52FF] font-bold tracking-widest text-[10px] sm:text-xs mb-2 lg:mb-4 uppercase whitespace-nowrap">
+                  <p className={`text-[#0D52FF] font-bold tracking-widest text-[10px] sm:text-xs mb-2 lg:mb-4 uppercase ${
+                    currentSlide === 0 ? "text-left" : "text-center"
+                  }`}>
                     {heroSlides[currentSlide].subtitle}
                   </p>
 
-                  <p className="text-[32px] sm:text-5xl lg:text-6xl font-bold text-white leading-[1.1] tracking-tight mb-3 lg:mb-6 whitespace-nowrap">
+                  <h1 className={`text-[28px] sm:text-5xl lg:text-6xl font-bold text-white leading-[1.15] tracking-tight mb-3 lg:mb-6 break-words ${
+                    currentSlide === 0 ? "text-left" : "text-center"
+                  }`}>
                     {heroSlides[currentSlide].title}
-                  </p>
+                  </h1>
 
-                  {/* Blue separator - mobile only */}
-                  <div className="w-12 h-1.5 bg-[#0D52FF] rounded-full mb-6 lg:hidden whitespace-nowrap"></div>
+                  {/* Blue separator - mobile only or centered for other slides */}
+                  <div className={`w-12 h-1.5 bg-[#0D52FF] rounded-full mb-4 sm:mb-6 ${
+                    currentSlide === 0 ? "lg:hidden" : "mx-auto"
+                  }`}></div>
 
-                  {/* Description text - visible on mobile/tablet (and desktop for slides > 0) */}
+                  {/* Description text */}
                   <p
-                    className={`text-white/90 text-sm sm:text-base leading-relaxed mb-6 max-w-sm font-medium ${currentSlide === 0 ? "lg:hidden" : ""}`}
+                    className={`text-white/90 text-sm sm:text-base leading-relaxed mb-6 max-w-lg font-medium ${
+                      currentSlide === 0 ? "lg:hidden text-left" : "text-center mx-auto"
+                    }`}
                   >
                     {heroSlides[currentSlide].description}
                   </p>
 
                   <Link
                     href={heroSlides[currentSlide].ctaLink}
-                    className="w-fit bg-[#0D52FF] hover:bg-blue-700 text-white font-semibold py-3 px-6 lg:py-4 lg:px-8 rounded-full flex items-center gap-3 transition-colors shadow-lg cursor-pointer"
+                    className={`w-fit bg-[#0D52FF] hover:bg-blue-700 text-white font-semibold py-3 px-6 lg:py-4 lg:px-8 rounded-full flex items-center gap-3 transition-colors shadow-lg cursor-pointer text-sm sm:text-base ${
+                      currentSlide === 0 ? "" : "mx-auto"
+                    }`}
                   >
-                    {heroSlides[currentSlide].ctaText}
-                    <ArrowRight className="w-4 h-4 whitespace-nowrap" />
+                    <span>{heroSlides[currentSlide].ctaText}</span>
+                    <ArrowRight className="w-4 h-4" />
                   </Link>
 
                   {/* 10K+ Clients - Mobile Pill Style */}
                   {currentSlide === 0 && (
-                    <div className="mt-8 flex items-center gap-4 bg-white/40 backdrop-blur-md rounded-full p-2 pr-6 w-fit lg:hidden shadow-lg border border-white/40 whitespace-nowrap">
-                      <div className="flex -space-x-3 whitespace-nowrap">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white overflow-hidden relative whitespace-nowrap">
+                    <div className="mt-6 sm:mt-8 flex items-center gap-3 sm:gap-4 bg-white/40 backdrop-blur-md rounded-full p-2 pr-5 sm:pr-6 w-fit lg:hidden shadow-lg border border-white/40">
+                      <div className="flex -space-x-3">
+                        <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-2 border-white overflow-hidden relative">
                           <Image
                             src="https://images.unsplash.com/photo-1632765854612-9b02b6ec2b15?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YmxhY2slMjBwZW9wbGV8ZW58MHx8MHx8fDA%3D"
                             alt="Client"
@@ -510,7 +551,7 @@ export default function Home() {
                             className="object-cover"
                           />
                         </div>
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white overflow-hidden relative whitespace-nowrap">
+                        <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-2 border-white overflow-hidden relative">
                           <Image
                             src="https://images.unsplash.com/photo-1632765854612-9b02b6ec2b15?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YmxhY2slMjBwZW9wbGV8ZW58MHx8MHx8fDA%3D"
                             alt="Client"
@@ -518,7 +559,7 @@ export default function Home() {
                             className="object-cover"
                           />
                         </div>
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white overflow-hidden relative whitespace-nowrap">
+                        <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-2 border-white overflow-hidden relative">
                           <Image
                             src="https://images.unsplash.com/photo-1565884280295-98eb83e41c65?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8YmxhY2slMjBwZW9wbGV8ZW58MHx8MHx8fDA%3D"
                             alt="Client"
@@ -528,10 +569,10 @@ export default function Home() {
                         </div>
                       </div>
                       <div>
-                        <span className="block text-2xl font-bold text-[#0D52FF] leading-none tracking-tight whitespace-nowrap">
+                        <span className="block text-xl sm:text-2xl font-bold text-[#0D52FF] leading-none tracking-tight">
                           10K+
                         </span>
-                        <span className="block text-[11px] text-[#181B25] font-bold mt-0.5 whitespace-nowrap">
+                        <span className="block text-[10px] sm:text-[11px] text-[#181B25] font-bold mt-0.5">
                           Clients Served
                         </span>
                       </div>
@@ -556,16 +597,16 @@ export default function Home() {
                     id="hero-service-banner-card"
                     className="bg-white rounded-[2rem] p-6 sm:p-7 shadow-2xl relative overflow-hidden w-full sm:w-auto max-w-sm flex flex-col justify-between transition-all hover:shadow-3xl space-y-5 lg:-translate-y-2"
                   >
-                    <div className="space-y-3 whitespace-nowrap">
-                      <h2 className="text-2xl sm:text-[26px] font-bold leading-[1.15] tracking-tight whitespace-nowrap">
-                        <span className="text-[#181B25] block whitespace-nowrap">
+                    <div className="space-y-3">
+                      <h2 className="text-2xl sm:text-[26px] font-bold leading-[1.15] tracking-tight">
+                        <span className="text-[#181B25] block">
                           Your Moments,
                         </span>
-                        <span className="text-brand-600 block whitespace-nowrap">
+                        <span className="text-brand-600 block">
                           Our Mastery.
                         </span>
                       </h2>
-                      <p className="text-xs sm:text-sm text-[#525866] leading-relaxed whitespace-nowrap">
+                      <p className="text-xs sm:text-sm text-[#525866] leading-relaxed">
                         From arrival to farewell, we handle every detail so you
                         can focus on what truly matters. Experience seamless
                         coordination, premium care, and VIP treatment tailored
@@ -573,18 +614,18 @@ export default function Home() {
                       </p>
                     </div>
 
-                    <div className="flex items-end justify-between pt-1 whitespace-nowrap">
-                      <div className="flex items-center gap-4 whitespace-nowrap">
+                    <div className="flex items-end justify-between pt-1">
+                      <div className="flex items-center gap-4">
                         <div>
-                          <span className="block text-2xl sm:text-3xl font-bold text-brand-600 leading-none tracking-tight whitespace-nowrap">
+                          <span className="block text-2xl sm:text-3xl font-bold text-brand-600 leading-none tracking-tight">
                             10K+
                           </span>
-                          <span className="block text-xs text-[#525866] font-medium mt-1 whitespace-nowrap">
+                          <span className="block text-xs text-[#525866] font-medium mt-1">
                             Clients Served
                           </span>
                         </div>
-                        <div className="flex -space-x-3 whitespace-nowrap">
-                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white overflow-hidden relative bg-slate-200 whitespace-nowrap">
+                        <div className="flex -space-x-3">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white overflow-hidden relative bg-slate-200">
                             <Image
                               src="https://images.unsplash.com/photo-1632765854612-9b02b6ec2b15?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YmxhY2slMjBwZW9wbGV8ZW58MHx8MHx8fDA%3D"
                               alt="Client"
@@ -592,7 +633,7 @@ export default function Home() {
                               className="object-cover"
                             />
                           </div>
-                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white overflow-hidden relative bg-slate-200 whitespace-nowrap">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white overflow-hidden relative bg-slate-200">
                             <Image
                               src="https://plus.unsplash.com/premium_photo-1664267832242-cc73a2fa4903?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8YmxhY2slMjBwZW9wbGV8ZW58MHx8MHx8fDA%3D"
                               alt="Client"
@@ -600,7 +641,7 @@ export default function Home() {
                               className="object-cover"
                             />
                           </div>
-                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white overflow-hidden relative bg-slate-200 whitespace-nowrap">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white overflow-hidden relative bg-slate-200">
                             <Image
                               src="https://images.unsplash.com/photo-1565884280295-98eb83e41c65?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8YmxhY2slMjBwZW9wbGV8ZW58MHx8MHx8fDA%3D"
                               alt="Client"
@@ -610,8 +651,8 @@ export default function Home() {
                           </div>
                         </div>
                       </div>
-                      <button className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors shrink-0 whitespace-nowrap">
-                        <ArrowUpRight className="w-5 h-5 text-[#181B25] whitespace-nowrap" />
+                      <button className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors shrink-0">
+                        <ArrowUpRight className="w-5 h-5 text-[#181B25]" />
                       </button>
                     </div>
                   </div>
@@ -621,52 +662,52 @@ export default function Home() {
                     id="hero-protocol-banner-card"
                     className="bg-white/60 backdrop-blur-2xl rounded-[2.5rem] p-6 sm:p-7 shadow-2xl relative overflow-hidden w-full sm:w-auto max-w-md flex flex-col border border-white/60 transition-all hover:shadow-3xl lg:-translate-y-2"
                   >
-                    <div className="flex justify-between items-start gap-4 mb-4 whitespace-nowrap">
-                      <div className="space-y-1 whitespace-nowrap">
-                        <h2 className="text-xl sm:text-2xl font-bold text-brand-600 whitespace-nowrap">
+                    <div className="flex justify-between items-start gap-4 mb-4">
+                      <div className="space-y-1">
+                        <h2 className="text-xl sm:text-2xl font-bold text-brand-600">
                           ELIMI Protocol
                         </h2>
-                        <div className="flex items-start gap-1.5 text-xs text-[#525866] font-medium whitespace-nowrap">
-                          <MapPin className="w-4 h-4 shrink-0 mt-0.5 whitespace-nowrap" />
+                        <div className="flex items-start gap-1.5 text-xs text-[#525866] font-medium">
+                          <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
                           <span>
-                            Professional Protocol &<br />
+                            Professional Protocol &amp;<br />
                             Hospitality Services
                           </span>
                         </div>
                       </div>
-                      <button className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm shrink-0 whitespace-nowrap">
-                        <ArrowUpRight className="w-5 h-5 text-[#181B25] whitespace-nowrap" />
+                      <button className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm shrink-0">
+                        <ArrowUpRight className="w-5 h-5 text-[#181B25]" />
                       </button>
                     </div>
 
-                    <p className="text-xs sm:text-sm text-[#181B25] leading-relaxed font-medium mb-4 whitespace-nowrap">
+                    <p className="text-xs sm:text-sm text-[#181B25] leading-relaxed font-medium mb-4">
                       We provide world-class protocol services that blend
                       sophistication with warmth—ensuring every guest, every
                       time, feels valued and respected.
                     </p>
 
-                    <div className="flex flex-col gap-2.5 text-xs text-[#181B25] font-medium mb-6 whitespace-nowrap">
-                      <div className="flex items-center gap-3 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          <Copy className="w-4 h-4 text-brand-600 whitespace-nowrap" />
+                    <div className="flex flex-col gap-2.5 text-xs text-[#181B25] font-medium mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <Copy className="w-4 h-4 text-brand-600" />
                           <span>Event Coordination</span>
                         </div>
-                        <span className="text-[#525866] whitespace-nowrap">•</span>
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          <CheckCircle2 className="w-4 h-4 text-brand-600 whitespace-nowrap" />
+                        <span className="text-[#525866]">•</span>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-brand-600" />
                           <span>VIP Handling</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 justify-center sm:justify-start whitespace-nowrap">
-                        <Briefcase className="w-4 h-4 text-brand-600 whitespace-nowrap" />
+                      <div className="flex items-center gap-1.5 justify-start">
+                        <Briefcase className="w-4 h-4 text-brand-600" />
                         <span>Airport Assistance</span>
                       </div>
                     </div>
 
                     {/* Bottom Social / Branding area */}
-                    <div className="flex items-end justify-between mt-auto pt-2 whitespace-nowrap">
+                    <div className="flex items-end justify-between mt-auto pt-2">
                       {/* Fake ELIMI Logo area */}
-                      <div className="flex flex-col items-center whitespace-nowrap">
+                      <div className="flex flex-col items-center">
                         <Image
                           src="/assets/icons/ELIMI_LOGO.svg"
                           alt="Elimi Logo"
@@ -674,34 +715,34 @@ export default function Home() {
                           height={36}
                           className="mb-0.5"
                         />
-                        <span className="text-[10px] font-bold text-brand-600 whitespace-nowrap">
+                        <span className="text-[10px] font-bold text-brand-600">
                           ELIMI
                         </span>
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex items-end gap-3.5 whitespace-nowrap">
-                        <div className="flex flex-col items-center gap-1 whitespace-nowrap">
-                          <button className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/50 hover:bg-white/80 transition-colors flex items-center justify-center text-[#181B25] whitespace-nowrap">
-                            <Heart className="w-4 h-4 whitespace-nowrap" />
+                      <div className="flex items-end gap-3.5">
+                        <div className="flex flex-col items-center gap-1">
+                          <button className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/50 hover:bg-white/80 transition-colors flex items-center justify-center text-[#181B25]">
+                            <Heart className="w-4 h-4" />
                           </button>
-                          <span className="text-[10px] font-medium text-[#181B25] whitespace-nowrap">
+                          <span className="text-[10px] font-medium text-[#181B25]">
                             4.8K
                           </span>
                         </div>
-                        <div className="flex flex-col items-center gap-1 whitespace-nowrap">
-                          <button className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/50 hover:bg-white/80 transition-colors flex items-center justify-center text-[#181B25] whitespace-nowrap">
-                            <Bookmark className="w-4 h-4 whitespace-nowrap" />
+                        <div className="flex flex-col items-center gap-1">
+                          <button className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/50 hover:bg-white/80 transition-colors flex items-center justify-center text-[#181B25]">
+                            <Bookmark className="w-4 h-4" />
                           </button>
-                          <span className="text-[10px] font-medium text-[#181B25] whitespace-nowrap">
+                          <span className="text-[10px] font-medium text-[#181B25]">
                             157
                           </span>
                         </div>
-                        <div className="flex flex-col items-center gap-1 whitespace-nowrap">
-                          <button className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/50 hover:bg-white/80 transition-colors flex items-center justify-center text-[#181B25] whitespace-nowrap">
-                            <Share2 className="w-4 h-4 whitespace-nowrap" />
+                        <div className="flex flex-col items-center gap-1">
+                          <button className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/50 hover:bg-white/80 transition-colors flex items-center justify-center text-[#181B25]">
+                            <Share2 className="w-4 h-4" />
                           </button>
-                          <span className="text-[10px] font-medium text-[#181B25] invisible whitespace-nowrap">
+                          <span className="text-[10px] font-medium text-[#181B25] invisible">
                             0
                           </span>
                         </div>

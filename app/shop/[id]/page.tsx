@@ -67,7 +67,7 @@ import {
   OrderItem,
 } from '@/lib/firestore-orders';
 import ElimiHeader from '@/components/ElimiHeader';
-import { useCurrency } from '@/components/SettingsProvider';
+import { useCurrency, useSettings } from '@/components/SettingsProvider';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -164,6 +164,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   const [headerSearch, setHeaderSearch] = useState('');
 
   const { toBIF, formatBIF, formatUSD } = useCurrency();
+  const { whatsappNumber } = useSettings();
   const productPriceBIF = toBIF(product.priceUSD);
 
   // Direct checkout state (triggers loading skeleton)
@@ -217,7 +218,7 @@ export default function ProductDetailPage({ params }: PageProps) {
         setShowSuccessModal(true);
 
         // 3. Open WhatsApp cleanly in a new window/tab
-        const whatsappUrl = generateClientWhatsAppGreetingUrl(result.orderId);
+        const whatsappUrl = generateClientWhatsAppGreetingUrl(result.orderId, whatsappNumber);
         if (typeof window !== 'undefined') {
           try {
             window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
@@ -1178,7 +1179,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
             <div className="space-y-2.5 pt-2">
               <a
-                href={generateClientWhatsAppGreetingUrl(placedOrder.id)}
+                href={generateClientWhatsAppGreetingUrl(placedOrder.id, whatsappNumber)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold rounded-full py-3.5 px-6 transition flex items-center justify-center gap-2 text-sm shadow-md cursor-pointer"

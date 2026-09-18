@@ -8,6 +8,11 @@ import { Product } from './types';
 interface ProductsSectionProps {
   onSelectProduct: (product: Product) => void;
   onAddToCartDirect: (product: Product) => void;
+  content?: {
+    badge?: string;
+    title?: string;
+    subtitle?: string;
+  };
 }
 
 export const initialProducts: Product[] = [
@@ -69,8 +74,12 @@ export const initialProducts: Product[] = [
   },
 ];
 
-export default function ProductsSection({ onSelectProduct, onAddToCartDirect }: ProductsSectionProps) {
+export default function ProductsSection({ onSelectProduct, onAddToCartDirect, content }: ProductsSectionProps) {
   const [activeDot, setActiveDot] = useState(0);
+
+  const badge = content?.badge || 'Featured Catalog';
+  const title = content?.title || 'Curated Print Items';
+  const subtitle = content?.subtitle || 'Select any item to configure finishes, upload artwork, and preview exact unit pricing.';
 
   return (
     <section id="products" className="py-16 lg:py-24 bg-white border-t border-[#0F172A]/8 text-[#0F172A]">
@@ -78,13 +87,13 @@ export default function ProductsSection({ onSelectProduct, onAddToCartDirect }: 
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16 max-w-xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E0EBFF] text-[#0B57FF] text-xs font-semibold uppercase tracking-wider mb-3 border border-[#0B57FF]/20">
-            <span>Featured Catalog</span>
+            <span>{badge}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-medium text-[#0F172A] leading-tight font-heading tracking-[-0.02em]">
-            Curated <span className="text-[#0B57FF] font-semibold">Print Items</span>
+            {title}
           </h2>
           <p className="text-[#64748B] text-sm sm:text-base mt-3 font-normal">
-            Select any item to configure finishes, upload artwork, and preview exact unit pricing.
+            {subtitle}
           </p>
         </div>
 

@@ -4,7 +4,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import ElimiHeader from '@/components/ElimiHeader';
 import RentalLightbox from '@/components/allocations/RentalLightbox';
+import { useSettings } from '@/components/SettingsProvider';
 import {
   useRealtimeRentalItems,
   RentalItem,
@@ -97,6 +99,7 @@ export default function AllocationItemDetailPage() {
   const itemId = (params?.id as string) || '';
 
   const { items, loading: loadingItems } = useRealtimeRentalItems();
+  const { whatsappNumber } = useSettings();
 
   // Find requested item or fallback to first item
   const item: RentalItem | undefined = useMemo(() => {
@@ -225,7 +228,7 @@ export default function AllocationItemDetailPage() {
         setShowSuccessModal(true);
 
         // 3. Open WhatsApp in new tab
-        const waUrl = generateClientWhatsAppGreetingUrl(result.orderId);
+        const waUrl = generateClientWhatsAppGreetingUrl(result.orderId, whatsappNumber);
         if (typeof window !== 'undefined') {
           try {
             window.open(waUrl, '_blank', 'noopener,noreferrer');
@@ -276,47 +279,9 @@ export default function AllocationItemDetailPage() {
   return (
     <div className="min-h-screen bg-white text-neutral-900 font-sans antialiased selection:bg-[#0D52FF] selection:text-white">
       {/* =========================================================================
-          TOP NAVIGATION HEADER (Matching image.png and video)
+          TOP NAVIGATION HEADER (Main Platform Header)
          ========================================================================= */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-neutral-200/80 transition-all">
-        <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-8 h-16 sm:h-20 flex items-center justify-between">
-          {/* Left: Hamburger menu icon */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(true)}
-            className="p-2 -ml-2 text-neutral-800 hover:text-black transition-colors cursor-pointer"
-            aria-label="Ouvrir le menu"
-          >
-            <Menu className="w-6 h-6 stroke-[1.75]" />
-          </button>
-
-          {/* Center: Brand logo "closet" */}
-          <Link
-            href="/allocations"
-            className="text-2xl sm:text-3xl font-serif font-black tracking-tight text-neutral-950 hover:opacity-90 transition-opacity lowercase"
-          >
-            closet
-          </Link>
-
-          {/* Right: User Icon + Blue Accent Discovery Button */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            <Link
-              href="/dashboard"
-              className="p-2 text-neutral-700 hover:text-black transition-colors"
-              title="Mon compte"
-            >
-              <User className="w-5 h-5 stroke-[1.75]" />
-            </Link>
-
-            <Link
-              href="/allocations"
-              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#0D52FF] hover:bg-blue-700 text-white text-xs sm:text-sm font-medium transition-all shadow-xs"
-            >
-              Je découvre
-            </Link>
-          </div>
-        </div>
-      </header>
+      <ElimiHeader />
 
       {/* Side Slide-out Menu (when hamburger is clicked) */}
       {mobileMenuOpen && (
@@ -923,7 +888,7 @@ export default function AllocationItemDetailPage() {
 
             <div className="space-y-2.5 pt-2">
               <a
-                href={generateClientWhatsAppGreetingUrl(placedOrder.id)}
+                href={generateClientWhatsAppGreetingUrl(placedOrder.id, whatsappNumber)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold rounded-full py-3.5 px-6 transition flex items-center justify-center gap-2 text-sm shadow-md cursor-pointer"

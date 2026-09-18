@@ -7,6 +7,7 @@ import ElimiHeader from '@/components/ElimiHeader';
 import GoogleLocationMap from '@/components/GoogleLocationMap';
 import ImageLightboxModal from '@/components/ImageLightboxModal';
 import { useRealtimeHouses } from '@/lib/firestore-houses';
+import { useSettings } from '@/components/SettingsProvider';
 import {
   Bed,
   Bath,
@@ -26,6 +27,7 @@ export default function HouseDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const { houses, loading } = useRealtimeHouses();
+  const { whatsappNumber, phoneNumber } = useSettings();
   const house = houses.find((h) => h.id === id);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -334,17 +336,19 @@ export default function HouseDetailPage() {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 max-w-md mx-auto sm:max-w-none">
             <a
-              href="tel:+25779000000"
-              className="bg-[#0D52FF] text-white px-7 py-3 rounded-xl text-sm font-semibold hover:bg-[#0b45d6] transition-colors shadow-sm"
+              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hello ELIMI Real Estate, I would like to schedule a tour for property: ${house.title}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#0D52FF] text-white px-7 py-3 rounded-xl text-sm font-semibold hover:bg-[#0b45d6] transition-colors shadow-sm flex items-center justify-center gap-2"
             >
-              Schedule a Tour
+              <span>Schedule a Tour</span>
             </a>
             <a
-              href="tel:+25779000000"
+              href={`tel:${phoneNumber}`}
               className="bg-white border border-gray-300 text-gray-800 px-7 py-3 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
             >
               <Phone className="w-4 h-4 text-[#0D52FF]" />
-              <span>Call (+257) 79 00 00 00</span>
+              <span>Call ({phoneNumber})</span>
             </a>
           </div>
         </div>
@@ -395,25 +399,12 @@ export default function HouseDetailPage() {
         </div>
         
         {/* Back Link */}
-        <div className="border-t border-gray-300/60 pt-6 pb-6">
+        <div className="border-t border-gray-300/60 pt-6 pb-8">
           <Link href="/houses" className="text-gray-600 hover:text-[#0D52FF] text-xs sm:text-sm font-medium transition-colors inline-flex items-center gap-1.5">
             ← Back to all properties
           </Link>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-300/60 bg-[#f5efe6] pt-8">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 text-center text-xs text-gray-500 flex flex-wrap justify-center gap-x-4 gap-y-2">
-          <span>© 2026 ELIMI Real Estate &amp; Estates</span>
-          <span className="hidden md:inline">·</span>
-          <Link href="#" className="hover:underline hover:text-gray-800">Privacy Policy</Link>
-          <span className="hidden md:inline">·</span>
-          <Link href="#" className="hover:underline hover:text-gray-800">Terms of Service</Link>
-          <span className="hidden md:inline">·</span>
-          <Link href="#" className="hover:underline hover:text-gray-800">VIP Real Estate Concierge</Link>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -1633,8 +1633,8 @@ export default function MediaPage() {
                 </Link>
               </li>
               <li>
-                <Link href="/nails" className="hover:text-white transition">
-                  Aesthetic &amp; Nail Lounge
+                <Link href="/allocations" className="hover:text-white transition">
+                  Other Occasional Rentals
                 </Link>
               </li>
             </ul>

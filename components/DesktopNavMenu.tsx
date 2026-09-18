@@ -26,6 +26,8 @@ import {
   ExternalLink,
   Phone,
   ArrowRight,
+  Code2,
+  Globe,
 } from 'lucide-react';
 
 export default function DesktopNavMenu() {
@@ -64,6 +66,12 @@ export default function DesktopNavMenu() {
       icon: UsersRound,
       description: 'VIP escort & delegations',
     },
+    {
+      label: 'Digital Solutions',
+      href: '/digital-solutions',
+      icon: Code2,
+      description: 'Apps, Web & Google Maps',
+    },
   ];
 
   const navColumnRight = [
@@ -80,8 +88,8 @@ export default function DesktopNavMenu() {
       description: 'Villas & residences',
     },
     {
-      label: 'PrintBe',
-      href: '/printbe',
+      label: 'Print',
+      href: '/print',
       icon: PrinterCheck,
       description: 'Prints & branding',
     },
@@ -446,6 +454,28 @@ export default function DesktopNavMenu() {
                 </div>
 
                 <div className="space-y-1.5 py-1">
+                  {/* Contact Us Page Link */}
+                  <NavigationMenuLink
+                    render={
+                      <Link
+                        href="/contact"
+                        className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 flex items-center justify-center shrink-0">
+                          <Phone className="w-5 h-5 text-slate-400 group-hover:text-[#0D52FF] transition-colors" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-xs text-slate-900 group-hover:text-[#0D52FF] transition-colors">
+                            Contact Us
+                          </div>
+                          <div className="text-[11px] text-slate-500 group-hover:text-slate-700 truncate transition-colors">
+                            Get in touch & view our details
+                          </div>
+                        </div>
+                      </Link>
+                    }
+                  />
+
                   {/* FIRST: Trigger to ELIMI AI Assistant */}
                   <NavigationMenuLink
                     render={

@@ -8,13 +8,61 @@ import Link from 'next/link';
 import ElimiHeader from '@/components/ElimiHeader';
 import GoogleLocationMap from '@/components/GoogleLocationMap';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
-import { useCurrency } from '@/components/SettingsProvider';
+import { useCurrency, useSettings } from '@/components/SettingsProvider';
+import { useCmsPage } from '@/lib/firestore-cms';
 
 const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
-const defaultCenter = { lat: 34.0522, lng: -118.2437 };
+const BURUNDI_CENTER = { lat: -3.3822, lng: 29.3644 };
+
+const MAP_REGIONS = [
+  { id: 'bujumbura', label: 'Bujumbura (Burundi)', center: { lat: -3.3822, lng: 29.3644 }, zoom: 13 },
+  { id: 'kiriri', label: 'Kiriri & Rohero', center: { lat: -3.3790, lng: 29.3730 }, zoom: 14 },
+  { id: 'kinindo', label: 'Kinindo & Beach', center: { lat: -3.4020, lng: 29.3520 }, zoom: 14 },
+  { id: 'gitega', label: 'Gitega Capital', center: { lat: -3.4275, lng: 29.9248 }, zoom: 13 },
+  { id: 'usa', label: 'USA (Legacy)', center: { lat: 34.0522, lng: -118.2437 }, zoom: 10 },
+  { id: 'global', label: 'Global View', center: { lat: 5.0, lng: 20.0 }, zoom: 3 },
+];
 
 function CarsContent() {
   const { cars, loading } = useRealtimeCars();
+  const { data: cmsCarsPage } = useCmsPage('cars');
+
+  const heroContent = cmsCarsPage?.sections?.find(s => s.id === 'hero' || s.type === 'hero')?.content;
+  const mapContent = cmsCarsPage?.sections?.find(s => s.id === 'map' || s.id === 'map-section' || s.type === 'map' || s.type === 'map-section')?.content;
+
+  const [activeRegion, setActiveRegion] = useState<string>('bujumbura');
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(() => {
+    if (mapContent?.centerLat && mapContent?.centerLng) {
+      return { lat: Number(mapContent.centerLat), lng: Number(mapContent.centerLng) };
+    }
+    return BURUNDI_CENTER;
+  });
+  const [mapZoom, setMapZoom] = useState<number>(() => {
+    return mapContent?.zoom ? Number(mapContent.zoom) : 13;
+  });
+
+  useEffect(() => {
+    if (mapContent?.centerLat && mapContent?.centerLng) {
+      setMapCenter({ lat: Number(mapContent.centerLat), lng: Number(mapContent.centerLng) });
+      if (mapContent?.zoom) setMapZoom(Number(mapContent.zoom));
+    }
+  }, [mapContent]);
+
+  const handleRegionChange = (region: typeof MAP_REGIONS[0]) => {
+    setActiveRegion(region.id);
+    setMapCenter(region.center);
+    setMapZoom(region.zoom);
+  };
+
+  const heroImage = heroContent?.image || 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=1600';
+  const heroBadge = heroContent?.badge || 'Prestige & Escort';
+  const heroHeadline = heroContent?.headline || 'Let\'s find your perfect ride.';
+  const heroSubheadline = heroContent?.subheadline || 'Browse prestige vehicles for certified purchase or rent for VIP protocol, executive travel, and special diplomatic missions.';
+
+  const mapBadge = mapContent?.badge || 'Live Fleet Map';
+  const mapTitle = mapContent?.title || 'Map your fleet.';
+  const mapDescription = mapContent?.description || 'Locate available vehicles across our mobility hubs and premium showrooms. Whether you\'re purchasing or renting, explore locations with instant pickup or concierge delivery.';
+
   const searchParams = useSearchParams();
   const [filter, setFilter] = useState<'all' | 'rent' | 'sale'>(() => {
     const typeParam = searchParams.get('type') || searchParams.get('filter');
@@ -46,6 +94,7 @@ function CarsContent() {
   const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
 
   const { toBIF, formatBIF, formatUSD } = useCurrency();
+  const { whatsappNumber } = useSettings();
 
   const activeCar = useMemo(() => {
     if (selectedCarId) {
@@ -64,12 +113,12 @@ function CarsContent() {
       <section className="relative bg-[#F8F9FA] flex flex-col lg:flex-row min-h-[460px] lg:min-h-[520px]">
         <div 
           className="w-full lg:w-2/3 min-h-[280px] sm:min-h-[380px] lg:min-h-[520px] bg-cover bg-center relative"
-          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=1600)' }}
+          style={{ backgroundImage: `url(${heroImage})` }}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent lg:bg-transparent"></div>
           <div className="lg:hidden absolute bottom-4 left-4 right-4 text-white">
             <span className="text-xs font-bold tracking-wider uppercase bg-[#0B57FF] text-white px-3 py-1 rounded-full shadow-xs">
-              VIP Fleet & Mobility
+              {heroBadge}
             </span>
           </div>
         </div>
@@ -80,13 +129,13 @@ function CarsContent() {
           <div className="relative">
             <div className="bg-white p-6 sm:p-8 rounded-2xl relative z-10 border border-[#0F172A]/8 shadow-[0px_4px_24px_0px_rgba(15,23,42,0.06)]">
               <span className="hidden lg:inline-block text-[11px] font-bold tracking-wider uppercase text-[#0B57FF] mb-2 bg-[#E0EBFF] px-3 py-1 rounded-full border border-[#0B57FF]/20">
-                Prestige &amp; Escort
+                {heroBadge}
               </span>
               <h1 className="text-3xl sm:text-4xl font-medium mb-3 sm:mb-4 text-[#0F172A] tracking-[-0.03em] leading-tight">
-                Let&apos;s find your<br />perfect ride.
+                {heroHeadline}
               </h1>
               <p className="text-sm text-[#64748B] mb-6 leading-relaxed border-l-2 border-[#0B57FF] pl-4">
-                Browse prestige vehicles for certified purchase or rent for VIP protocol, executive travel, and special diplomatic missions.
+                {heroSubheadline}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                 <button 
@@ -114,11 +163,11 @@ function CarsContent() {
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
           <div className="w-full lg:w-1/3">
             <span className="text-xs font-bold tracking-wider uppercase text-[#0B57FF] mb-2 inline-block bg-[#E0EBFF] px-3 py-1 rounded-full border border-[#0B57FF]/20">
-              Live Fleet Map
+              {mapBadge}
             </span>
-            <h2 className="text-2xl sm:text-3xl font-medium tracking-[-0.03em] mb-4 text-[#0F172A]">Map your fleet.</h2>
+            <h2 className="text-2xl sm:text-3xl font-medium tracking-[-0.03em] mb-4 text-[#0F172A]">{mapTitle}</h2>
             <p className="text-sm sm:text-base text-[#64748B] mb-6 leading-relaxed border-l-2 border-[#0B57FF] pl-4">
-              Locate available vehicles across our mobility hubs and premium showrooms. Whether you&apos;re purchasing or renting, explore locations with instant pickup or concierge delivery.
+              {mapDescription}
             </p>
             <div className="flex gap-2">
               <div className="flex-grow flex items-center bg-white border border-[#0F172A]/8 rounded-xl px-4 py-3 shadow-[0px_4px_24px_0px_rgba(15,23,42,0.02)]">
@@ -128,23 +177,45 @@ function CarsContent() {
             </div>
           </div>
           
-          <div className="w-full lg:w-2/3 bg-slate-100 rounded-2xl overflow-hidden border border-[#0F172A]/8 shadow-sm h-[320px] sm:h-[400px] lg:h-[440px] relative">
-            <APIProvider apiKey={googleMapsApiKey}>
-              <Map
-                mapId="DEMO_MAP_ID"
-                defaultCenter={defaultCenter}
-                defaultZoom={10}
-                gestureHandling={'greedy'}
-                disableDefaultUI={false}
-                internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
-              >
-                {filteredCars.map((car) => (
-                  <AdvancedMarker key={car.id} position={car.location} title={car.title}>
-                    <Pin background={'#0B57FF'} borderColor={'#1D4ED8'} glyphColor={'#ffffff'} />
-                  </AdvancedMarker>
-                ))}
-              </Map>
-            </APIProvider>
+          <div className="w-full lg:w-2/3 bg-slate-100 rounded-2xl overflow-hidden border border-[#0F172A]/8 shadow-sm h-[380px] sm:h-[440px] lg:h-[480px] relative flex flex-col">
+            {/* Region Switcher Bar */}
+            <div className="absolute top-3 left-3 right-3 z-10 flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none pointer-events-auto bg-white/90 backdrop-blur-md p-1.5 rounded-xl border border-[#0F172A]/10 shadow-xs">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] pl-2 pr-1 shrink-0">Region:</span>
+              {MAP_REGIONS.map((region) => (
+                <button
+                  key={region.id}
+                  type="button"
+                  onClick={() => handleRegionChange(region)}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
+                    activeRegion === region.id
+                      ? 'bg-[#0B57FF] text-white shadow-xs'
+                      : 'bg-transparent text-[#0F172A] hover:bg-slate-100'
+                  }`}
+                >
+                  {region.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-full h-full">
+              <APIProvider apiKey={googleMapsApiKey}>
+                <Map
+                  key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
+                  mapId="DEMO_MAP_ID"
+                  defaultCenter={mapCenter}
+                  defaultZoom={mapZoom}
+                  gestureHandling={'greedy'}
+                  disableDefaultUI={false}
+                  internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
+                >
+                  {filteredCars.map((car) => (
+                    <AdvancedMarker key={car.id} position={car.location} title={car.title}>
+                      <Pin background={'#0B57FF'} borderColor={'#1D4ED8'} glyphColor={'#ffffff'} />
+                    </AdvancedMarker>
+                  ))}
+                </Map>
+              </APIProvider>
+            </div>
           </div>
         </div>
       </section>
@@ -262,7 +333,9 @@ function CarsContent() {
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                     <a
-                      href="tel:+25779000000"
+                      href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hello ELIMI Motors, I would like to reserve/inquire vehicle: ${car.title}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex-1 bg-white border border-[#1D4ED8] text-[#0F172A] text-center py-2.5 px-4 rounded-full text-xs sm:text-sm font-semibold hover:bg-slate-50 transition-colors flex items-center justify-center"
                     >
                       Reserve / Inquire

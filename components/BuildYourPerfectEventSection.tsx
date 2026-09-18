@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { EMIL_SPRINGS } from '@/lib/motion-constants';
@@ -27,6 +27,7 @@ import {
   X,
   Layers
 } from 'lucide-react';
+import { useRealtimeEventServices, EventServiceItem, INITIAL_EVENT_SERVICES } from '@/lib/firestore-event-services';
 
 interface ServiceItem {
   id: string;
@@ -46,131 +47,83 @@ interface ServiceItem {
 
 export default function BuildYourPerfectEventSection() {
   const shouldReduceMotion = useReducedMotion();
-  const [services, setServices] = useState<ServiceItem[]>([
-    {
-      id: 'vip-fleet',
-      title: 'VIP Fleet (3 Mercedes SUVs)',
-      description: 'Luxury Mercedes SUVs with professional chauffeurs.',
-      unitPrice: 200,
-      quantity: 3,
-      defaultQuantity: 3,
-      checked: true,
-      subtext: '$200 each',
-      image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=400&q=80',
-      tags: [
-        { iconType: 'car', label: 'Mercedes GLE' },
-        { iconType: 'users', label: 'Up to 21 Pax' }
-      ]
-    },
-    {
-      id: 'protocol-agents',
-      title: 'Protocol Agents (6 Staff)',
-      description: 'Professional, uniformed and well-trained protocol agents.',
-      unitPrice: 50,
-      quantity: 6,
-      defaultQuantity: 6,
-      checked: true,
-      subtext: '$50 each',
-      image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=400&q=80',
-      tags: [
-        { iconType: 'users', label: 'Uniformed' },
-        { iconType: 'shield', label: 'Trained & Certified' }
-      ]
-    },
-    {
-      id: 'photo-drone',
-      title: 'Full HD Photo & Drone Video',
-      description: 'Full day coverage with professional photo, HD video & drone shots.',
-      unitPrice: 250,
-      quantity: 1,
-      defaultQuantity: 1,
-      checked: true,
-      subtext: '',
-      image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=400&q=80',
-      tags: [
-        { iconType: 'video', label: 'Full HD' },
-        { iconType: 'zap', label: 'Drone Included' }
-      ]
-    },
-    {
-      id: 'premium-catering',
-      title: 'Premium Catering',
-      description: 'Delicious menus, buffet setup and professional service.',
-      unitPrice: 150,
-      quantity: 0,
-      defaultQuantity: 1,
-      checked: false,
-      subtext: '',
-      image: 'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=400&q=80',
-      tags: [
-        { iconType: 'utensils', label: 'Buffet' },
-        { iconType: 'file', label: 'Custom Menus' }
-      ]
-    },
-    {
-      id: 'invitation-printing',
-      title: 'Invitation Printing',
-      description: 'High-quality invitation cards with custom design.',
-      unitPrice: 150,
-      quantity: 0,
-      defaultQuantity: 1,
-      checked: false,
-      subtext: 'per 100 cards',
-      image: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=400&q=80',
-      tags: [
-        { iconType: 'shield', label: 'Premium Quality' },
-        { iconType: 'file', label: '100 Cards' }
-      ]
-    }
-  ]);
+  const { services: firestoreServices } = useRealtimeEventServices();
+
+  const [userSelections, setUserSelections] = useState<
+    Record<string, { checked?: boolean; quantity?: number }>
+  >({});
+
+  const services: ServiceItem[] = React.useMemo(() => {
+    const sourceList = firestoreServices && firestoreServices.length > 0 ? firestoreServices : INITIAL_EVENT_SERVICES;
+    const activeList = sourceList.filter((s) => s.enabled !== false);
+
+    return activeList.map((s) => {
+      const userSel = userSelections[s.id];
+      const isChecked = userSel?.checked !== undefined ? userSel.checked : Boolean(s.checkedByDefault);
+      let quantity = userSel?.quantity;
+      if (quantity === undefined) {
+        quantity = isChecked ? s.defaultQuantity : 0;
+      }
+      return {
+        id: s.id,
+        title: s.title,
+        description: s.description,
+        unitPrice: s.unitPrice,
+        quantity,
+        defaultQuantity: s.defaultQuantity,
+        checked: isChecked,
+        subtext: s.subtext,
+        image: s.image,
+        tags: s.tags || [],
+      };
+    });
+  }, [firestoreServices, userSelections]);
 
   const [showReserveModal, setShowReserveModal] = useState(false);
   const [showAllServicesModal, setShowAllServicesModal] = useState(false);
 
   // Toggle checkbox
   const handleToggleCheck = (id: string) => {
-    setServices((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const nextChecked = !item.checked;
-          const nextQty = nextChecked
-            ? item.quantity > 0
-              ? item.quantity
-              : item.defaultQuantity
-            : item.quantity;
-          return { ...item, checked: nextChecked, quantity: nextQty };
-        }
-        return item;
-      })
-    );
+    const item = services.find((s) => s.id === id);
+    if (!item) return;
+    const nextChecked = !item.checked;
+    const nextQty = nextChecked
+      ? item.quantity > 0
+        ? item.quantity
+        : item.defaultQuantity
+      : item.quantity;
+
+    setUserSelections((prev) => ({
+      ...prev,
+      [id]: { checked: nextChecked, quantity: nextQty },
+    }));
   };
 
   // Decrement quantity
   const handleDecrement = (id: string) => {
-    setServices((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          if (item.quantity <= 1) {
-            return { ...item, quantity: 0, checked: false };
-          }
-          return { ...item, quantity: item.quantity - 1 };
-        }
-        return item;
-      })
-    );
+    const item = services.find((s) => s.id === id);
+    if (!item) return;
+    if (item.quantity <= 1) {
+      setUserSelections((prev) => ({
+        ...prev,
+        [id]: { checked: false, quantity: 0 },
+      }));
+    } else {
+      setUserSelections((prev) => ({
+        ...prev,
+        [id]: { checked: true, quantity: item.quantity - 1 },
+      }));
+    }
   };
 
   // Increment quantity
   const handleIncrement = (id: string) => {
-    setServices((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const newQty = item.quantity + 1;
-          return { ...item, quantity: newQty, checked: true };
-        }
-        return item;
-      })
-    );
+    const item = services.find((s) => s.id === id);
+    if (!item) return;
+    setUserSelections((prev) => ({
+      ...prev,
+      [id]: { checked: true, quantity: item.quantity + 1 },
+    }));
   };
 
   // Calculations
@@ -226,8 +179,8 @@ export default function BuildYourPerfectEventSection() {
   };
 
   return (
-    <section id="build-event" className="w-full bg-[#F8F9FA] py-16 md:py-24 px-4 sm:px-6 lg:px-8 text-[#0F172A] font-sans antialiased">
-      <div className="max-w-[1200px] mx-auto space-y-12">
+    <section id="build-event" className="w-full bg-[#F8F9FA] py-16 md:py-24 px-4 sm:px-6 lg:px-8 text-[#0F172A] font-sans antialiased scroll-mt-20">
+      <div id="events-calculator" className="max-w-[1200px] mx-auto space-y-12">
         
         {/* ====================================================================
             1. SECTION HEADER & TRUST BADGES ROW
@@ -323,109 +276,179 @@ export default function BuildYourPerfectEventSection() {
                 return (
                   <div
                     key={item.id}
-                    className={`bg-white rounded-2xl p-5 md:p-6 border transition-all relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                    className={`bg-white rounded-2xl p-4 sm:p-5 md:p-6 border transition-all relative ${
                       isSelected
                         ? 'border-[#0B57FF]/40 shadow-[0px_4px_24px_0px_rgba(11,87,255,0.08)]'
                         : 'border-[#0F172A]/8 hover:border-[#0F172A]/16 shadow-[0px_4px_24px_0px_rgba(15,23,42,0.02)]'
                     }`}
                   >
-                    {/* Left: Checkbox + Thumbnail + Details */}
-                    <div className="flex items-start gap-3.5 w-full sm:w-auto flex-1">
-                      
-                      {/* Checkbox */}
-                      <button
-                        type="button"
-                        onClick={() => handleToggleCheck(item.id)}
-                        className={`mt-1.5 sm:mt-3 w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
-                          isSelected
-                            ? 'bg-[#0B57FF] border-[#0B57FF] text-white'
-                            : 'border-slate-300 bg-white hover:border-[#0B57FF]'
-                        }`}
-                        aria-label={`Select ${item.title}`}
-                      >
-                        {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                      </button>
+                    {/* MOBILE LAYOUT (2 ROWS) */}
+                    <div className="flex sm:hidden flex-col gap-3">
+                      {/* ROW 1: Checkbox + Image + Stepper Controls */}
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-3">
+                          {/* Checkbox */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleCheck(item.id)}
+                            className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
+                              isSelected
+                                ? 'bg-[#0B57FF] border-[#0B57FF] text-white'
+                                : 'border-slate-300 bg-white hover:border-[#0B57FF]'
+                            }`}
+                            aria-label={`Select ${item.title}`}
+                          >
+                            {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </button>
 
-                      {/* Service Thumbnail */}
-                      <div className="relative w-28 h-20 sm:w-36 sm:h-24 rounded-xl overflow-hidden shrink-0 border border-[#0F172A]/8 bg-slate-100">
-                        <Image
-                          src={item.image}
-                          alt={item.title}
-                          fill
-                          unoptimized
-                          referrerPolicy="no-referrer"
-                          className="object-cover transition-transform duration-300 hover:scale-105"
-                        />
-                      </div>
+                          {/* Service Thumbnail */}
+                          <div className="relative w-24 h-16 rounded-xl overflow-hidden shrink-0 border border-[#0F172A]/8 bg-slate-100">
+                            <Image
+                              src={item.image}
+                              alt={item.title}
+                              fill
+                              unoptimized
+                              referrerPolicy="no-referrer"
+                              className="object-cover"
+                            />
+                          </div>
+                        </div>
 
-                      {/* Content Info */}
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm sm:text-base text-[#0F172A] leading-snug">
-                          {item.title}
-                        </h4>
+                        {/* Stepper Controls */}
+                        <div className="inline-flex items-center gap-1 bg-[#F8F9FA] border border-[#0F172A]/8 rounded-lg p-1">
+                          <button
+                            type="button"
+                            onClick={() => handleDecrement(item.id)}
+                            className="w-6 h-6 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-[#0F172A] flex items-center justify-center transition disabled:opacity-40"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="w-3 h-3 stroke-[2.5]" />
+                          </button>
 
-                        <p className="text-xs text-[#64748B] line-clamp-2 leading-relaxed">
-                          {item.description}
-                        </p>
+                          <span className="w-5 text-center text-xs font-bold text-[#0F172A]">
+                            {item.quantity}
+                          </span>
 
-                        {/* Metadata Tags */}
-                        <div className="flex flex-wrap items-center gap-2 pt-1.5">
-                          {item.tags.map((tag, idx) => (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center gap-1 text-[11px] font-medium text-[#64748B] bg-[#F8F9FA] border border-[#0F172A]/8 px-2.5 py-0.5 rounded-full"
-                            >
-                              {renderTagIcon(tag.iconType)}
-                              <span>{tag.label}</span>
-                            </span>
-                          ))}
+                          <button
+                            type="button"
+                            onClick={() => handleIncrement(item.id)}
+                            className="w-6 h-6 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-[#0B57FF] flex items-center justify-center transition"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="w-3 h-3 stroke-[2.5]" />
+                          </button>
                         </div>
                       </div>
 
-                    </div>
+                      {/* ROW 2: Name (1 line, truncated with ..., reduced font size) + Price */}
+                      <div className="flex items-center justify-between w-full pt-2 border-t border-slate-100 gap-2">
+                        <h3 className="font-semibold text-xs text-[#0F172A] truncate whitespace-nowrap overflow-hidden text-ellipsis max-w-[60%]">
+                          {item.title}
+                        </h3>
 
-                    {/* Right: Stepper Counter + Price display */}
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0 gap-2">
-                      
-                      {/* Stepper Controls */}
-                      <div className="inline-flex items-center gap-1.5 bg-[#F8F9FA] border border-[#0F172A]/8 rounded-lg p-1">
-                        <button
-                          type="button"
-                          onClick={() => handleDecrement(item.id)}
-                          className="w-7 h-7 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-[#0F172A] flex items-center justify-center transition disabled:opacity-40"
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus className="w-3 h-3 stroke-[2.5]" />
-                        </button>
-
-                        <span className="w-6 text-center text-xs font-bold text-[#0F172A]">
-                          {item.quantity}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => handleIncrement(item.id)}
-                          className="w-7 h-7 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-[#0B57FF] flex items-center justify-center transition"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus className="w-3 h-3 stroke-[2.5]" />
-                        </button>
-                      </div>
-
-                      {/* Calculated Price */}
-                      <div className="text-right">
-                        <span className="font-bold text-base sm:text-lg text-[#0B57FF] block leading-tight">
-                          ${totalItemCost > 0 ? totalItemCost : item.unitPrice} USD
-                        </span>
-                        {item.subtext && (
-                          <span className="text-[10px] text-[#64748B] font-medium block">
-                            {item.subtext}
+                        <div className="text-right shrink-0">
+                          <span className="font-bold text-xs text-[#0B57FF] block leading-tight">
+                            ${totalItemCost > 0 ? totalItemCost : item.unitPrice} USD
                           </span>
-                        )}
+                        </div>
                       </div>
-
                     </div>
 
+                    {/* DESKTOP LAYOUT (Full row view) */}
+                    <div className="hidden sm:flex flex-row items-center justify-between gap-4">
+                      {/* Left: Checkbox + Thumbnail + Details */}
+                      <div className="flex items-start gap-3.5 w-auto flex-1">
+                        {/* Checkbox */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCheck(item.id)}
+                          className={`mt-1.5 sm:mt-3 w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
+                            isSelected
+                              ? 'bg-[#0B57FF] border-[#0B57FF] text-white'
+                              : 'border-slate-300 bg-white hover:border-[#0B57FF]'
+                          }`}
+                          aria-label={`Select ${item.title}`}
+                        >
+                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        </button>
+
+                        {/* Service Thumbnail */}
+                        <div className="relative w-28 h-20 sm:w-36 sm:h-24 rounded-xl overflow-hidden shrink-0 border border-[#0F172A]/8 bg-slate-100">
+                          <Image
+                            src={item.image}
+                            alt={item.title}
+                            fill
+                            unoptimized
+                            referrerPolicy="no-referrer"
+                            className="object-cover transition-transform duration-300 hover:scale-105"
+                          />
+                        </div>
+
+                        {/* Content Info */}
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm sm:text-base text-[#0F172A] leading-snug">
+                            {item.title}
+                          </h3>
+
+                          <p className="text-xs text-[#64748B] line-clamp-2 leading-relaxed">
+                            {item.description}
+                          </p>
+
+                          {/* Metadata Tags */}
+                          <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                            {item.tags.map((tag, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#64748B] bg-[#F8F9FA] border border-[#0F172A]/8 px-2.5 py-0.5 rounded-full"
+                              >
+                                {renderTagIcon(tag.iconType)}
+                                <span>{tag.label}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Stepper Counter + Price display */}
+                      <div className="flex flex-col items-end justify-between w-auto shrink-0 gap-2">
+                        {/* Stepper Controls */}
+                        <div className="inline-flex items-center gap-1.5 bg-[#F8F9FA] border border-[#0F172A]/8 rounded-lg p-1">
+                          <button
+                            type="button"
+                            onClick={() => handleDecrement(item.id)}
+                            className="w-7 h-7 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-[#0F172A] flex items-center justify-center transition disabled:opacity-40"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="w-3 h-3 stroke-[2.5]" />
+                          </button>
+
+                          <span className="w-6 text-center text-xs font-bold text-[#0F172A]">
+                            {item.quantity}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => handleIncrement(item.id)}
+                            className="w-7 h-7 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-[#0B57FF] flex items-center justify-center transition"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="w-3 h-3 stroke-[2.5]" />
+                          </button>
+                        </div>
+
+                        {/* Calculated Price */}
+                        <div className="text-right">
+                          <span className="font-bold text-base sm:text-lg text-[#0B57FF] block leading-tight">
+                            ${totalItemCost > 0 ? totalItemCost : item.unitPrice} USD
+                          </span>
+                          {item.subtext && (
+                            <span className="text-[10px] text-[#64748B] font-medium block">
+                              {item.subtext}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -452,8 +475,8 @@ export default function BuildYourPerfectEventSection() {
 
           </div>
 
-          {/* RIGHT COLUMN: Live Estimate Floating Summary Card (5 Cols) */}
-          <div className="lg:col-span-5 sticky top-6">
+          {/* RIGHT COLUMN: Live Estimate Floating Summary Card (Hidden on Mobile) */}
+          <div className="hidden lg:block lg:col-span-5 sticky top-6">
             
             <div className="rounded-[24px] shadow-xl overflow-visible border border-slate-200/80 bg-[#0A2351]">
               

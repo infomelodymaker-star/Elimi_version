@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ElimiHeader from '@/components/ElimiHeader';
-import Footer from '@/components/Footer';
 import {
   ArrowRight,
   CheckCircle2,
@@ -482,9 +481,6 @@ export default function DigitalMarketingPage() {
         </section>
 
       </main>
-
-      {/* Shared Global Footer */}
-      <Footer />
 
       {/* Contact & Consultation Modal */}
       {isContactModalOpen && (

@@ -321,6 +321,58 @@ export default function ProductsManagementView() {
     }));
   };
 
+  // Upload Main Product Image to ImgBB
+  const handleUploadMainImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    showToast('Uploading main product image to ImgBB...', 'info');
+    try {
+      const res = await uploadImageSafely(file, 'product-main');
+      if (res.success && res.url) {
+        setFormData((prev) => ({ ...prev, image: res.url }));
+        showToast('Main image uploaded to ImgBB!');
+      } else {
+        showToast(res.warning || 'Failed to upload image', 'error');
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Error uploading image', 'error');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  // Upload Gallery Images to ImgBB
+  const handleUploadGalleryImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    showToast('Uploading gallery images to ImgBB...', 'info');
+    let successCount = 0;
+    const newUrls: string[] = [];
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const res = await uploadImageSafely(files[i], `product-gallery-${i}`);
+        if (res.success && res.url) {
+          newUrls.push(res.url);
+          successCount++;
+        }
+      }
+      if (newUrls.length > 0) {
+        setFormData((prev) => ({ ...prev, gallery: [...prev.gallery, ...newUrls] }));
+        showToast(`${successCount} gallery image(s) uploaded to ImgBB!`);
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Error uploading gallery images', 'error');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
   // Add Gallery Image URL
   const handleAddGalleryImage = () => {
     if (!formData.newGalleryUrl.trim()) return;
@@ -1309,9 +1361,22 @@ export default function ProductsManagementView() {
 
               {/* Row 5: Images & Gallery Strip (Analyzed from /shop/[id] page) */}
               <div className="space-y-2.5">
-                <label className="block text-xs font-medium text-zinc-700">
-                  Main Image URL *
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-medium text-zinc-700">
+                    Main Image URL *
+                  </label>
+                  <label className="relative overflow-hidden cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded-lg transition-colors border border-blue-200">
+                    <span className="material-symbols-outlined text-[16px]">upload</span>
+                    <span>Upload Image (ImgBB)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleUploadMainImage}
+                      disabled={isUploading}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </label>
+                </div>
                 <div className="flex items-center gap-3">
                   <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100 shrink-0 shadow-xs">
                     <Image
@@ -1336,8 +1401,19 @@ export default function ProductsManagementView() {
                 {/* Gallery Images Strip for Carousel Thumbnails */}
                 <div className="pt-2">
                   <div className="text-[11px] font-medium text-zinc-600 mb-1.5 flex items-center justify-between">
-                    <span>Gallery Carousel Images (Used for the 3-image thumbnail strip on product details page):</span>
-                    <span className="font-mono text-zinc-400">{formData.gallery.length} images</span>
+                    <span>Gallery Carousel Images (Used for thumbnail strip on product details page):</span>
+                    <label className="relative overflow-hidden cursor-pointer inline-flex items-center gap-1 text-[11px] font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md transition-colors border border-blue-200">
+                      <span className="material-symbols-outlined text-[14px]">upload</span>
+                      <span>Upload Gallery Photos</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleUploadGalleryImages}
+                        disabled={isUploading}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                    </label>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 mb-2">

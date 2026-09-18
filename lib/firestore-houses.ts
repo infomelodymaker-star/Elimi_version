@@ -63,20 +63,22 @@ const DEFAULT_PHOTOS = [
 export const SAMPLE_HOUSES: House[] = [
   {
     id: 'house-1',
-    title: 'Luxury Villa in Beverly Hills',
-    description: 'Beautiful modern villa with a large pool and garden.',
-    price: 3500000,
+    title: 'Luxury Villa in Kiriri Hills',
+    description: 'Exclusive modern hillside estate with panoramic views of Lake Tanganyika, private infinity pool, lush tropical gardens, and diplomatic security quarters.',
+    price: 650000,
+    rentPrice: 3500,
     sales: true,
-    rent: false,
-    location: { lat: 34.0736, lng: -118.4004 },
-    address: 'Beverly Hills, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_house_1',
+    rent: true,
+    location: { lat: -3.3760, lng: 29.3825 },
+    address: 'Avenue Belvédère, Kiriri, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/BujumburaKiririVilla',
     bedrooms: 5,
-    bathrooms: 4,
-    sqft: 4500,
-    floorPlanName: 'The Beverly Estate',
+    bathrooms: 5,
+    sqft: 5200,
+    floorPlanName: 'The Belvédère Luxury Palace',
     availableUnits: [
-      { unitId: 'BV-01', availableDate: 'Available Now', price: 3500000, isRent: false }
+      { unitId: 'KV-01', availableDate: 'Available Now', price: 3500, isRent: true },
+      { unitId: 'KV-02', availableDate: 'Available for Purchase', price: 650000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -84,22 +86,22 @@ export const SAMPLE_HOUSES: House[] = [
   },
   {
     id: 'house-2',
-    title: 'Downtown Modern Loft',
-    description: 'Exposed brick, high ceilings, in the heart of downtown.',
-    price: 850000,
-    rentPrice: 3200,
+    title: 'Executive Penthouse Rohero I',
+    description: 'Sophisticated contemporary penthouse in the heart of Rohero diplomatic district with floor-to-ceiling glass, backup solar power, and 24/7 security concierge.',
+    price: 380000,
+    rentPrice: 2200,
     sales: true,
     rent: true,
-    location: { lat: 34.0407, lng: -118.2468 },
-    address: 'Downtown Los Angeles, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_house_2',
-    bedrooms: 2,
-    bathrooms: 2,
-    sqft: 1800,
-    floorPlanName: 'Urban Loft Layout',
+    location: { lat: -3.3855, lng: 29.3640 },
+    address: 'Boulevard du 28 Novembre, Rohero I, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/BujumburaRoheroPenthouse',
+    bedrooms: 3,
+    bathrooms: 3,
+    sqft: 2800,
+    floorPlanName: 'Diplomatic Skyline Penthouse',
     availableUnits: [
-      { unitId: 'DT-4A', availableDate: 'Oct 18', price: 3200, isRent: true },
-      { unitId: 'DT-5B', availableDate: 'Nov 01', price: 850000, isRent: false }
+      { unitId: 'RH-3A', availableDate: 'Available Today', price: 2200, isRent: true },
+      { unitId: 'RH-3B', availableDate: 'Available Now', price: 380000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -107,21 +109,22 @@ export const SAMPLE_HOUSES: House[] = [
   },
   {
     id: 'house-3',
-    title: 'Cozy Beachfront Cottage',
-    description: 'Wake up to the sound of waves every morning.',
-    price: 1200000,
-    rentPrice: 4500,
-    sales: false,
+    title: 'Lake Tanganyika Beachfront Residence',
+    description: 'Private waterfront villa directly overlooking Lake Tanganyika with private pier, terrace bar, sunset deck, and tranquil lake breezes.',
+    price: 490000,
+    rentPrice: 2800,
+    sales: true,
     rent: true,
-    location: { lat: 34.0259, lng: -118.5155 },
-    address: 'Santa Monica, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_house_3',
-    bedrooms: 3,
-    bathrooms: 2,
-    sqft: 1500,
-    floorPlanName: 'Seaside Plan',
+    location: { lat: -3.4050, lng: 29.3480 },
+    address: 'Chaussée d\'Uvira, Kinindo Plage, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/BujumburaKinindoPlage',
+    bedrooms: 4,
+    bathrooms: 4,
+    sqft: 3600,
+    floorPlanName: 'Tanganyika Azure Villa',
     availableUnits: [
-      { unitId: 'SM-02', availableDate: 'Available Now', price: 4500, isRent: true }
+      { unitId: 'KP-01', availableDate: 'Available Now', price: 2800, isRent: true },
+      { unitId: 'KP-02', availableDate: 'Available for Purchase', price: 490000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -129,20 +132,22 @@ export const SAMPLE_HOUSES: House[] = [
   },
   {
     id: 'house-4',
-    title: 'Suburban Family Home',
-    description: 'Spacious backyard, perfect for a growing family.',
-    price: 650000,
+    title: 'Modern Family Compound in Gihosha',
+    description: 'Spacious 4-bedroom gated residence with manicured lawns, generator backup, water reservoir, and detached staff quarters.',
+    price: 295000,
+    rentPrice: 1600,
     sales: true,
-    rent: false,
-    location: { lat: 34.1425, lng: -118.2551 },
-    address: 'Glendale, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_house_4',
+    rent: true,
+    location: { lat: -3.3620, lng: 29.3890 },
+    address: 'Quartier Gihosha Rural, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/BujumburaGihoshaFamily',
     bedrooms: 4,
     bathrooms: 3,
-    sqft: 2200,
-    floorPlanName: 'Maplewood Family',
+    sqft: 3100,
+    floorPlanName: 'Gihosha Family Compound',
     availableUnits: [
-      { unitId: 'GL-11', availableDate: 'Available Now', price: 650000, isRent: false }
+      { unitId: 'GH-10', availableDate: 'Available Now', price: 1600, isRent: true },
+      { unitId: 'GH-11', availableDate: 'Ready for Deed Transfer', price: 295000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -150,22 +155,22 @@ export const SAMPLE_HOUSES: House[] = [
   },
   {
     id: 'house-5',
-    title: 'Penthouse with City Views',
-    description: 'Luxury living with panoramic views of the skyline.',
-    price: 2100000,
-    rentPrice: 7500,
+    title: 'Mutanga Nord Diplomatic Residence',
+    description: 'Turnkey fully furnished 4-bedroom residence designed for international NGO leaders and foreign embassy dignitaries.',
+    price: 420000,
+    rentPrice: 2400,
     sales: true,
     rent: true,
-    location: { lat: 34.0522, lng: -118.2437 },
-    address: 'Financial District, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_house_5',
-    bedrooms: 3,
-    bathrooms: 3,
-    sqft: 2800,
-    floorPlanName: 'Skyline Penthouse',
+    location: { lat: -3.3810, lng: 29.3780 },
+    address: 'Avenue de l\'OUA, Mutanga Nord, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/BujumburaMutangaRes',
+    bedrooms: 4,
+    bathrooms: 3.5,
+    sqft: 3400,
+    floorPlanName: 'Mutanga Executive Villa',
     availableUnits: [
-      { unitId: 'PH-01', availableDate: 'Dec 01', price: 7500, isRent: true },
-      { unitId: 'PH-02', availableDate: 'Dec 15', price: 2100000, isRent: false }
+      { unitId: 'MN-01', availableDate: 'Available Now', price: 2400, isRent: true },
+      { unitId: 'MN-02', availableDate: 'Available Now', price: 420000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -173,108 +178,45 @@ export const SAMPLE_HOUSES: House[] = [
   },
   {
     id: 'house-6',
-    title: 'Rustic Cabin Getaway',
-    description: 'A peaceful retreat surrounded by nature.',
-    price: 0,
+    title: 'Gitega Capital Modern Estate',
+    description: 'Spacious ministerial style estate located in Burundi\'s political capital Gitega, featuring grand reception hall and security perimeter.',
+    price: 310000,
     rentPrice: 1500,
-    sales: false,
-    rent: true,
-    location: { lat: 34.2506, lng: -118.1887 },
-    address: 'Angeles National Forest, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_house_6',
-    bedrooms: 2,
-    bathrooms: 1,
-    sqft: 900,
-    floorPlanName: 'Pine Cabin',
-    availableUnits: [
-      { unitId: 'CB-99', availableDate: 'Available Now', price: 1500, isRent: true }
-    ],
-    amenities: DEFAULT_AMENITIES,
-    photos: DEFAULT_PHOTOS,
-    imageUrl: 'https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&q=80&w=800',
-  },
-  {
-    id: 'house-7',
-    title: 'Modern Smart Home',
-    description: 'Fully automated, energy-efficient modern design.',
-    price: 1800000,
-    sales: true,
-    rent: false,
-    location: { lat: 34.0195, lng: -118.4912 },
-    address: 'Venice, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_house_7',
-    bedrooms: 4,
-    bathrooms: 3.5,
-    sqft: 3100,
-    floorPlanName: 'Tech Haven',
-    availableUnits: [
-      { unitId: 'VN-44', availableDate: 'Available Now', price: 1800000, isRent: false }
-    ],
-    amenities: DEFAULT_AMENITIES,
-    photos: DEFAULT_PHOTOS,
-    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800',
-  },
-  {
-    id: 'house-8',
-    title: 'Charming Historic Victorian',
-    description: 'Beautifully restored Victorian house with original details.',
-    price: 950000,
-    rentPrice: 3800,
     sales: true,
     rent: true,
-    location: { lat: 34.1478, lng: -118.1445 },
-    address: 'Pasadena, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_house_8',
-    bedrooms: 3,
-    bathrooms: 2,
-    sqft: 2400,
-    floorPlanName: 'Heritage Layout',
+    location: { lat: -3.4275, lng: 29.9248 },
+    address: 'Quartier Musinzira, Gitega Political Capital',
+    mapsLink: 'https://maps.app.goo.gl/GitegaCapitalEstate',
+    bedrooms: 5,
+    bathrooms: 4,
+    sqft: 4100,
+    floorPlanName: 'Gitega Capital Manor',
     availableUnits: [
-      { unitId: 'PA-21', availableDate: 'Available Now', price: 3800, isRent: true }
+      { unitId: 'GT-01', availableDate: 'Available Now', price: 1500, isRent: true },
+      { unitId: 'GT-02', availableDate: 'Ready for Purchase', price: 310000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
     imageUrl: 'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?auto=format&fit=crop&q=80&w=800',
   },
   {
-    id: 'house-9',
-    title: 'Studio Apartment Near Campus',
-    description: 'Perfect for students, walking distance to major universities.',
-    price: 0,
-    rentPrice: 1200,
-    sales: false,
-    rent: true,
-    location: { lat: 34.0224, lng: -118.2851 },
-    address: 'University Park, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_house_9',
-    bedrooms: 1,
-    bathrooms: 1,
-    sqft: 600,
-    floorPlanName: 'Student Studio',
-    availableUnits: [
-      { unitId: 'UP-08', availableDate: 'Aug 15', price: 1200, isRent: true },
-      { unitId: 'UP-09', availableDate: 'Sep 01', price: 1200, isRent: true }
-    ],
-    amenities: DEFAULT_AMENITIES,
-    photos: DEFAULT_PHOTOS,
-    imageUrl: 'https://images.unsplash.com/photo-1536376072261-38c75010e6c9?auto=format&fit=crop&q=80&w=800',
-  },
-  {
     id: 'house-10',
-    title: 'Spacious Multi-Family Estate',
-    description: 'Perfect investment property or for large extended families.',
-    price: 2500000,
+    title: 'Rohero II Diplomatic Residence',
+    description: 'Premier executive residence near embassies in Rohero II, with expansive gardens, diplomatic security features, and servant quarters.',
+    price: 520000,
+    rentPrice: 2800,
     sales: true,
-    rent: false,
-    location: { lat: 34.1808, lng: -118.3090 },
-    address: 'Burbank, CA',
-    mapsLink: 'https://maps.app.goo.gl/random_house_10',
+    rent: true,
+    location: { lat: -3.3885, lng: 29.3695 },
+    address: 'Avenue du Large, Rohero II, Bujumbura',
+    mapsLink: 'https://maps.app.goo.gl/RoheroDiplomaticManor',
     bedrooms: 6,
     bathrooms: 5,
     sqft: 5200,
-    floorPlanName: 'Grand Estate',
+    floorPlanName: 'Rohero Grand Estate',
     availableUnits: [
-      { unitId: 'BB-77', availableDate: 'Available Now', price: 2500000, isRent: false }
+      { unitId: 'RH-01', availableDate: 'Available Now', price: 2800, isRent: true },
+      { unitId: 'RH-02', availableDate: 'Ready for Purchase', price: 520000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -314,15 +256,19 @@ export const HOUSES_STORAGE_KEY = 'elimi_houses_storage';
 export const HOUSES_SYNC_EVENT = 'elimi_sync_houses';
 
 export function useRealtimeHouses() {
-  const [houses, setHouses] = useState<House[]>(() =>
-    getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES)
-  );
+  const [houses, setHouses] = useState<House[]>(SAMPLE_HOUSES);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
-    // 1. Listen to custom sync events
+    // 1. Hydrate from local storage on client mount
+    queueMicrotask(() => {
+      const initialStored = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
+      setHouses(initialStored);
+    });
+
+    // 2. Listen to custom sync events
     const handleSync = () => {
       const updated = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
       setHouses(updated);
