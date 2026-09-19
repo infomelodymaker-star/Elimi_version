@@ -28,11 +28,12 @@ import {
   PrinterCheck,
   UsersRound,
   Sparkles,
+  Boxes,
   Bot,
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import FourPillarsSection from "@/components/FourPillarsSection";
@@ -164,22 +165,6 @@ const defaultHeroSlides = [
     ctaLink: "/printbe",
     bgImage: "/assets/printbe/rollup-banner.jpg",
   },
-  {
-    id: "nails",
-    subtitle: "BEAUTY. CARE. PERFECTION.",
-    title: (
-      <>
-        Elevate <br />
-        Your <br />
-        <span className="text-[#0D52FF] whitespace-nowrap">Look.</span>
-      </>
-    ),
-    description:
-      "Expert nail care, spa treatments, and beauty services for a flawless, polished appearance.",
-    ctaText: "Book Nails",
-    ctaLink: "/nails",
-    bgImage: "/assets/shop/cat_beauty.png",
-  },
 ];
 
 export default function Home() {
@@ -189,24 +174,21 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const { data: homeCms } = useCmsPage('home');
-  const [heroSlides, setHeroSlides] = useState(defaultHeroSlides);
-
-  useEffect(() => {
+  const heroSlides = useMemo(() => {
     if (homeCms && homeCms.sections) {
       const heroSection = homeCms.sections.find((s: any) => s.type === 'hero');
       if (heroSection && heroSection.content) {
-        setHeroSlides((prev) => {
-          const newSlides = [...prev];
-          newSlides[0] = {
-            ...newSlides[0],
-            title: heroSection.content.headline || newSlides[0].title,
-            subtitle: heroSection.content.subheadline || newSlides[0].subtitle,
-            bgImage: heroSection.content.backgroundImage || newSlides[0].bgImage,
-          };
-          return newSlides;
-        });
+        const newSlides = [...defaultHeroSlides];
+        newSlides[0] = {
+          ...newSlides[0],
+          title: heroSection.content.headline || newSlides[0].title,
+          subtitle: heroSection.content.subheadline || newSlides[0].subtitle,
+          bgImage: heroSection.content.backgroundImage || newSlides[0].bgImage,
+        };
+        return newSlides;
       }
     }
+    return defaultHeroSlides;
   }, [homeCms]);
 
   useEffect(() => {
@@ -214,7 +196,7 @@ export default function Home() {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
     }, 4000);
     return () => clearInterval(timer);
-  }, []);
+  }, [heroSlides.length]);
 
   useEffect(() => {
     const updateGreeting = () => {
@@ -475,22 +457,22 @@ export default function Home() {
                   : "text-slate-800 hover:bg-white/80 hover:text-[#0D52FF]"
               }`}
             >
-              <Sparkles className="w-5 h-5 whitespace-nowrap" />
+              <Boxes className="w-5 h-5 whitespace-nowrap" />
             </Link>
           </aside>
           {/* END: Left Sidebar Quick Navigation */}
 
           {/* BEGIN: Hero Content Area */}
-          <div className={`relative z-10 w-full h-full flex flex-col p-4 sm:p-6 lg:p-12 ${
+          <div className={`relative z-10 w-full h-full flex flex-col px-4 sm:px-8 lg:p-12 ${
             currentSlide === 0
-              ? "justify-between pb-4 lg:pb-14 md:pl-28 lg:pl-32 lg:pt-28"
-              : "justify-center items-center text-center my-auto md:pl-0 lg:pl-0"
+              ? "justify-center items-center text-center py-6 sm:py-8 lg:py-0 lg:justify-between lg:items-start lg:text-left lg:pl-40 xl:pl-48 lg:pt-36 lg:pb-12"
+              : "justify-center items-center text-center py-6 sm:py-8 lg:py-0 my-auto"
           }`}>
             {/* Main Typography & CTA */}
             <div className={`flex flex-col relative w-full ${
               currentSlide === 0
-                ? "min-h-[260px] sm:min-h-[280px] lg:min-h-[300px] max-w-2xl lg:mt-0 text-left items-start"
-                : "max-w-2xl text-center items-center justify-center mx-auto my-auto"
+                ? "w-full max-w-full sm:max-w-2xl lg:max-w-2xl items-center text-center mx-auto lg:mx-0 lg:items-start lg:text-left min-h-[260px] sm:min-h-[280px] lg:min-h-[300px] lg:translate-x-3 lg:translate-y-3"
+                : "w-full max-w-full sm:max-w-2xl lg:max-w-4xl items-center text-center mx-auto my-auto"
             }`}>
               <AnimatePresence mode="wait">
                 <motion.div
@@ -499,51 +481,54 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.4 }}
-                  className={`flex flex-col w-full ${
-                    currentSlide === 0 ? "items-start text-left" : "items-center text-center mx-auto"
+                  className={`flex flex-col w-full gap-4 ${
+                    currentSlide === 0
+                      ? "items-center text-center lg:items-start lg:text-left"
+                      : "items-center text-center mx-auto"
                   }`}
                 >
-                  <p className={`text-[#0D52FF] font-bold tracking-widest text-[10px] sm:text-xs mb-2 lg:mb-4 uppercase ${
-                    currentSlide === 0 ? "text-left" : "text-center"
+                  <p className={`text-[#0D52FF] font-bold tracking-widest text-[11px] sm:text-xs uppercase ${
+                    currentSlide === 0 ? "text-center lg:text-left" : "text-center"
                   }`}>
                     {heroSlides[currentSlide].subtitle}
                   </p>
 
-                  <h1 className={`text-[28px] sm:text-5xl lg:text-6xl font-bold text-white leading-[1.15] tracking-tight mb-3 lg:mb-6 break-words ${
-                    currentSlide === 0 ? "text-left" : "text-center"
+                  <h1 className={`text-[28px] sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.15] lg:leading-[1.12] tracking-tight break-words max-w-xl sm:max-w-2xl ${
+                    currentSlide === 0 ? "text-center lg:text-left lg:max-w-2xl" : "text-center lg:max-w-3xl mx-auto"
                   }`}>
                     {heroSlides[currentSlide].title}
                   </h1>
 
-                  {/* Blue separator - mobile only or centered for other slides */}
-                  <div className={`w-12 h-1.5 bg-[#0D52FF] rounded-full mb-4 sm:mb-6 ${
-                    currentSlide === 0 ? "lg:hidden" : "mx-auto"
+                  {/* Blue separator */}
+                  <div className={`w-12 h-1.5 bg-[#0D52FF] rounded-full ${
+                    currentSlide === 0 ? "mx-auto lg:mx-0 lg:hidden" : "mx-auto"
                   }`}></div>
 
                   {/* Description text */}
                   <p
-                    className={`text-white/90 text-sm sm:text-base leading-relaxed mb-6 max-w-lg font-medium ${
-                      currentSlide === 0 ? "lg:hidden text-left" : "text-center mx-auto"
+                    className={`text-white/90 text-sm sm:text-base leading-relaxed max-w-md sm:max-w-lg font-medium ${
+                      currentSlide === 0 ? "text-center lg:hidden lg:text-left" : "text-center mx-auto lg:max-w-xl"
                     }`}
                   >
                     {heroSlides[currentSlide].description}
                   </p>
 
+                  {/* Centered CTA pill button on mobile/tablet (py-3.5 px-8), desktop (lg:py-4 lg:px-8) */}
                   <Link
                     href={heroSlides[currentSlide].ctaLink}
-                    className={`w-fit bg-[#0D52FF] hover:bg-blue-700 text-white font-semibold py-3 px-6 lg:py-4 lg:px-8 rounded-full flex items-center gap-3 transition-colors shadow-lg cursor-pointer text-sm sm:text-base ${
-                      currentSlide === 0 ? "" : "mx-auto"
+                    className={`w-fit bg-[#0D52FF] hover:bg-blue-700 active:scale-98 text-white font-semibold py-3.5 px-8 lg:py-4 lg:px-8 rounded-full flex items-center justify-center gap-3 transition-all shadow-lg cursor-pointer text-sm sm:text-base ${
+                      currentSlide === 0 ? "mx-auto lg:mx-0" : "mx-auto"
                     }`}
                   >
                     <span>{heroSlides[currentSlide].ctaText}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
 
-                  {/* 10K+ Clients - Mobile Pill Style */}
+                  {/* 10K+ Clients - Mobile / Tablet Pill Style */}
                   {currentSlide === 0 && (
-                    <div className="mt-6 sm:mt-8 flex items-center gap-3 sm:gap-4 bg-white/40 backdrop-blur-md rounded-full p-2 pr-5 sm:pr-6 w-fit lg:hidden shadow-lg border border-white/40">
+                    <div className="mt-2 sm:mt-3 flex items-center gap-3 sm:gap-4 bg-white/40 backdrop-blur-md rounded-full p-2 pr-5 sm:pr-6 w-fit mx-auto lg:mx-0 lg:hidden shadow-lg border border-white/40">
                       <div className="flex -space-x-3">
-                        <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-2 border-white overflow-hidden relative">
+                        <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border-2 border-white overflow-hidden relative">
                           <Image
                             src="https://images.unsplash.com/photo-1632765854612-9b02b6ec2b15?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YmxhY2slMjBwZW9wbGV8ZW58MHx8MHx8fDA%3D"
                             alt="Client"
@@ -551,7 +536,7 @@ export default function Home() {
                             className="object-cover"
                           />
                         </div>
-                        <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-2 border-white overflow-hidden relative">
+                        <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border-2 border-white overflow-hidden relative">
                           <Image
                             src="https://images.unsplash.com/photo-1632765854612-9b02b6ec2b15?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YmxhY2slMjBwZW9wbGV8ZW58MHx8MHx8fDA%3D"
                             alt="Client"
@@ -559,7 +544,7 @@ export default function Home() {
                             className="object-cover"
                           />
                         </div>
-                        <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-2 border-white overflow-hidden relative">
+                        <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border-2 border-white overflow-hidden relative">
                           <Image
                             src="https://images.unsplash.com/photo-1565884280295-98eb83e41c65?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8YmxhY2slMjBwZW9wbGV8ZW58MHx8MHx8fDA%3D"
                             alt="Client"
@@ -568,7 +553,7 @@ export default function Home() {
                           />
                         </div>
                       </div>
-                      <div>
+                      <div className="text-left">
                         <span className="block text-xl sm:text-2xl font-bold text-[#0D52FF] leading-none tracking-tight">
                           10K+
                         </span>

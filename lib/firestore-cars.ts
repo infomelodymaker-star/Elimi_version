@@ -87,7 +87,7 @@ export const SAMPLE_CARS: Car[] = [
     ],
     amenities: DEFAULT_CAR_FEATURES,
     photos: [
-      '/public/assets/shop/mercedes-vclass.jpg',
+      '/assets/shop/mercedes-vclass.jpg',
       'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=1200',
       'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800'
     ],
@@ -123,7 +123,7 @@ export const SAMPLE_CARS: Car[] = [
       'Chauffeur Service Optional'
     ],
     photos: [
-      '/public/assets/elimi-images/4-pillar-section/PRADO.webp',
+      '/assets/elimi-images/4-pillar-section/PRADO.webp',
       'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&q=80&w=800',
       'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800'
     ],

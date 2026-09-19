@@ -23,6 +23,7 @@ import {
   Brush,
   Bot,
   Sparkles,
+  Boxes,
   ExternalLink,
   Phone,
   ArrowRight,
@@ -96,7 +97,7 @@ export default function DesktopNavMenu() {
     {
       label: 'Other Rentals',
       href: '/allocations',
-      icon: Sparkles,
+      icon: Boxes,
       description: 'Staff & équipements à louer',
     },
   ];

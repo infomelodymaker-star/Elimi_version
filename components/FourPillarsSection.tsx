@@ -60,6 +60,12 @@ function getLatest20Products(items: Product[]): Product[] {
     .slice(0, 20);
 }
 
+function getSafePhotoUrl(url?: string, fallback: string = "/assets/elimi-images/4-pillar-section/PRADO.webp"): string {
+  if (!url) return fallback;
+  if (url.startsWith('/public/')) return url.replace('/public/', '/');
+  return url;
+}
+
 interface PillarYouTubeVideo {
   youtubeId: string;
   title: string;
@@ -125,17 +131,18 @@ export default function FourPillarsSection() {
 
   const currentPillar1Data = React.useMemo(() => {
     if (pillar1Tab === "Buy") {
-      const topSaleCar = saleCars[0] || allCars[0];
+      const topSaleCar = saleCars[0] || allCars.find((c) => c.sales) || allCars[0];
+      const carPrice = topSaleCar?.price || 65000;
       return {
         title: topSaleCar?.title || "Toyota Land Cruiser Prado",
-        price: `$${(topSaleCar?.price || 65000).toLocaleString()}`,
+        price: `$${carPrice.toLocaleString()}`,
         unit: " Buy",
         availability: "Direct Ownership",
         badge: "In Stock",
-        image: topSaleCar?.photos?.[0] || topSaleCar?.imageUrl || "/assets/elimi-images/4-pillar-section/PRADO.webp",
-        link: topSaleCar ? `/cars/${topSaleCar.id}` : "/cars",
+        image: getSafePhotoUrl(topSaleCar?.photos?.[0] || topSaleCar?.imageUrl, "/assets/elimi-images/4-pillar-section/PRADO.webp"),
+        link: topSaleCar ? `/cars/${topSaleCar.id}` : "/cars?type=sale",
         ctaText: "Explore Vehicles For Sale",
-        ctaLink: "/cars",
+        ctaLink: "/cars?type=sale",
         checklist: [
           `${saleCars.length > 0 ? saleCars.length : "12+"} Inspected Vehicles in Stock`,
           "Direct Import, Cleared & Certified",
@@ -154,7 +161,7 @@ export default function FourPillarsSection() {
         unit: isRentHouse ? "/mo" : " Buy",
         availability: isRentHouse ? "For Long/Short Stay" : "Verified Title",
         badge: isRentHouse ? "For Rent" : "For Sale",
-        image: topHouse?.photos?.[0] || topHouse?.imageUrl || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200",
+        image: getSafePhotoUrl(topHouse?.photos?.[0] || topHouse?.imageUrl, "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200"),
         link: topHouse ? `/houses/${topHouse.id}` : "/houses",
         ctaText: "Explore Real Estate",
         ctaLink: "/houses",
@@ -166,7 +173,7 @@ export default function FourPillarsSection() {
       };
     }
     // Default: Rent
-    const topRentCar = rentCars[0] || allCars[0];
+    const topRentCar = rentCars[0] || allCars.find((c) => c.rent) || allCars[0];
     const minRentPrice = rentCars.length > 0 ? Math.min(...rentCars.map((c) => c.rentPrice || 60)) : 60;
     return {
       title: topRentCar?.title || "Toyota Prado TX-L 2020",
@@ -174,10 +181,10 @@ export default function FourPillarsSection() {
       unit: "/day",
       availability: "Available Today",
       badge: "Fleet Ready",
-      image: topRentCar?.photos?.[0] || topRentCar?.imageUrl || "/assets/elimi-images/4-pillar-section/PRADO.webp",
-      link: topRentCar ? `/cars/${topRentCar.id}` : "/cars",
+      image: getSafePhotoUrl(topRentCar?.photos?.[0] || topRentCar?.imageUrl, "/assets/elimi-images/4-pillar-section/PRADO.webp"),
+      link: topRentCar ? `/cars/${topRentCar.id}` : "/cars?type=rent",
       ctaText: "Explore Rental Fleet",
-      ctaLink: "/cars",
+      ctaLink: "/cars?type=rent",
       checklist: [
         `${rentCars.length > 0 ? rentCars.length : "20+"} Verified Fleet Vehicles for Rent`,
         `Rates from $${minRentPrice}/day with Chauffeur`,

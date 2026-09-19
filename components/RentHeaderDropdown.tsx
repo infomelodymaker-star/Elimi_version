@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowUpRight, ChevronDown, Car, HousePlus, Sparkles, ArrowRight, ShieldCheck, Check } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Car, HousePlus, Boxes, ArrowRight, ShieldCheck, Check } from 'lucide-react';
 import { useRealtimeCars } from '@/lib/firestore-cars';
 import { useRealtimeHouses } from '@/lib/firestore-houses';
 import { useRealtimeRentalItems } from '@/lib/firestore-rentals';
@@ -153,7 +153,7 @@ export default function RentHeaderDropdown() {
                 className="group flex items-start gap-3.5 p-2.5 rounded-xl hover:bg-blue-50/70 transition-colors cursor-pointer"
               >
                 <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-[#0B57FF] shrink-0 group-hover:bg-[#0B57FF] group-hover:text-white transition-colors mt-0.5">
-                  <Sparkles className="w-5 h-5" />
+                  <Boxes className="w-5 h-5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">

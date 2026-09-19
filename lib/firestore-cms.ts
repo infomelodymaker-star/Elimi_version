@@ -699,3 +699,52 @@ export function useCmsPage(pageId: string) {
   return { data, loading };
 }
 
+/**
+ * Utility to strip undefined properties recursively for Firestore safe operations.
+ */
+export function cleanObjectForFirestore<T extends Record<string, any>>(obj: T): T {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map((item) => cleanObjectForFirestore(item)) as unknown as T;
+  }
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    if (value !== null && typeof value === 'object') {
+      cleaned[key] = cleanObjectForFirestore(value);
+    } else {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned as T;
+}
+
+/**
+ * Saves a CmsPage to localStorage and syncs with Firestore collection 'cms_pages'.
+ */
+export async function saveCmsPageToFirestore(page: CmsPage): Promise<void> {
+  const updatedPage: CmsPage = {
+    ...page,
+    lastUpdated: new Date().toISOString(),
+  };
+
+  // 1. Instantly update localStorage & notify reactive UI listeners
+  const currentPages = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
+  const existsIndex = currentPages.findIndex((p) => p.id === updatedPage.id);
+  const newPages = [...currentPages];
+  if (existsIndex >= 0) {
+    newPages[existsIndex] = updatedPage;
+  } else {
+    newPages.push(updatedPage);
+  }
+  saveStoredItems(CMS_STORAGE_KEY, newPages, CMS_SYNC_EVENT);
+
+  // 2. Safe background Firestore task
+  const cleanedData = cleanObjectForFirestore(updatedPage as any);
+  await runFirestoreTaskSafe(
+    () => setDoc(doc(db, 'cms_pages', updatedPage.id), cleanedData, { merge: true }),
+    3000,
+    `Save CMS page ${updatedPage.id}`
+  );
+}
+

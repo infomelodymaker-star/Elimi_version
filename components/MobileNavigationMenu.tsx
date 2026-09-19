@@ -16,6 +16,8 @@ import {
   Menu,
   X,
   Sparkles,
+  Boxes,
+  Code2,
 } from 'lucide-react';
 
 interface MobileNavigationMenuProps {
@@ -108,13 +110,13 @@ export function MobileNavigationMenu({ className }: MobileNavigationMenuProps) {
     {
       label: 'Digital Solutions',
       href: '/digital-solutions',
-      icon: Sparkles,
+      icon: Code2,
       description: 'Apps, Web & Google Maps',
     },
     {
       label: 'Other Rentals',
       href: '/allocations',
-      icon: Sparkles,
+      icon: Boxes,
       description: 'Staff & équipements à louer',
     },
   ];
