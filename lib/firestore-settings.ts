@@ -6,6 +6,7 @@ export interface GlobalSettings {
   usdToBifRate: number;
   contactEmail?: string;
   contactPhone?: string;
+  phoneNumber?: string;
   whatsappNumber?: string;
 }
 
@@ -13,6 +14,7 @@ export const DEFAULT_SETTINGS: GlobalSettings = {
   usdToBifRate: 2850, // Default fallback
   contactEmail: 'contact@elimi.com',
   contactPhone: '+257 79 12 34 56',
+  phoneNumber: '+257 79 12 34 56',
   whatsappNumber: '25779123456',
 };
 

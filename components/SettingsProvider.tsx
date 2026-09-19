@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import {
   GlobalSettings,
   DEFAULT_SETTINGS,
@@ -68,17 +68,22 @@ export function useSettings() {
 export function useCurrency() {
   const settings = useSettings();
   
-  const toBIF = (usdValue: number) => {
+  const toBIF = useCallback((usdValue: number) => {
     return Math.round(usdValue * settings.usdToBifRate);
-  };
+  }, [settings.usdToBifRate]);
   
-  const formatBIF = (usdValue: number) => {
+  const formatBIF = useCallback((usdValue: number) => {
     return toBIF(usdValue).toLocaleString();
-  };
+  }, [toBIF]);
   
-  const formatUSD = (usdValue: number) => {
+  const formatUSD = useCallback((usdValue: number) => {
     return usdValue.toFixed(2);
-  };
+  }, []);
   
-  return { toBIF, formatBIF, formatUSD, usdToBifRate: settings.usdToBifRate };
+  return useMemo(() => ({
+    toBIF,
+    formatBIF,
+    formatUSD,
+    usdToBifRate: settings.usdToBifRate,
+  }), [toBIF, formatBIF, formatUSD, settings.usdToBifRate]);
 }

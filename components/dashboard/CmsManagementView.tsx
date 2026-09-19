@@ -150,7 +150,7 @@ export default function CmsManagementView() {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, pageId: string, sectionIdx: number, field: 'backgroundImage' | 'images') => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, pageId: string, sectionIdx: number, field: 'backgroundImage' | 'images' | 'showcaseImage') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -164,12 +164,24 @@ export default function CmsManagementView() {
         const p = newPages.find(p => p.id === pageId)!;
         if (field === 'backgroundImage') {
           p.sections[sectionIdx].content.backgroundImage = result.url;
+          p.sections[sectionIdx].content.image = result.url;
+        } else if (field === 'showcaseImage') {
+          p.sections[sectionIdx].content.showcaseImage = result.url;
+          p.sections[sectionIdx].content.image = result.url;
         } else if (field === 'images') {
           const currentImages = p.sections[sectionIdx].content.images || [];
           p.sections[sectionIdx].content.images = [...currentImages, result.url];
         }
         setPages(newPages);
-        showToast('Image uploaded successfully!');
+        
+        // Auto-save to Firestore so changes are immediately live on public site
+        try {
+          await saveCmsPageToFirestore(p);
+          showToast('Image uploaded and CMS saved live!', 'success');
+        } catch (fsErr) {
+          console.warn('Auto-save to Firestore:', fsErr);
+          showToast('Image uploaded successfully!', 'success');
+        }
       } else {
         showToast(result.warning || 'Image upload failed', 'error');
       }
@@ -177,6 +189,7 @@ export default function CmsManagementView() {
       showToast('Error uploading image', 'error');
     } finally {
       setIsUploadingImgBB(false);
+      e.target.value = '';
     }
   };
 
@@ -191,7 +204,7 @@ export default function CmsManagementView() {
     if (!file) return;
 
     setIsUploadingImgBB(true);
-    showToast('Uploading file to ImgBB...', 'success');
+    showToast('Uploading file...', 'success');
 
     try {
       const result = await uploadImageSafely(file);
@@ -202,7 +215,15 @@ export default function CmsManagementView() {
           p.sections[sectionIdx].content.items[itemIdx][fieldName] = result.url;
         }
         setPages(newPages);
-        showToast('File uploaded to ImgBB successfully!');
+        
+        // Auto-save to Firestore so changes are immediately live on public site
+        try {
+          await saveCmsPageToFirestore(p);
+          showToast('File uploaded and CMS updated live!', 'success');
+        } catch (fsErr) {
+          console.warn('Auto-save item to Firestore:', fsErr);
+          showToast('File uploaded successfully!', 'success');
+        }
       } else {
         showToast(result.warning || 'Upload failed', 'error');
       }
@@ -333,6 +354,7 @@ export default function CmsManagementView() {
       showToast('Error uploading image', 'error');
     } finally {
       setIsUploadingImgBB(false);
+      e.target.value = '';
     }
   };
 

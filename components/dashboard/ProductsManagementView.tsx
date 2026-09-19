@@ -332,7 +332,11 @@ export default function ProductsManagementView() {
       const res = await uploadImageSafely(file, 'product-main');
       if (res.success && res.url) {
         setFormData((prev) => ({ ...prev, image: res.url }));
-        showToast('Main image uploaded to ImgBB!');
+        if (res.source === 'imgbb') {
+          showToast('Main image uploaded to ImgBB successfully!');
+        } else {
+          showToast('Main image uploaded and saved to storage!', 'success');
+        }
       } else {
         showToast(res.warning || 'Failed to upload image', 'error');
       }
@@ -350,7 +354,7 @@ export default function ProductsManagementView() {
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
-    showToast('Uploading gallery images to ImgBB...', 'info');
+    showToast('Uploading gallery images...', 'info');
     let successCount = 0;
     const newUrls: string[] = [];
     try {
@@ -363,7 +367,7 @@ export default function ProductsManagementView() {
       }
       if (newUrls.length > 0) {
         setFormData((prev) => ({ ...prev, gallery: [...prev.gallery, ...newUrls] }));
-        showToast(`${successCount} gallery image(s) uploaded to ImgBB!`);
+        showToast(`${successCount} gallery image(s) uploaded successfully!`);
       }
     } catch (err: any) {
       showToast(err?.message || 'Error uploading gallery images', 'error');
@@ -517,7 +521,11 @@ export default function ProductsManagementView() {
       const res = await uploadImageSafely(file, 'product-category');
       if (res.success && res.url) {
         setCatFormData((prev) => ({ ...prev, imageUrl: res.url }));
-        showToast('Category image uploaded to ImgBB!');
+        if (res.source === 'imgbb') {
+          showToast('Category image uploaded to ImgBB!');
+        } else {
+          showToast('Category image uploaded and saved to storage!');
+        }
       } else {
         showToast(res.warning || 'Failed to upload image', 'error');
       }
@@ -525,6 +533,7 @@ export default function ProductsManagementView() {
       showToast(err?.message || 'Error uploading image', 'error');
     } finally {
       setIsUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -1378,23 +1387,28 @@ export default function ProductsManagementView() {
                   </label>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100 shrink-0 shadow-xs">
-                    <Image
-                      src={formData.image || '/assets/shop/african-suit.jpg'}
-                      alt="Preview"
-                      fill
-                      unoptimized
-                      referrerPolicy="no-referrer"
-                      className="object-cover"
-                    />
+                  <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100 shrink-0 shadow-xs flex items-center justify-center">
+                    {formData.image ? (
+                      <img
+                        src={formData.image}
+                        alt="Preview"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = '/assets/shop/african-suit.jpg';
+                        }}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="material-symbols-outlined text-zinc-400 text-xl">image</span>
+                    )}
                   </div>
                   <input
                     required
                     value={formData.image}
                     onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="https://..."
+                    placeholder="/uploads/... or https://..."
                     className="flex-1 h-9 px-3 rounded-lg border border-zinc-200 bg-white font-mono text-xs text-zinc-900 focus:outline-none focus:border-blue-500 shadow-xs"
-                    type="url"
+                    type="text"
                   />
                 </div>
 
@@ -1422,13 +1436,14 @@ export default function ProductsManagementView() {
                         key={index}
                         className="relative w-16 h-16 rounded-lg overflow-hidden border border-zinc-300 bg-zinc-100 group shadow-xs"
                       >
-                        <Image
+                        <img
                           src={imgUrl}
                           alt={`Gallery image ${index + 1}`}
-                          fill
-                          unoptimized
                           referrerPolicy="no-referrer"
-                          className="object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = '/assets/shop/african-suit.jpg';
+                          }}
+                          className="w-full h-full object-cover"
                         />
                         <button
                           type="button"
@@ -1448,7 +1463,7 @@ export default function ProductsManagementView() {
                       onChange={(e) => setFormData({ ...formData, newGalleryUrl: e.target.value })}
                       placeholder="Add another gallery image URL..."
                       className="flex-1 h-8 px-3 rounded-lg border border-zinc-200 bg-white font-mono text-xs text-zinc-900 focus:outline-none focus:border-blue-500"
-                      type="url"
+                      type="text"
                     />
                     <button
                       type="button"

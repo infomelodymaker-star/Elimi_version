@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shirt, Smartphone, ChevronDown, RotateCcw, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -93,27 +93,11 @@ export default function CategorySidebar({
   onResetFilters,
   onCloseMobileFilters,
 }: CategorySidebarProps) {
-  // Track open accordion state per category ID
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
-    Fashion: selectedCategory === 'Fashion' || selectedCategory === 'All',
-    Electronics: selectedCategory === 'Electronics',
-    Cultural: selectedCategory === 'Cultural',
-    'Nails & Beauty': selectedCategory === 'Nails & Beauty',
-  });
-
-  const [prevCategory, setPrevCategory] = useState(selectedCategory);
-  if (prevCategory !== selectedCategory) {
-    setPrevCategory(selectedCategory);
-    if (selectedCategory && selectedCategory !== 'All') {
-      setOpenCategories((prev) => ({
-        ...prev,
-        [selectedCategory]: true,
-      }));
-    }
-  }
+  // Track manually collapsed categories (by default, active category is open)
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
 
   const toggleAccordion = (catId: string) => {
-    setOpenCategories((prev) => ({
+    setCollapsedCategories((prev) => ({
       ...prev,
       [catId]: !prev[catId],
     }));
@@ -125,9 +109,10 @@ export default function CategorySidebar({
       if (setSelectedSubCategory) {
         setSelectedSubCategory('All');
       }
-      setOpenCategories((prev) => ({
+      // Ensure the newly selected category is expanded
+      setCollapsedCategories((prev) => ({
         ...prev,
-        [catId]: true,
+        [catId]: false,
       }));
       onCloseMobileFilters?.();
     } else {
@@ -188,7 +173,10 @@ export default function CategorySidebar({
         <div className="space-y-1.5">
           {CATEGORY_ITEMS.map((cat) => {
             const isCategorySelected = selectedCategory === cat.id;
-            const isOpen = !!openCategories[cat.id];
+            const isManuallyCollapsed = Boolean(collapsedCategories[cat.id]);
+            const isOpen = isCategorySelected || (selectedCategory === 'All' && cat.id === 'Fashion')
+              ? !isManuallyCollapsed
+              : !isManuallyCollapsed && Boolean(collapsedCategories[cat.id] === false);
 
             return (
               <div key={cat.id} className="rounded-xl overflow-hidden">

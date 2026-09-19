@@ -370,7 +370,7 @@ export async function updateCarInFirestore(
 ): Promise<void> {
   // 1. Immediately update local storage
   const current = getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS);
-  const existing = current.find((c) => c.id === carId) || SAMPLE_CARS.find((c) => c.id === carId) || { id: carId, title: '', description: '', price: 0, sales: true, rent: false, photos: [] } as Car;
+  const existing = current.find((c) => c.id === carId) || SAMPLE_CARS.find((c) => c.id === carId) || ({ id: carId, title: '', description: '', price: 0, sales: true, rent: false, photos: [] } as unknown as Car);
   const cleanedUpdates: Car = removeUndefinedFields({
     ...existing,
     ...updates,

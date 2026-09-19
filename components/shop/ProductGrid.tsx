@@ -92,9 +92,19 @@ export default function ProductGrid({
   }, [showMobileFilters]);
 
   // Infinite Scroll pagination states
-  const [visibleCount, setVisibleCount] = useState<number>(8);
+  const [extraItemsLoaded, setExtraItemsLoaded] = useState<number>(0);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const observerRef = useRef<HTMLDivElement | null>(null);
+
+  // Compute pagination key based on filters to automatically derive base items count
+  const filterKey = `${searchQuery}-${selectedCategory}-${selectedSubCategory}-${maxPrice}-${stockLocation}-${sortBy}`;
+  const [prevFilterKey, setPrevFilterKey] = useState<string>(filterKey);
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
+    setExtraItemsLoaded(0);
+  }
+
+  const visibleCount = 8 + extraItemsLoaded;
 
   const handleResetFilters = () => {
     setSelectedCategory('All');
@@ -102,7 +112,7 @@ export default function ProductGrid({
     setMaxPrice(2500000);
     setCurrency('BIF');
     setStockLocation('All Locations');
-    setVisibleCount(8);
+    setExtraItemsLoaded(0);
   };
 
   const toggleFavorite = (e: React.MouseEvent, id: string) => {
@@ -149,15 +159,6 @@ export default function ProductGrid({
     });
   }, [realtimeProducts, searchQuery, selectedCategory, selectedSubCategory, maxPrice, stockLocation, sortBy, toBIF]);
 
-  // Reset visible count during render when filters or search query change
-  const filterKey = `${searchQuery}-${selectedCategory}-${selectedSubCategory}-${maxPrice}-${stockLocation}-${sortBy}-${realtimeProducts.length}`;
-  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
-
-  if (prevFilterKey !== filterKey) {
-    setPrevFilterKey(filterKey);
-    setVisibleCount(8);
-  }
-
   // Infinite scroll intersection observer effect
   useEffect(() => {
     const observerElement = observerRef.current;
@@ -169,7 +170,7 @@ export default function ProductGrid({
         if (first.isIntersecting && !isLoadingMore && visibleCount < filteredProducts.length) {
           setIsLoadingMore(true);
           setTimeout(() => {
-            setVisibleCount((prev) => Math.min(prev + 4, filteredProducts.length));
+            setExtraItemsLoaded((prev) => prev + 4);
             setIsLoadingMore(false);
           }, 500);
         }

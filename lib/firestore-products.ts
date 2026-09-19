@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   collection,
   doc,
@@ -536,6 +536,11 @@ export function useRealtimeProductReviews(
   productId: string,
   initialFallbackReviews: ProductReview[] = []
 ) {
+  const fallbackRef = useRef(initialFallbackReviews);
+  useEffect(() => {
+    fallbackRef.current = initialFallbackReviews;
+  }, [initialFallbackReviews]);
+
   const [reviews, setReviews] = useState<ProductReview[]>(initialFallbackReviews);
   const [loading, setLoading] = useState<boolean>(Boolean(productId));
   const [isLive, setIsLive] = useState<boolean>(false);
@@ -552,23 +557,23 @@ export function useRealtimeProductReviews(
           if (Array.isArray(data.reviews) && data.reviews.length > 0) {
             setReviews(data.reviews);
           } else {
-            setReviews(initialFallbackReviews);
+            setReviews(fallbackRef.current);
           }
           setIsLive(true);
         } else {
-          setReviews(initialFallbackReviews);
+          setReviews(fallbackRef.current);
         }
         setLoading(false);
       },
       (err) => {
         console.warn('Firestore reviews listener fallback:', err);
-        setReviews(initialFallbackReviews);
+        setReviews(fallbackRef.current);
         setLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [productId, initialFallbackReviews]);
+  }, [productId]);
 
   const stats = calculateReviewStats(reviews);
 

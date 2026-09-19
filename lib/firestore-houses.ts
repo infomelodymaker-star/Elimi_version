@@ -365,7 +365,7 @@ export async function updateHouseInFirestore(
 ): Promise<void> {
   // 1. Immediately update local storage
   const current = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
-  const existing = current.find((h) => h.id === houseId) || SAMPLE_HOUSES.find((h) => h.id === houseId) || { id: houseId, title: '', description: '', price: 0, sales: true, rent: false, photos: [] } as House;
+  const existing = current.find((h) => h.id === houseId) || SAMPLE_HOUSES.find((h) => h.id === houseId) || ({ id: houseId, title: '', description: '', price: 0, sales: true, rent: false, photos: [] } as unknown as House);
   const cleanedUpdates: House = removeUndefinedFields({
     ...existing,
     ...updates,

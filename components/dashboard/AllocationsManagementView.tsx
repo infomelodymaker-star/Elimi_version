@@ -1045,9 +1045,24 @@ export default function AllocationsManagementView() {
                   <div className="text-[11px] font-semibold text-zinc-600 mb-1">
                     Primary Cover Photo
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100 shrink-0 flex items-center justify-center shadow-2xs">
+                      {itemFormData.imageUrl ? (
+                        <img
+                          src={itemFormData.imageUrl}
+                          alt="Cover preview"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=400';
+                          }}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="material-symbols-outlined text-zinc-400 text-lg">image</span>
+                      )}
+                    </div>
                     <input
-                      type="url"
+                      type="text"
                       value={itemFormData.imageUrl}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -1057,10 +1072,10 @@ export default function AllocationsManagementView() {
                           gallery: val && !itemFormData.gallery.includes(val) ? [val, ...itemFormData.gallery] : itemFormData.gallery,
                         });
                       }}
-                      placeholder="https://i.ibb.co/... or image URL"
-                      className="flex-1 px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none bg-white text-xs"
+                      placeholder="/uploads/... or image URL"
+                      className="flex-1 px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none bg-white text-xs font-mono"
                     />
-                    <label className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer shrink-0 flex items-center gap-1.5 shadow-xs transition-colors">
+                    <label className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer shrink-0 flex items-center gap-1.5 shadow-xs transition-colors text-xs">
                       <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
                       <span>{isUploading ? 'Uploading...' : 'Upload Cover'}</span>
                       <input
@@ -1097,7 +1112,7 @@ export default function AllocationsManagementView() {
                   {/* Add photo by direct URL */}
                   <div className="flex gap-2">
                     <input
-                      type="url"
+                      type="text"
                       value={newGalleryPhotoUrl}
                       onChange={(e) => setNewGalleryPhotoUrl(e.target.value)}
                       onKeyDown={(e) => {
@@ -1326,11 +1341,11 @@ export default function AllocationsManagementView() {
                 </label>
                 <div className="flex gap-2">
                   <input
-                    type="url"
+                    type="text"
                     value={catFormData.imageUrl}
                     onChange={(e) => setCatFormData({ ...catFormData, imageUrl: e.target.value })}
-                    placeholder="https://images.unsplash.com/..."
-                    className="flex-1 px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none"
+                    placeholder="/uploads/... or https://..."
+                    className="flex-1 px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none font-mono text-xs"
                   />
                   <label className="px-4 py-2 rounded-full bg-[#0B57FF] hover:bg-[#0B57FF]/90 text-white font-semibold cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm shadow-[#0B57FF]/20 transition-all">
                     <span className="material-symbols-outlined text-[16px]">cloud_upload</span>

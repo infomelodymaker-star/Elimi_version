@@ -9,7 +9,7 @@
 export interface UploadResult {
   success: boolean;
   url: string;
-  source: 'imgbb' | 'fallback';
+  source: 'imgbb' | 'local' | 'fallback';
   warning?: string;
 }
 
@@ -131,7 +131,8 @@ export async function uploadImageSafely(file: File, namePrefix = 'upload'): Prom
       return {
         success: true,
         url: json.url,
-        source: 'imgbb',
+        source: json.source === 'imgbb' ? 'imgbb' : 'local',
+        warning: json.warning,
       };
     }
 

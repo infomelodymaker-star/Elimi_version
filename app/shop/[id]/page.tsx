@@ -69,6 +69,19 @@ import {
 import ElimiHeader from '@/components/ElimiHeader';
 import { useCurrency, useSettings } from '@/components/SettingsProvider';
 
+const DEFAULT_FALLBACK_REVIEWS: ProductReview[] = [
+  {
+    id: 'r-default',
+    author: 'Alex Mathio',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    date: '13 Oct 2024',
+    rating: 5,
+    comment:
+      "NextGen's dedication to sustainability and ethical practices resonates strongly with today's consumers, positioning the brand as a responsible choice in the fashion world.",
+    verified: true,
+  },
+];
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -122,21 +135,8 @@ export default function ProductDetailPage({ params }: PageProps) {
   const [timeLeft, setTimeLeft] = useState({ hours: 2, minutes: 30, seconds: 25 });
 
   // Reviews Carousel & Real-time Reviews State
-  const defaultFallbackReviews: ProductReview[] = [
-    {
-      id: 'r-default',
-      author: 'Alex Mathio',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      date: '13 Oct 2024',
-      rating: 5,
-      comment:
-        "NextGen's dedication to sustainability and ethical practices resonates strongly with today's consumers, positioning the brand as a responsible choice in the fashion world.",
-      verified: true,
-    },
-  ];
-
   const initialProductReviews =
-    product.reviews && product.reviews.length > 0 ? product.reviews : defaultFallbackReviews;
+    product.reviews && product.reviews.length > 0 ? product.reviews : DEFAULT_FALLBACK_REVIEWS;
 
   const {
     reviews: liveReviews,

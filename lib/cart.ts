@@ -81,29 +81,34 @@ export function calculateCartDeliveryFee(cartItems: CartItem[]): DeliveryFeeSumm
 
 const CART_STORAGE_KEY = 'elimi_boutique_cart';
 
-let cachedCart: CartItem[] | null = null;
+const EMPTY_CART: CartItem[] = [];
+let cachedCart: CartItem[] = EMPTY_CART;
 let cachedRaw: string | null = null;
 
 export function getSavedCart(): CartItem[] {
   if (typeof window === 'undefined') {
-    return [];
+    return EMPTY_CART;
   }
   try {
     const raw = localStorage.getItem(CART_STORAGE_KEY);
     if (!raw) {
-      cachedRaw = '';
-      cachedCart = [];
-      return cachedCart;
+      if (cachedRaw === null && cachedCart === EMPTY_CART) {
+        return EMPTY_CART;
+      }
+      cachedRaw = null;
+      cachedCart = EMPTY_CART;
+      return EMPTY_CART;
     }
     if (raw === cachedRaw && cachedCart !== null) {
       return cachedCart;
     }
     cachedRaw = raw;
-    cachedCart = JSON.parse(raw);
-    return cachedCart || [];
+    const parsed = JSON.parse(raw);
+    cachedCart = Array.isArray(parsed) ? parsed : EMPTY_CART;
+    return cachedCart;
   } catch (err) {
     console.error('Failed to read cart from localStorage', err);
-    return [];
+    return cachedCart || EMPTY_CART;
   }
 }
 
@@ -139,7 +144,10 @@ export function getServerCartCountSnapshot(): number {
 export function saveCart(items: CartItem[]) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    const serialized = JSON.stringify(items);
+    localStorage.setItem(CART_STORAGE_KEY, serialized);
+    cachedRaw = serialized;
+    cachedCart = items;
     window.dispatchEvent(new CustomEvent('elimi-cart-updated', { detail: items }));
   } catch (err) {
     console.error('Failed to write cart to localStorage', err);

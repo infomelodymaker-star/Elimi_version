@@ -40,7 +40,7 @@ export default function ElimiHeader({
       window.addEventListener('elimi-cart-updated', updateCount);
       return () => window.removeEventListener('elimi-cart-updated', updateCount);
     }
-  }, [cartCount]);
+  }, []);
 
   const displayCount = cartCount > 0 ? cartCount : internalCount;
 

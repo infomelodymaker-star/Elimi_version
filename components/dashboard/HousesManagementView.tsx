@@ -1254,13 +1254,14 @@ export default function HousesManagementView() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                     <div className="relative w-20 h-16 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100 shrink-0">
                       {formData.imageUrl ? (
-                        <Image
+                        <img
                           src={formData.imageUrl}
                           alt="Cover Preview"
-                          fill
-                          unoptimized
                           referrerPolicy="no-referrer"
-                          className="object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600';
+                          }}
+                          className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-zinc-400">
@@ -1271,17 +1272,17 @@ export default function HousesManagementView() {
 
                     <div className="flex-1 w-full space-y-2">
                       <input
-                        type="url"
+                        type="text"
                         value={formData.imageUrl}
                         onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                        placeholder="Paste image URL directly or upload via ImgBB..."
-                        className="w-full h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-blue-500"
+                        placeholder="/uploads/... or paste image URL..."
+                        className="w-full h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-blue-500 text-xs font-mono"
                       />
                       <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 text-xs font-medium cursor-pointer transition-colors shadow-2xs">
                         <span className={`material-symbols-outlined text-[16px] ${isUploadingCover ? 'animate-spin' : ''}`}>
                           {isUploadingCover ? 'progress_activity' : 'cloud_upload'}
                         </span>
-                        <span>{isUploadingCover ? 'Uploading to ImgBB...' : 'Upload Cover via ImgBB'}</span>
+                        <span>{isUploadingCover ? 'Uploading...' : 'Upload Cover'}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -1302,7 +1303,7 @@ export default function HousesManagementView() {
                       <span className={`material-symbols-outlined text-[16px] ${isUploadingGallery ? 'animate-spin' : ''}`}>
                         {isUploadingGallery ? 'progress_activity' : 'add_photo_alternate'}
                       </span>
-                      <span>{isUploadingGallery ? 'Uploading to ImgBB...' : 'Upload Photos to ImgBB'}</span>
+                      <span>{isUploadingGallery ? 'Uploading...' : 'Upload Photos'}</span>
                       <input
                         type="file"
                         multiple
@@ -1317,11 +1318,11 @@ export default function HousesManagementView() {
                   {/* Manual add photo url */}
                   <div className="flex gap-2">
                     <input
-                      type="url"
+                      type="text"
                       value={formData.newPhotoUrl}
                       onChange={(e) => setFormData({ ...formData, newPhotoUrl: e.target.value })}
                       placeholder="Add photo by URL..."
-                      className="flex-1 h-8 px-2.5 rounded-lg border border-zinc-200 text-zinc-900 focus:outline-none focus:border-blue-500"
+                      className="flex-1 h-8 px-2.5 rounded-lg border border-zinc-200 text-zinc-900 focus:outline-none focus:border-blue-500 text-xs font-mono"
                     />
                     <button
                       type="button"
@@ -1339,13 +1340,14 @@ export default function HousesManagementView() {
                         key={idx}
                         className="relative group rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100 h-16 shadow-2xs"
                       >
-                        <Image
+                        <img
                           src={url}
                           alt={`Gallery ${idx + 1}`}
-                          fill
-                          unoptimized
                           referrerPolicy="no-referrer"
-                          className="object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600';
+                          }}
+                          className="w-full h-full object-cover"
                         />
                         <button
                           type="button"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useSyncExternalStore } from "react";
+import React, { useState, useSyncExternalStore, useCallback } from "react";
 import ElimiHeader from "@/components/ElimiHeader";
 import ShopHero from "@/components/shop/ShopHero";
 import ProductGrid, {
@@ -33,9 +33,9 @@ export default function ShopPage() {
     getServerCartSnapshot
   );
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = useCallback((product: Product) => {
     addToCart(product, 1);
-  };
+  }, []);
 
   const totalCartCount = cartItems.reduce(
     (acc, item) => acc + item.quantity,

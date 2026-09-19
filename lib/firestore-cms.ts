@@ -3,9 +3,22 @@ import { db } from './firebase';
 import { useState, useEffect } from 'react';
 import { getStoredItems, saveStoredItems, runFirestoreTaskSafe } from './firestore-sync';
 
+export type CmsSectionType =
+  | 'hero'
+  | 'text'
+  | 'gallery'
+  | 'features'
+  | 'services'
+  | 'process'
+  | 'map'
+  | 'cta'
+  | 'policies'
+  | 'videos'
+  | 'products';
+
 export interface CmsSection {
   id: string;
-  type: 'hero' | 'text' | 'gallery' | 'features';
+  type: CmsSectionType;
   content: any;
 }
 
@@ -648,7 +661,7 @@ export const CMS_STORAGE_KEY = 'elimi_cms_pages_storage';
 export const CMS_SYNC_EVENT = 'elimi_sync_cms_pages';
 
 export function useCmsPage(pageId: string) {
-  const [data, setData] = useState<any>(() => {
+  const [data, setData] = useState<CmsPage | null>(() => {
     return INITIAL_CMS_PAGES.find((p) => p.id === pageId) || null;
   });
   const [loading, setLoading] = useState(false);
