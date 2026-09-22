@@ -1075,8 +1075,10 @@ export default function AllocationsManagementView() {
                       placeholder="/uploads/... or image URL"
                       className="flex-1 px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none bg-white text-xs font-mono"
                     />
-                    <label className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer shrink-0 flex items-center gap-1.5 shadow-xs transition-colors text-xs">
-                      <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
+                    <label className={`px-3 py-2 rounded-lg ${isUploading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} text-white font-semibold cursor-pointer shrink-0 flex items-center gap-1.5 shadow-xs transition-colors text-xs`}>
+                      <span className={`material-symbols-outlined text-[16px] ${isUploading ? 'animate-spin' : ''}`}>
+                        {isUploading ? 'progress_activity' : 'cloud_upload'}
+                      </span>
                       <span>{isUploading ? 'Uploading...' : 'Upload Cover'}</span>
                       <input
                         type="file"
@@ -1095,8 +1097,10 @@ export default function AllocationsManagementView() {
                     <span className="text-[11px] font-semibold text-zinc-600">
                       Add Secondary &amp; Gallery Photos
                     </span>
-                    <label className="px-2.5 py-1 rounded-md bg-zinc-200 hover:bg-zinc-300 text-zinc-800 font-medium cursor-pointer shrink-0 flex items-center gap-1 text-[11px] transition-colors">
-                      <span className="material-symbols-outlined text-[14px]">add_photo_alternate</span>
+                    <label className={`px-2.5 py-1 rounded-md ${isUploadingGallery ? 'bg-zinc-300 cursor-not-allowed' : 'bg-zinc-200 hover:bg-zinc-300'} text-zinc-800 font-medium cursor-pointer shrink-0 flex items-center gap-1 text-[11px] transition-colors`}>
+                      <span className={`material-symbols-outlined text-[14px] ${isUploadingGallery ? 'animate-spin' : ''}`}>
+                        {isUploadingGallery ? 'progress_activity' : 'add_photo_alternate'}
+                      </span>
                       <span>{isUploadingGallery ? 'Uploading...' : 'Select multiple photos'}</span>
                       <input
                         type="file"
@@ -1347,8 +1351,10 @@ export default function AllocationsManagementView() {
                     placeholder="/uploads/... or https://..."
                     className="flex-1 px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none font-mono text-xs"
                   />
-                  <label className="px-4 py-2 rounded-full bg-[#0B57FF] hover:bg-[#0B57FF]/90 text-white font-semibold cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm shadow-[#0B57FF]/20 transition-all">
-                    <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
+                  <label className={`px-4 py-2 rounded-full ${isUploading ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#0B57FF] hover:bg-[#0B57FF]/90'} text-white font-semibold cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm shadow-[#0B57FF]/20 transition-all`}>
+                    <span className={`material-symbols-outlined text-[16px] ${isUploading ? 'animate-spin' : ''}`}>
+                      {isUploading ? 'progress_activity' : 'cloud_upload'}
+                    </span>
                     <span>{isUploading ? 'Uploading...' : 'Upload Cover'}</span>
                     <input
                       type="file"

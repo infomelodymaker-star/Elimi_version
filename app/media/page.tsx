@@ -782,7 +782,7 @@ export default function MediaPage() {
                 <div className="relative flex-1 w-full min-h-[280px] sm:min-h-[320px] md:min-h-[360px] lg:min-h-[400px] flex items-center justify-between px-1 sm:px-4 translate-y-[30px] sm:translate-y-0">
                   {/* 1. LEFT COLUMN */}
                   <div className="z-20 space-y-2 text-left max-w-[200px] sm:max-w-[240px] md:max-w-[260px] lg:max-w-[310px] my-auto">
-                    {/* Mini spark doodle on left */}
+                    {/* Mini spark doodle on left - remains visible on all screen sizes */}
                     <div className="inline-block">
                       <svg
                         className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#0B57FF]"
@@ -797,48 +797,48 @@ export default function MediaPage() {
                       </svg>
                     </div>
 
-                    <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed font-normal max-w-prose">
-                      From web development to branding, we deliver innovative
-                      strategies that elevate your brand and drive growth.
-                      Let&apos;s create something exceptional together.
-                    </p>
+                    {/* Hidden on mobile, visible on sm+ screens */}
+                    <div className="hidden sm:block space-y-2">
+                      <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed font-normal max-w-prose">
+                        From web development to branding, we deliver innovative
+                        strategies that elevate your brand and drive growth.
+                        Let&apos;s create something exceptional together.
+                      </p>
 
-                    <div className="relative pt-1">
-                      <button
-                        onClick={() => {
-                          const el = document.getElementById("whats-up-now");
-                          if (el) el.scrollIntoView({ behavior: "smooth" });
-                        }}
-                        className="border border-[#1D4ED8] text-[#0F172A] hover:bg-[#0B57FF] hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition-all cursor-pointer"
-                      >
-                        Innovate Your Brand
-                      </button>
-
-                      {/* Hand-Drawn Looping Arrow Doodle curving toward center */}
-                      <div className="hidden sm:block absolute -right-12 sm:-right-14 top-1 pointer-events-none select-none text-[#0F172A]/70 z-30">
-                        <svg
-                          className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 transform rotate-6"
-                          viewBox="0 0 60 60"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                      <div className="relative pt-1">
+                        <Link
+                          href="/digital-solutions"
+                          className="inline-block border border-[#1D4ED8] text-[#0F172A] hover:bg-[#0B57FF] hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition-all cursor-pointer"
                         >
-                          <path d="M15 12 C 5 28, 12 48, 36 42 C 48 39, 48 20, 36 18 C 24 16, 26 38, 48 46" />
-                          <path d="M42 48 L50 46 L47 38" />
-                        </svg>
+                          Innovate Your Brand
+                        </Link>
+
+                        {/* Hand-Drawn Looping Arrow Doodle curving toward center */}
+                        <div className="hidden sm:block absolute -right-12 sm:-right-14 top-1 pointer-events-none select-none text-[#0F172A]/70 z-30">
+                          <svg
+                            className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 transform rotate-6"
+                            viewBox="0 0 60 60"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M15 12 C 5 28, 12 48, 36 42 C 48 39, 48 20, 36 18 C 24 16, 26 38, 48 46" />
+                            <path d="M42 48 L50 46 L47 38" />
+                          </svg>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* 2. CENTER PRESENTER: Lower z-index (z-10), large size, flush to bottom */}
-                  <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-end z-10 pointer-events-none">
+                  {/* 2. CENTER PRESENTER: Lower z-index (z-10), large size, flush to bottom, shifted down 20px on mobile */}
+                  <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-end z-10 pointer-events-none translate-y-[20px] sm:translate-y-0">
                     {/* Subtle Circular Ring Backdrop behind presenter */}
                     <div className="w-[260px] h-[260px] sm:w-[320px] sm:h-[320px] md:w-[370px] md:h-[370px] lg:w-[460px] lg:h-[460px] xl:w-[520px] xl:h-[520px] rounded-full bg-[#E0EBFF]/50 absolute bottom-0 left-1/2 -translate-x-1/2 -z-10" />
 
-                    {/* Big Host Presenter Image Cutout */}
-                    <div className="relative w-[280px] sm:w-[360px] md:w-[420px] lg:w-[500px] xl:w-[560px] 2xl:w-[600px] h-[280px] sm:h-[350px] md:h-[390px] lg:h-[50vh] xl:h-[54vh] max-h-[520px] flex items-end justify-center">
+                    {/* Big Host Presenter Image Cutout - stretched a little in Y-axis on mobile */}
+                    <div className="relative w-[280px] sm:w-[360px] md:w-[420px] lg:w-[500px] xl:w-[560px] 2xl:w-[600px] h-[280px] sm:h-[350px] md:h-[390px] lg:h-[50vh] xl:h-[54vh] max-h-[520px] flex items-end justify-center origin-bottom scale-y-[1.08] sm:scale-y-100">
                       <Image
                         src="/assets/media/media_hero_presenter.jpg"
                         alt="ELIMI Média Host"
@@ -850,8 +850,8 @@ export default function MediaPage() {
                     </div>
                   </div>
 
-                  {/* 3. DUAL FROSTED PILL CONTROLS */}
-                  <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-30 w-auto">
+                  {/* 3. DUAL FROSTED PILL CONTROLS - shifted down 20px on mobile */}
+                  <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-30 w-auto translate-y-[20px] sm:translate-y-0">
                     <div className="bg-white/95 backdrop-blur-xl p-1.5 rounded-full border border-[#0F172A]/10 shadow-[0px_8px_30px_rgba(15,23,42,0.12)] flex items-center gap-1.5">
                       <button
                         onClick={() => {

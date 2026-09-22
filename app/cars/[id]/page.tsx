@@ -6,7 +6,7 @@ import Link from 'next/link';
 import ElimiHeader from '@/components/ElimiHeader';
 import GoogleLocationMap from '@/components/GoogleLocationMap';
 import ImageLightboxModal from '@/components/ImageLightboxModal';
-import { useRealtimeCars } from '@/lib/firestore-cars';
+import { useRealtimeCar } from '@/lib/firestore-cars';
 import { useSettings } from '@/components/SettingsProvider';
 import {
   Users,
@@ -26,9 +26,8 @@ import {
 export default function CarDetailPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { cars, loading } = useRealtimeCars();
+  const { car, loading } = useRealtimeCar(id);
   const { whatsappNumber, phoneNumber } = useSettings();
-  const car = cars.find((c) => c.id === id);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);

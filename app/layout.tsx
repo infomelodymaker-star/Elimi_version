@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Syne } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css"; // Global styles
-import AIChatAssistant from "@/components/AIChatAssistant";
 import TopProgressBar from "@/components/TopProgressBar";
 import Footer from "@/components/Footer";
 import { SettingsProvider } from "@/components/SettingsProvider";
+import AIChatAssistantWrapper from "@/components/AIChatAssistantWrapper";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -51,7 +51,7 @@ export default function RootLayout({
           </Suspense>
           {children}
           <Footer />
-          <AIChatAssistant />
+          <AIChatAssistantWrapper />
         </SettingsProvider>
       </body>
     </html>

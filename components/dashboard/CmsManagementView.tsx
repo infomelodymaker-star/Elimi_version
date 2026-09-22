@@ -44,7 +44,13 @@ import {
   DollarSign,
   RefreshCw,
   MapPin,
+  Loader2,
+  ChevronUp,
+  ChevronDown,
+  Sliders,
+  ImageIcon,
 } from 'lucide-react';
+import { CmsImagePreview } from './CmsImagePreview';
 
 export default function CmsManagementView() {
   const [activeTab, setActiveTab] = useState<'event-services' | 'pages'>('event-services');
@@ -87,7 +93,32 @@ export default function CmsManagementView() {
     window.addEventListener(CMS_SYNC_EVENT, handleSync);
     window.addEventListener('storage', handleSync);
 
-    // 2. Safe live subscription
+    // 2. Fetch server-side persisted pages on mount
+    fetch('/api/cms')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.success && Array.isArray(json?.pages) && json.pages.length > 0) {
+          const srvMap = new Map<string, CmsPage>();
+          json.pages.forEach((p: CmsPage) => srvMap.set(p.id, p));
+
+          setPages((current) => {
+            const merged = current.map((p) => {
+              const srvDoc = srvMap.get(p.id);
+              if (srvDoc) {
+                const srvTime = srvDoc.lastUpdated ? new Date(srvDoc.lastUpdated).getTime() : 0;
+                const curTime = p.lastUpdated ? new Date(p.lastUpdated).getTime() : 0;
+                if (srvTime >= curTime) return srvDoc;
+              }
+              return p;
+            });
+            saveStoredItems(CMS_STORAGE_KEY, merged);
+            return merged;
+          });
+        }
+      })
+      .catch(() => {});
+
+    // 3. Safe live Firestore subscription with timestamp protection
     let unsubscribe: (() => void) | undefined;
     try {
       unsubscribe = onSnapshot(
@@ -103,6 +134,11 @@ export default function CmsManagementView() {
           const merged: CmsPage[] = INITIAL_CMS_PAGES.map((initPage) => {
             const fsDoc = liveMap.get(initPage.id);
             const localDoc = currentStored.find((p) => p.id === initPage.id);
+            if (fsDoc && localDoc) {
+              const fsTime = fsDoc.lastUpdated ? new Date(fsDoc.lastUpdated).getTime() : 0;
+              const localTime = localDoc.lastUpdated ? new Date(localDoc.lastUpdated).getTime() : 0;
+              return fsTime >= localTime ? fsDoc : localDoc;
+            }
             return fsDoc || localDoc || initPage;
           });
 
@@ -144,43 +180,56 @@ export default function CmsManagementView() {
       showToast(`CMS section "${updatedPage.title || pageId}" updated & saved to Firestore!`, 'success');
     } catch (err: any) {
       console.error('Error saving CMS page to Firestore:', err);
-      showToast(`Error saving to Firestore: ${err?.message || 'Check database connection'}`, 'error');
+      showToast(`Saved locally & to server storage (${err?.message || 'Firestore offline'})`, 'success');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, pageId: string, sectionIdx: number, field: 'backgroundImage' | 'images' | 'showcaseImage') => {
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    pageId: string,
+    sectionIdx: number,
+    field: string
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploadingImgBB(true);
-    showToast('Uploading image...', 'success');
+    showToast('Uploading image to ImgBB & local storage...', 'success');
     
     try {
       const result = await uploadImageSafely(file);
       if (result.success && result.url) {
         const newPages = [...pages];
-        const p = newPages.find(p => p.id === pageId)!;
-        if (field === 'backgroundImage') {
+        const p = newPages.find((page) => page.id === pageId)!;
+        
+        if (field === 'backgroundImage' || field === 'showcaseImage') {
           p.sections[sectionIdx].content.backgroundImage = result.url;
-          p.sections[sectionIdx].content.image = result.url;
-        } else if (field === 'showcaseImage') {
           p.sections[sectionIdx].content.showcaseImage = result.url;
           p.sections[sectionIdx].content.image = result.url;
+        } else if (field === 'mainImage') {
+          p.sections[sectionIdx].content.mainImage = result.url;
+        } else if (field === 'secondaryImage') {
+          p.sections[sectionIdx].content.secondaryImage = result.url;
         } else if (field === 'images') {
           const currentImages = p.sections[sectionIdx].content.images || [];
           p.sections[sectionIdx].content.images = [...currentImages, result.url];
+        } else {
+          p.sections[sectionIdx].content[field] = result.url;
         }
+
+        p.lastUpdated = new Date().toISOString();
         setPages(newPages);
+        saveStoredItems(CMS_STORAGE_KEY, newPages);
         
-        // Auto-save to Firestore so changes are immediately live on public site
+        // Auto-save to Firestore & server store so changes persist immediately
         try {
           await saveCmsPageToFirestore(p);
           showToast('Image uploaded and CMS saved live!', 'success');
         } catch (fsErr) {
-          console.warn('Auto-save to Firestore:', fsErr);
-          showToast('Image uploaded successfully!', 'success');
+          console.warn('Auto-save note:', fsErr);
+          showToast('Image uploaded and saved to server storage!', 'success');
         }
       } else {
         showToast(result.warning || 'Image upload failed', 'error');
@@ -204,31 +253,71 @@ export default function CmsManagementView() {
     if (!file) return;
 
     setIsUploadingImgBB(true);
-    showToast('Uploading file...', 'success');
+    showToast('Uploading item file...', 'success');
 
     try {
       const result = await uploadImageSafely(file);
       if (result.success && result.url) {
         const newPages = [...pages];
-        const p = newPages.find((p) => p.id === pageId)!;
+        const p = newPages.find((page) => page.id === pageId)!;
         if (p.sections[sectionIdx]?.content?.items?.[itemIdx]) {
           p.sections[sectionIdx].content.items[itemIdx][fieldName] = result.url;
+          p.lastUpdated = new Date().toISOString();
+          setPages(newPages);
+          saveStoredItems(CMS_STORAGE_KEY, newPages);
+
+          try {
+            await saveCmsPageToFirestore(p);
+            showToast('Item file uploaded & saved!', 'success');
+          } catch {
+            showToast('Item file saved to server storage!', 'success');
+          }
+        }
+      } else {
+        showToast(result.warning || 'Item file upload failed', 'error');
+      }
+    } catch {
+      showToast('Error uploading item file', 'error');
+    } finally {
+      setIsUploadingImgBB(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleSlideImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    pageId: string,
+    sectionIdx: number,
+    slideIdx: number
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImgBB(true);
+    showToast('Uploading slide image to ImgBB...', 'success');
+
+    try {
+      const result = await uploadImageSafely(file);
+      if (result.success && result.url) {
+        const newPages = [...pages];
+        const p = newPages.find((page) => page.id === pageId)!;
+        if (p.sections[sectionIdx]?.content?.slides?.[slideIdx]) {
+          p.sections[sectionIdx].content.slides[slideIdx].imageUrl = result.url;
         }
         setPages(newPages);
-        
-        // Auto-save to Firestore so changes are immediately live on public site
+
         try {
           await saveCmsPageToFirestore(p);
-          showToast('File uploaded and CMS updated live!', 'success');
+          showToast('Slide image uploaded and CMS updated live!', 'success');
         } catch (fsErr) {
-          console.warn('Auto-save item to Firestore:', fsErr);
-          showToast('File uploaded successfully!', 'success');
+          console.warn('Auto-save slide to Firestore:', fsErr);
+          showToast('Slide image uploaded successfully!', 'success');
         }
       } else {
         showToast(result.warning || 'Upload failed', 'error');
       }
     } catch {
-      showToast('Error uploading file', 'error');
+      showToast('Error uploading slide image', 'error');
     } finally {
       setIsUploadingImgBB(false);
       e.target.value = '';
@@ -676,15 +765,15 @@ export default function CmsManagementView() {
                                 <label className="block text-xs font-medium text-zinc-600">
                                   {section.content.showcaseImage !== undefined ? 'Showcase / Hero Image URL' : 'Background Image URL'}
                                 </label>
-                                <div className="relative overflow-hidden cursor-pointer flex items-center gap-1 text-[10px] font-semibold bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 transition-colors">
-                                  <Upload className="w-3.5 h-3.5" />
-                                  <span>Upload</span>
+                                <div className={`relative overflow-hidden cursor-pointer flex items-center gap-1 text-[10px] font-semibold ${isUploadingImgBB ? 'bg-blue-100 text-blue-400 cursor-not-allowed' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'} px-2 py-1 rounded transition-colors`}>
+                                  {isUploadingImgBB ? <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" /> : <Upload className="w-3.5 h-3.5" />}
+                                  <span>{isUploadingImgBB ? 'Uploading...' : 'Upload'}</span>
                                   <input
                                     type="file"
                                     accept="image/*"
                                     onChange={(e) => handleImageUpload(e, page.id, idx, section.content.showcaseImage !== undefined ? 'showcaseImage' : 'backgroundImage')}
                                     disabled={isUploadingImgBB}
-                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                    className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
                                   />
                                 </div>
                               </div>
@@ -707,18 +796,324 @@ export default function CmsManagementView() {
                               />
                               {/* Live Image Preview */}
                               {(section.content.showcaseImage || section.content.backgroundImage || section.content.image) && (
-                                <div className="mt-2 relative rounded-lg border border-zinc-200 overflow-hidden bg-zinc-100 max-w-sm h-32 flex items-center justify-center">
-                                  <img
-                                    src={section.content.showcaseImage || section.content.backgroundImage || section.content.image}
-                                    alt="Hero Preview"
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      (e.target as HTMLElement).style.display = 'none';
+                                <div className="mt-2 max-w-md">
+                                  <CmsImagePreview
+                                    url={section.content.showcaseImage || section.content.backgroundImage || section.content.image || ''}
+                                    label="Hero / Showcase"
+                                    heightClass="h-40"
+                                    onApplyDirectUrl={(directUrl) => {
+                                      const newPages = [...pages];
+                                      const p = newPages.find((pg) => pg.id === page.id)!;
+                                      if (p.sections[idx].content.showcaseImage !== undefined) {
+                                        p.sections[idx].content.showcaseImage = directUrl;
+                                      } else {
+                                        p.sections[idx].content.backgroundImage = directUrl;
+                                        p.sections[idx].content.image = directUrl;
+                                      }
+                                      setPages(newPages);
+                                    }}
+                                    onRemove={() => {
+                                      const newPages = [...pages];
+                                      const p = newPages.find((pg) => pg.id === page.id)!;
+                                      if (p.sections[idx].content.showcaseImage !== undefined) {
+                                        p.sections[idx].content.showcaseImage = '';
+                                      }
+                                      p.sections[idx].content.backgroundImage = '';
+                                      p.sections[idx].content.image = '';
+                                      setPages(newPages);
                                     }}
                                   />
                                 </div>
                               )}
                             </div>
+
+                            {/* HERO CAROUSEL SLIDES (For Allocations & Multi-Slide Pages) */}
+                            {(page.id === 'allocations' || section.content.slides !== undefined) && (
+                              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200">
+                                  <div>
+                                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                      <Sliders className="w-4 h-4 text-blue-600" />
+                                      <span>Hero Carousel Slides ({section.content.slides?.length || 0})</span>
+                                    </h4>
+                                    <p className="text-xs text-slate-500">
+                                      Gérez les diapositives, images et boutons du carrousel de la page Allocations.
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newPages = [...pages];
+                                        const p = newPages.find(p => p.id === page.id)!;
+                                        const currentSlides = p.sections[idx].content.slides || [];
+                                        const newSlide = {
+                                          id: `slide-${Date.now()}`,
+                                          title: 'Tenues de bureau',
+                                          subtitle: 'Costumes modernes, tailleurs fluides et chemises structurées pour vos rendez-vous.',
+                                          buttonText: 'Découvrir la sélection',
+                                          buttonLink: '#catalog-section',
+                                          imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1920',
+                                        };
+                                        p.sections[idx].content.slides = [...currentSlides, newSlide];
+                                        setPages(newPages);
+                                        showToast('Nouvelle slide ajoutée !', 'success');
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs cursor-pointer"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>Ajouter une slide</span>
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Autoplay speed */}
+                                <div className="flex items-center gap-3 bg-white p-2.5 rounded-lg border border-slate-200">
+                                  <span className="text-xs font-medium text-slate-700">Intervalle de défilement (ms) :</span>
+                                  <input
+                                    type="number"
+                                    min="2000"
+                                    max="20000"
+                                    step="500"
+                                    value={section.content.autoPlayInterval || 5000}
+                                    onChange={(e) => {
+                                      const newPages = [...pages];
+                                      const p = newPages.find(p => p.id === page.id)!;
+                                      p.sections[idx].content.autoPlayInterval = parseInt(e.target.value, 10) || 5000;
+                                      setPages(newPages);
+                                    }}
+                                    className="w-24 text-xs p-1.5 border border-slate-200 rounded font-mono"
+                                  />
+                                  <span className="text-[11px] text-slate-500">
+                                    ({((section.content.autoPlayInterval || 5000) / 1000).toFixed(1)} secondes par slide)
+                                  </span>
+                                </div>
+
+                                {/* Slides List */}
+                                <div className="space-y-3">
+                                  {(section.content.slides || []).map((slide: any, sIdx: number) => (
+                                    <div
+                                      key={slide.id || sIdx}
+                                      className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3"
+                                    >
+                                      {/* Slide Header */}
+                                      <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                                        <div className="flex items-center gap-2.5">
+                                          <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">
+                                            {sIdx + 1}
+                                          </span>
+                                          <span className="text-xs font-bold text-slate-800 truncate max-w-[200px] sm:max-w-xs">
+                                            {slide.title || `Slide #${sIdx + 1}`}
+                                          </span>
+                                          {slide.badge && (
+                                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-semibold text-slate-600">
+                                              {slide.badge}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        <div className="flex items-center gap-1">
+                                          {/* Move Up */}
+                                          <button
+                                            type="button"
+                                            disabled={sIdx === 0}
+                                            onClick={() => {
+                                              if (sIdx === 0) return;
+                                              const newPages = [...pages];
+                                              const p = newPages.find(p => p.id === page.id)!;
+                                              const slides = [...p.sections[idx].content.slides];
+                                              const temp = slides[sIdx];
+                                              slides[sIdx] = slides[sIdx - 1];
+                                              slides[sIdx - 1] = temp;
+                                              p.sections[idx].content.slides = slides;
+                                              setPages(newPages);
+                                            }}
+                                            className="p-1 rounded hover:bg-slate-100 text-slate-500 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                                            title="Monter"
+                                          >
+                                            <ChevronUp className="w-4 h-4" />
+                                          </button>
+                                          {/* Move Down */}
+                                          <button
+                                            type="button"
+                                            disabled={sIdx === (section.content.slides.length - 1)}
+                                            onClick={() => {
+                                              if (sIdx >= section.content.slides.length - 1) return;
+                                              const newPages = [...pages];
+                                              const p = newPages.find(p => p.id === page.id)!;
+                                              const slides = [...p.sections[idx].content.slides];
+                                              const temp = slides[sIdx];
+                                              slides[sIdx] = slides[sIdx + 1];
+                                              slides[sIdx + 1] = temp;
+                                              p.sections[idx].content.slides = slides;
+                                              setPages(newPages);
+                                            }}
+                                            className="p-1 rounded hover:bg-slate-100 text-slate-500 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                                            title="Descendre"
+                                          >
+                                            <ChevronDown className="w-4 h-4" />
+                                          </button>
+                                          {/* Delete Slide */}
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const newPages = [...pages];
+                                              const p = newPages.find(p => p.id === page.id)!;
+                                              p.sections[idx].content.slides = p.sections[idx].content.slides.filter((_: any, i: number) => i !== sIdx);
+                                              setPages(newPages);
+                                              showToast('Slide supprimée', 'success');
+                                            }}
+                                            className="p-1 rounded hover:bg-red-50 text-red-600 cursor-pointer"
+                                            title="Supprimer la slide"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      {/* Slide Inputs Grid */}
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        <div>
+                                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                            Titre de la slide (ex: Back to work)
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={slide.title || ''}
+                                            onChange={(e) => {
+                                              const newPages = [...pages];
+                                              const p = newPages.find(p => p.id === page.id)!;
+                                              p.sections[idx].content.slides[sIdx].title = e.target.value;
+                                              setPages(newPages);
+                                            }}
+                                            className="w-full text-xs p-2 border border-slate-200 rounded-md bg-white font-medium"
+                                            placeholder="ex: Back to work"
+                                          />
+                                        </div>
+
+                                        <div>
+                                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                            Badge / Tag (Optionnel)
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={slide.badge || ''}
+                                            onChange={(e) => {
+                                              const newPages = [...pages];
+                                              const p = newPages.find(p => p.id === page.id)!;
+                                              p.sections[idx].content.slides[sIdx].badge = e.target.value;
+                                              setPages(newPages);
+                                            }}
+                                            className="w-full text-xs p-2 border border-slate-200 rounded-md bg-white"
+                                            placeholder="ex: Nouvelle Saison"
+                                          />
+                                        </div>
+
+                                        <div className="sm:col-span-2">
+                                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                            Sous-titre / Description
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={slide.subtitle || ''}
+                                            onChange={(e) => {
+                                              const newPages = [...pages];
+                                              const p = newPages.find(p => p.id === page.id)!;
+                                              p.sections[idx].content.slides[sIdx].subtitle = e.target.value;
+                                              setPages(newPages);
+                                            }}
+                                            className="w-full text-xs p-2 border border-slate-200 rounded-md bg-white"
+                                            placeholder="Description élégante de la collection..."
+                                          />
+                                        </div>
+
+                                        <div>
+                                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                            Texte du Bouton (CTA)
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={slide.buttonText || ''}
+                                            onChange={(e) => {
+                                              const newPages = [...pages];
+                                              const p = newPages.find(p => p.id === page.id)!;
+                                              p.sections[idx].content.slides[sIdx].buttonText = e.target.value;
+                                              setPages(newPages);
+                                            }}
+                                            className="w-full text-xs p-2 border border-slate-200 rounded-md bg-white"
+                                            placeholder="Découvrir le catalogue"
+                                          />
+                                        </div>
+
+                                        <div>
+                                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                            Lien du Bouton
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={slide.buttonLink || ''}
+                                            onChange={(e) => {
+                                              const newPages = [...pages];
+                                              const p = newPages.find(p => p.id === page.id)!;
+                                              p.sections[idx].content.slides[sIdx].buttonLink = e.target.value;
+                                              setPages(newPages);
+                                            }}
+                                            className="w-full text-xs p-2 border border-slate-200 rounded-md bg-white font-mono"
+                                            placeholder="#catalog ou /allocations/..."
+                                          />
+                                        </div>
+
+                                        {/* Image URL & Upload */}
+                                        <div className="sm:col-span-2">
+                                          <div className="flex justify-between items-center mb-1">
+                                            <label className="block text-[11px] font-semibold text-slate-600">
+                                              Image d&apos;arrière-plan de la slide
+                                            </label>
+                                            <div className={`relative overflow-hidden cursor-pointer flex items-center gap-1 text-[10px] font-semibold ${isUploadingImgBB ? 'bg-blue-100 text-blue-400 cursor-not-allowed' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'} px-2 py-0.5 rounded transition-colors`}>
+                                              {isUploadingImgBB ? <Loader2 className="w-3 h-3 animate-spin text-blue-600" /> : <Upload className="w-3 h-3" />}
+                                              <span>{isUploadingImgBB ? 'Envoi...' : 'Uploader image'}</span>
+                                              <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => handleSlideImageUpload(e, page.id, idx, sIdx)}
+                                                disabled={isUploadingImgBB}
+                                                className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                              />
+                                            </div>
+                                          </div>
+                                          <div className="flex gap-2 items-center">
+                                            <input
+                                              type="text"
+                                              value={slide.imageUrl || ''}
+                                              onChange={(e) => {
+                                                const newPages = [...pages];
+                                                const p = newPages.find(p => p.id === page.id)!;
+                                                p.sections[idx].content.slides[sIdx].imageUrl = e.target.value;
+                                                setPages(newPages);
+                                              }}
+                                              className="flex-1 text-xs p-2 border border-slate-200 rounded-md bg-white font-mono"
+                                              placeholder="https://images.unsplash.com/... ou URL image"
+                                            />
+                                            {slide.imageUrl && (
+                                              <div className="w-12 h-9 rounded border border-slate-200 overflow-hidden bg-slate-100 shrink-0">
+                                                <img
+                                                  src={slide.imageUrl}
+                                                  alt={slide.title || 'Slide thumbnail'}
+                                                  className="w-full h-full object-cover"
+                                                  onError={(e) => {
+                                                    (e.target as HTMLElement).style.display = 'none';
+                                                  }}
+                                                />
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
 
                             {/* Background Video URL for Hero */}
                             <div>
@@ -1533,15 +1928,15 @@ export default function CmsManagementView() {
                              <div>
                               <div className="flex justify-between items-center mb-2">
                                 <label className="block text-xs font-medium text-zinc-600">Gallery Images (Comma separated URLs)</label>
-                                <div className="relative overflow-hidden cursor-pointer flex items-center gap-1 text-[10px] font-semibold bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 transition-colors">
-                                  <Upload className="w-3.5 h-3.5" />
-                                  <span>Upload Image</span>
+                                <div className={`relative overflow-hidden cursor-pointer flex items-center gap-1 text-[10px] font-semibold ${isUploadingImgBB ? 'bg-blue-100 text-blue-400 cursor-not-allowed' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'} px-2 py-1 rounded transition-colors`}>
+                                  {isUploadingImgBB ? <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" /> : <Upload className="w-3.5 h-3.5" />}
+                                  <span>{isUploadingImgBB ? 'Uploading...' : 'Upload Image'}</span>
                                   <input
                                     type="file"
                                     accept="image/*"
                                     onChange={(e) => handleImageUpload(e, page.id, idx, 'images')}
                                     disabled={isUploadingImgBB}
-                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                    className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
                                   />
                                 </div>
                               </div>
@@ -1701,26 +2096,36 @@ export default function CmsManagementView() {
                                       }}
                                       className="flex-1 text-xs p-1.5 border border-zinc-200 rounded font-mono"
                                     />
-                                    <label className="relative overflow-hidden cursor-pointer inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-50 text-blue-600 px-2.5 py-1 rounded border border-blue-200 shrink-0">
-                                      <Upload className="w-3 h-3" />
-                                      <span>Upload ImgBB</span>
+                                    <label className={`relative overflow-hidden cursor-pointer inline-flex items-center gap-1 text-[10px] font-semibold ${isUploadingImgBB ? 'bg-blue-100 text-blue-400 cursor-not-allowed' : 'bg-blue-50 text-blue-600'} px-2.5 py-1 rounded border border-blue-200 shrink-0`}>
+                                      {isUploadingImgBB ? <Loader2 className="w-3 h-3 animate-spin text-blue-600" /> : <Upload className="w-3 h-3" />}
+                                      <span>{isUploadingImgBB ? 'Uploading...' : 'Upload ImgBB'}</span>
                                       <input
                                         type="file"
                                         accept="image/*"
                                         onChange={(e) => handleItemFileUpload(e, page.id, idx, itemIdx, 'image')}
-                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        disabled={isUploadingImgBB}
+                                        className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
                                       />
                                     </label>
                                   </div>
 
                                   {item.image && (
-                                    <div className="relative rounded-lg border border-zinc-200 overflow-hidden bg-zinc-100 w-24 h-16 flex items-center justify-center">
-                                      <img
-                                        src={item.image}
-                                        alt={item.title || 'Item preview'}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                          (e.target as HTMLElement).style.display = 'none';
+                                    <div className="mt-2 max-w-xs">
+                                      <CmsImagePreview
+                                        url={item.image}
+                                        label={item.title || 'Item Image'}
+                                        heightClass="h-24"
+                                        onApplyDirectUrl={(directUrl) => {
+                                          const newPages = [...pages];
+                                          const p = newPages.find((pg) => pg.id === page.id)!;
+                                          p.sections[idx].content.items[itemIdx].image = directUrl;
+                                          setPages(newPages);
+                                        }}
+                                        onRemove={() => {
+                                          const newPages = [...pages];
+                                          const p = newPages.find((pg) => pg.id === page.id)!;
+                                          p.sections[idx].content.items[itemIdx].image = '';
+                                          setPages(newPages);
                                         }}
                                       />
                                     </div>
@@ -1856,14 +2261,15 @@ export default function CmsManagementView() {
                                         }}
                                         className="flex-1 text-xs p-1.5 border border-zinc-200 rounded font-mono"
                                       />
-                                      <label className="relative overflow-hidden cursor-pointer inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-200 shrink-0">
-                                        <Upload className="w-3 h-3" />
-                                        <span>ImgBB</span>
+                                      <label className={`relative overflow-hidden cursor-pointer inline-flex items-center gap-1 text-[10px] font-semibold ${isUploadingImgBB ? 'bg-blue-100 text-blue-400 cursor-not-allowed' : 'bg-blue-50 text-blue-600'} px-2 py-1 rounded border border-blue-200 shrink-0`}>
+                                        {isUploadingImgBB ? <Loader2 className="w-3 h-3 animate-spin text-blue-600" /> : <Upload className="w-3 h-3" />}
+                                        <span>{isUploadingImgBB ? 'Uploading...' : 'ImgBB'}</span>
                                         <input
                                           type="file"
                                           accept="image/*"
                                           onChange={(e) => handleItemFileUpload(e, page.id, idx, itemIdx, 'posterUrl')}
-                                          className="absolute inset-0 opacity-0 cursor-pointer"
+                                          disabled={isUploadingImgBB}
+                                          className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
                                         />
                                       </label>
                                     </div>
@@ -1975,15 +2381,15 @@ export default function CmsManagementView() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block font-semibold text-zinc-700">Image URL</label>
-                  <div className="relative overflow-hidden cursor-pointer flex items-center gap-1 text-[11px] font-semibold bg-[#E0EBFF] text-[#0B57FF] px-2.5 py-1 rounded-md hover:bg-blue-100">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Image</span>
+                  <div className={`relative overflow-hidden cursor-pointer flex items-center gap-1 text-[11px] font-semibold ${isUploadingImgBB ? 'bg-blue-100 text-blue-400 cursor-not-allowed' : 'bg-[#E0EBFF] text-[#0B57FF] hover:bg-blue-100'} px-2.5 py-1 rounded-md`}>
+                    {isUploadingImgBB ? <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" /> : <Upload className="w-3.5 h-3.5" />}
+                    <span>{isUploadingImgBB ? 'Uploading...' : 'Upload Image'}</span>
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleServiceImageUpload}
                       disabled={isUploadingImgBB}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>

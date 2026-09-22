@@ -14,12 +14,14 @@ import { db } from '@/lib/firebase';
 const SettingsContext = createContext<GlobalSettings>(DEFAULT_SETTINGS);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<GlobalSettings>(() =>
-    getStoredObject<GlobalSettings>(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS)
-  );
+  const [settings, setSettings] = useState<GlobalSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
-    // 1. Initial values from storage already loaded in useState
+    // 1. Initial values from storage loaded inside queueMicrotask after mount (preventing SSR hydration mismatch)
+    queueMicrotask(() => {
+      const stored = getStoredObject<GlobalSettings>(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS);
+      setSettings(stored);
+    });
     
     // 2. Listen to custom sync events
     const handleSync = () => {

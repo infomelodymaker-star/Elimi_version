@@ -78,7 +78,7 @@ export default function Footer() {
     setIsPoliciesOpen(true);
   };
 
-  const whatsappNum = settings?.whatsappNumber || "25779123456";
+  const whatsappNum = settings?.whatsappNumber || "25769992984";
   const whatsappLink = `https://wa.me/${whatsappNum.replace(/\+/g, "")}`;
 
   const socials = [
@@ -90,17 +90,17 @@ export default function Footer() {
     {
       label: "Facebook",
       icon: "/assets/icons/social/facebook-150x150.png",
-      href: "https://facebook.com/elimiofficiel",
+      href: "https://facebook.com/elimiburundi",
     },
     {
       label: "Instagram",
       icon: "/assets/icons/social/instagram-150x150.png",
-      href: "https://instagram.com/elimiofficiel",
+      href: "https://instagram.com/elimi_burundi",
     },
     {
       label: "YouTube",
       icon: "/assets/icons/social/Youtube.png",
-      href: "https://youtube.com/@elimiofficiel",
+      href: "https://youtube.com/@elimimedia",
     },
   ];
 

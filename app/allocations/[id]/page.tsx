@@ -8,6 +8,7 @@ import ElimiHeader from '@/components/ElimiHeader';
 import RentalLightbox from '@/components/allocations/RentalLightbox';
 import { useSettings } from '@/components/SettingsProvider';
 import {
+  useRealtimeRentalItem,
   useRealtimeRentalItems,
   RentalItem,
 } from '@/lib/firestore-rentals';
@@ -98,13 +99,15 @@ export default function AllocationItemDetailPage() {
   const router = useRouter();
   const itemId = (params?.id as string) || '';
 
-  const { items, loading: loadingItems } = useRealtimeRentalItems();
+  const { item: liveItem, loading: loadingItems } = useRealtimeRentalItem(itemId);
+  const { items } = useRealtimeRentalItems();
   const { whatsappNumber } = useSettings();
 
-  // Find requested item or fallback to first item
+  // Find requested item with fallback if needed
   const item: RentalItem | undefined = useMemo(() => {
-    return items.find((i) => i.id === itemId) || items[0];
-  }, [items, itemId]);
+    if (liveItem) return liveItem;
+    return items.find((i) => i.id === itemId) || (items.length > 0 ? items[0] : undefined);
+  }, [liveItem, items, itemId]);
 
   // Gallery Photos (2x2 grid matching image.png)
   const photos = useMemo(() => {

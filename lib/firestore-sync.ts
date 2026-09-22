@@ -92,3 +92,49 @@ export function runFirestoreTaskSafe<T>(
       });
   });
 }
+
+/**
+ * Persists an item or deletion to the server-side catalog API (/api/catalog).
+ * Guarantees cross-browser and cross-device persistence even if Firestore is offline.
+ */
+export async function syncItemToServerCatalog(
+  collection: string,
+  itemOrId: any,
+  action: 'save' | 'delete' = 'save'
+): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const payload =
+      action === 'delete'
+        ? { collection, action: 'delete', id: typeof itemOrId === 'string' ? itemOrId : itemOrId?.id }
+        : { collection, action: 'save', item: itemOrId };
+
+    await fetch('/api/catalog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (err: any) {
+    console.warn(`Server catalog sync note for ${collection}:`, err?.message || err);
+  }
+}
+
+/**
+ * Fetches the latest collection items from the server-side catalog API.
+ */
+export async function fetchServerCatalog<T>(collection: string): Promise<T[] | null> {
+  if (typeof window === 'undefined') return null;
+  try {
+    const res = await fetch(`/api/catalog?collection=${encodeURIComponent(collection)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data?.items)) {
+        return data.items as T[];
+      }
+    }
+  } catch (err) {
+    console.warn(`Could not fetch server catalog for ${collection}:`, err);
+  }
+  return null;
+}
+

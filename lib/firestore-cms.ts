@@ -16,6 +16,16 @@ export type CmsSectionType =
   | 'videos'
   | 'products';
 
+export interface AllocationHeroSlide {
+  id: string;
+  title: string;
+  subtitle?: string;
+  buttonText?: string;
+  buttonLink?: string;
+  imageUrl: string;
+  badge?: string;
+}
+
 export interface CmsSection {
   id: string;
   type: CmsSectionType;
@@ -257,10 +267,44 @@ export const INITIAL_CMS_PAGES: CmsPage[] = [
         id: 'hero',
         type: 'hero',
         content: {
-          badge: 'VIP Event Rentals & Allocations',
-          headline: 'Elite Event Wardrobe & Tech Allocations',
-          subheadline: 'Rent ceremonial protocol suits, evening gala gowns, sound/lighting gear, and event furniture with concierge delivery.',
-          backgroundImage: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=1600',
+          headline: 'Tenues de bureau',
+          subheadline: 'Découvrez notre nouvelle collection de tenues de bureau, costumes de gala et tenues élégantes.',
+          autoPlayInterval: 5000,
+          slides: [
+            {
+              id: 'slide-1',
+              title: 'Tenues de bureau',
+              subtitle: 'Costumes modernes, tailleurs fluides et chemises structurées pour vos rendez-vous professionnels',
+              buttonText: 'Découvrir la sélection',
+              buttonLink: '#catalog-section',
+              imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1920',
+            },
+            {
+              id: 'slide-2',
+              title: 'Le soir & Gala',
+              subtitle: 'Robes de cocktail spectaculaires, fentes sensuelles et costumes sur-mesure pour vos soirées',
+              buttonText: 'Découvrir la sélection',
+              buttonLink: '#catalog-section',
+              imageUrl: 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?auto=format&fit=crop&q=80&w=1920',
+            },
+            {
+              id: 'slide-3',
+              title: 'Romance bohème',
+              subtitle: 'Coupes fluides, broderies fines et mailles douces pour vos célébrations et événements',
+              buttonText: 'Découvrir la sélection',
+              buttonLink: '#catalog-section',
+              imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1920',
+            },
+            {
+              id: 'slide-4',
+              title: 'Week-end off',
+              subtitle: 'Vestes confortables, pièces décontractées et tenues chics pour vos escapades',
+              buttonText: 'Découvrir la sélection',
+              buttonLink: '#catalog-section',
+              imageUrl: 'https://images.unsplash.com/photo-1508427953056-b00b8d78ebf5?auto=format&fit=crop&q=80&w=1920',
+            },
+          ],
+          backgroundImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1920',
           bannerBadge: 'Concierge Wardrobe & Gear',
           bannerTitle: 'Complete Event Allocation Packages',
           bannerDesc: 'Outfit entire hostesses & protocol teams or rent top-tier audiovisual equipment for international summits.',
@@ -674,6 +718,31 @@ export function useCmsPage(pageId: string) {
       if (cached) setData(cached);
     });
 
+    // 2. Fetch latest from server-side persistence store
+    fetch(`/api/cms/${encodeURIComponent(pageId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.success && json?.page) {
+          const serverPage = json.page as CmsPage;
+          setData((current) => {
+            const curTime = current?.lastUpdated ? new Date(current.lastUpdated).getTime() : 0;
+            const srvTime = serverPage.lastUpdated ? new Date(serverPage.lastUpdated).getTime() : 0;
+            if (srvTime >= curTime) {
+              // Update local cache as well
+              const pages = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
+              const idx = pages.findIndex((p) => p.id === pageId);
+              const updated = [...pages];
+              if (idx >= 0) updated[idx] = serverPage;
+              else updated.push(serverPage);
+              saveStoredItems(CMS_STORAGE_KEY, updated);
+              return serverPage;
+            }
+            return current;
+          });
+        }
+      })
+      .catch(() => {});
+
     const handleSync = () => {
       const updated = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
       const matched = updated.find((p) => p.id === pageId);
@@ -683,14 +752,29 @@ export function useCmsPage(pageId: string) {
     window.addEventListener(CMS_SYNC_EVENT, handleSync);
     window.addEventListener('storage', handleSync);
 
-    // Safe Firestore listener
+    // 3. Safe Firestore live listener with smart timestamp check
     let unsubscribe: (() => void) | undefined;
     try {
       unsubscribe = onSnapshot(
         doc(db, 'cms_pages', pageId),
         (docSnap) => {
           if (docSnap.exists()) {
-            setData(docSnap.data());
+            const fsData = { id: docSnap.id, ...docSnap.data() } as CmsPage;
+            setData((current) => {
+              const curTime = current?.lastUpdated ? new Date(current.lastUpdated).getTime() : 0;
+              const fsTime = fsData.lastUpdated ? new Date(fsData.lastUpdated).getTime() : 0;
+              if (fsTime >= curTime) {
+                // Also update local cache
+                const pages = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
+                const idx = pages.findIndex((p) => p.id === pageId);
+                const updated = [...pages];
+                if (idx >= 0) updated[idx] = fsData;
+                else updated.push(fsData);
+                saveStoredItems(CMS_STORAGE_KEY, updated);
+                return fsData;
+              }
+              return current;
+            });
           }
           setLoading(false);
         },
@@ -733,7 +817,7 @@ export function cleanObjectForFirestore<T extends Record<string, any>>(obj: T): 
 }
 
 /**
- * Saves a CmsPage to localStorage and syncs with Firestore collection 'cms_pages'.
+ * Saves a CmsPage to localStorage, durable server disk storage (/api/cms), and syncs with Firestore collection 'cms_pages'.
  */
 export async function saveCmsPageToFirestore(page: CmsPage): Promise<void> {
   const updatedPage: CmsPage = {
@@ -752,11 +836,22 @@ export async function saveCmsPageToFirestore(page: CmsPage): Promise<void> {
   }
   saveStoredItems(CMS_STORAGE_KEY, newPages, CMS_SYNC_EVENT);
 
-  // 2. Safe background Firestore task
+  // 2. Persist to server store via /api/cms (ensures persistence across browsers and reloads)
+  try {
+    fetch('/api/cms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedPage),
+    }).catch((err) => console.warn('CMS server store sync notice:', err));
+  } catch {
+    // Non-blocking
+  }
+
+  // 3. Safe background Firestore task
   const cleanedData = cleanObjectForFirestore(updatedPage as any);
   await runFirestoreTaskSafe(
     () => setDoc(doc(db, 'cms_pages', updatedPage.id), cleanedData, { merge: true }),
-    3000,
+    4000,
     `Save CMS page ${updatedPage.id}`
   );
 }

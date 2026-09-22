@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Product, ProductReview, BOUTIQUE_PRODUCTS } from './products';
-import { getStoredItems, saveStoredItems, runFirestoreTaskSafe } from './firestore-sync';
+import { getStoredItems, saveStoredItems, runFirestoreTaskSafe, syncItemToServerCatalog, fetchServerCatalog } from './firestore-sync';
 
 export interface ProductCategory {
   id: string;
@@ -184,13 +184,21 @@ export function useRealtimeProducts() {
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
-    // 1. Hydrate from local storage on client mount
+    // 1. Initial stored items loaded after mount to prevent SSR mismatch
     queueMicrotask(() => {
       const initialStored = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
       setProducts(initialStored);
+      
+      // Also fetch latest items from the server-side catalog
+      fetchServerCatalog<Product>('products').then((serverItems) => {
+        if (serverItems && serverItems.length > 0) {
+          saveStoredItems(PRODUCTS_STORAGE_KEY, serverItems);
+          setProducts(serverItems);
+        }
+      }).catch(() => {});
     });
 
-    // 2. Listen to custom sync events
+    // 2. Listen to custom sync events and storage
     const handleSync = () => {
       const updated = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
       setProducts(updated);
@@ -199,7 +207,7 @@ export function useRealtimeProducts() {
     window.addEventListener(PRODUCTS_SYNC_EVENT, handleSync);
     window.addEventListener('storage', handleSync);
 
-    // 2. Optional live subscription to Firestore without blocking the UI
+    // 3. Live subscription to Firestore
     let unsubscribe: (() => void) | undefined;
     try {
       const q = collection(db, PRODUCTS_COLLECTION);
@@ -216,26 +224,23 @@ export function useRealtimeProducts() {
               });
             });
 
-            // Merge with any locally added products
-            const currentStored = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
-            const liveIds = new Set(liveProducts.map((p) => p.id));
-            const locallyAddedOnly = currentStored.filter((p) => !liveIds.has(p.id) && p.id.startsWith('prod-'));
-            const merged = [...liveProducts, ...locallyAddedOnly];
-
-            saveStoredItems(PRODUCTS_STORAGE_KEY, merged);
-            setProducts(merged);
+            saveStoredItems(PRODUCTS_STORAGE_KEY, liveProducts);
+            setProducts(liveProducts);
             setIsLive(true);
+          } else {
+            // If empty in Firestore, trigger background seeding so public catalog is ready
+            seedInitialProductsIfEmpty().catch(() => {});
           }
           setLoading(false);
         },
         (err) => {
-          console.warn('Firestore onSnapshot error (using resilient cache):', err?.message || err);
+          console.warn('Firestore onSnapshot note (using cache):', err?.message || err);
           setProducts(getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS));
           setLoading(false);
         }
       );
     } catch (err: any) {
-      console.warn('Firestore products listener setup fallback:', err);
+      console.warn('Firestore products listener setup note:', err);
     }
 
     return () => {
@@ -259,24 +264,35 @@ export function useRealtimeProducts() {
  * Hook to subscribe in real-time to a single product document by ID.
  */
 export function useRealtimeProduct(productId: string) {
-  const currentProducts = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
-  const defaultFallback =
-    currentProducts.find((p) => p.id === productId) ||
-    BOUTIQUE_PRODUCTS.find((p) => p.id === productId) ||
-    BOUTIQUE_PRODUCTS[0];
-  const [product, setProduct] = useState<Product>(defaultFallback);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [product, setProduct] = useState<Product | null>(() => {
+    if (!productId) return null;
+    return BOUTIQUE_PRODUCTS.find((p) => p.id === productId) || null;
+  });
+  const [loading, setLoading] = useState<boolean>(true);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
     if (!productId) {
+      queueMicrotask(() => {
+        setLoading(false);
+        setProduct(null);
+      });
       return;
     }
 
-    const handleSync = () => {
+    // Check stored items on mount
+    queueMicrotask(() => {
       const stored = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
-      const foundStored = stored.find((p) => p.id === productId);
-      if (foundStored) setProduct(foundStored);
+      const foundStored = stored.find((p) => p.id === productId) || BOUTIQUE_PRODUCTS.find((p) => p.id === productId);
+      if (foundStored) {
+        setProduct(foundStored);
+      }
+    });
+
+    const handleSync = () => {
+      const latestStored = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
+      const matched = latestStored.find((p) => p.id === productId);
+      if (matched) setProduct(matched);
     };
 
     window.addEventListener(PRODUCTS_SYNC_EVENT, handleSync);
@@ -289,11 +305,17 @@ export function useRealtimeProduct(productId: string) {
         docRef,
         (docSnap) => {
           if (docSnap.exists()) {
-            setProduct({
+            const liveDoc = {
               ...(docSnap.data() as Product),
               id: docSnap.id,
-            });
+            };
+            setProduct(liveDoc);
             setIsLive(true);
+          } else {
+            // Check stored or default fallback
+            const latest = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
+            const found = latest.find((p) => p.id === productId) || null;
+            setProduct(found);
           }
           setLoading(false);
         },
@@ -303,10 +325,14 @@ export function useRealtimeProduct(productId: string) {
         }
       );
     } catch {
-      // Keep existing product and loading state
+      queueMicrotask(() => {
+        setLoading(false);
+      });
     }
 
     return () => {
+      window.removeEventListener(PRODUCTS_SYNC_EVENT, handleSync);
+      window.removeEventListener('storage', handleSync);
       if (unsubscribe) unsubscribe();
     };
   }, [productId]);
@@ -343,11 +369,14 @@ export async function addProductToFirestore(product: Product): Promise<void> {
   const updatedList = [cleaned, ...current.filter((p) => p.id !== product.id)];
   saveStoredItems(PRODUCTS_STORAGE_KEY, updatedList, PRODUCTS_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist to server catalog storage (guarantees cross-device persistence)
+  await syncItemToServerCatalog('products', cleaned, 'save');
+
+  // 3. Write to Firestore with safety timeout (never hangs UI)
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, PRODUCTS_COLLECTION, product.id);
     await setDoc(docRef, cleaned);
-  }, 1200, `Add product ${product.id}`);
+  }, 1500, `Add product ${product.id}`);
 }
 
 /**
@@ -373,11 +402,14 @@ export async function updateProductInFirestore(
   }
   saveStoredItems(PRODUCTS_STORAGE_KEY, updatedList, PRODUCTS_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist to server catalog storage
+  await syncItemToServerCatalog('products', cleanedUpdates, 'save');
+
+  // 3. Write to Firestore with safety timeout (never hangs UI)
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, PRODUCTS_COLLECTION, productId);
     await setDoc(docRef, cleanedUpdates, { merge: true });
-  }, 1200, `Update product ${productId}`);
+  }, 1500, `Update product ${productId}`);
 }
 
 /**
@@ -389,11 +421,14 @@ export async function deleteProductFromFirestore(productId: string): Promise<voi
   const updatedList = current.filter((p) => p.id !== productId);
   saveStoredItems(PRODUCTS_STORAGE_KEY, updatedList, PRODUCTS_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist deletion to server catalog storage
+  await syncItemToServerCatalog('products', productId, 'delete');
+
+  // 3. Delete from Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, PRODUCTS_COLLECTION, productId);
     await deleteDoc(docRef);
-  }, 1200, `Delete product ${productId}`);
+  }, 1500, `Delete product ${productId}`);
 }
 
 /**
@@ -615,14 +650,25 @@ export const PRODUCT_CATEGORIES_STORAGE_KEY = 'elimi_product_categories_storage'
 export const PRODUCT_CATEGORIES_SYNC_EVENT = 'elimi_sync_product_categories';
 
 export function useRealtimeProductCategories() {
-  const [categories, setCategories] = useState<ProductCategory[]>(() =>
-    getStoredItems<ProductCategory>(PRODUCT_CATEGORIES_STORAGE_KEY, INITIAL_PRODUCT_CATEGORIES)
-  );
+  const [categories, setCategories] = useState<ProductCategory[]>(INITIAL_PRODUCT_CATEGORIES);
   const [loading, setLoading] = useState<boolean>(false);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
-    // 1. Custom sync event listener
+    // 1. Hydrate from storage on mount
+    queueMicrotask(() => {
+      const stored = getStoredItems<ProductCategory>(PRODUCT_CATEGORIES_STORAGE_KEY, INITIAL_PRODUCT_CATEGORIES);
+      setCategories(stored);
+
+      fetchServerCatalog<ProductCategory>('shop_categories').then((serverCats) => {
+        if (serverCats && serverCats.length > 0) {
+          saveStoredItems(PRODUCT_CATEGORIES_STORAGE_KEY, serverCats);
+          setCategories(serverCats);
+        }
+      }).catch(() => {});
+    });
+
+    // 2. Custom sync event listener
     const handleSync = () => {
       const updated = getStoredItems<ProductCategory>(PRODUCT_CATEGORIES_STORAGE_KEY, INITIAL_PRODUCT_CATEGORIES);
       setCategories(updated);
@@ -631,7 +677,7 @@ export function useRealtimeProductCategories() {
     window.addEventListener(PRODUCT_CATEGORIES_SYNC_EVENT, handleSync);
     window.addEventListener('storage', handleSync);
 
-    // 2. Optional live subscription
+    // 3. Live subscription
     let unsubscribe: (() => void) | undefined;
     try {
       const colRef = collection(db, 'shop_categories');
@@ -645,14 +691,8 @@ export function useRealtimeProductCategories() {
             });
             list.sort((a, b) => (a.order || 999) - (b.order || 999));
 
-            // Merge with local categories
-            const currentStored = getStoredItems<ProductCategory>(PRODUCT_CATEGORIES_STORAGE_KEY, INITIAL_PRODUCT_CATEGORIES);
-            const liveIds = new Set(list.map((c) => c.id));
-            const locallyAddedOnly = currentStored.filter((c) => !liveIds.has(c.id) && c.id.startsWith('cat-'));
-            const merged = [...list, ...locallyAddedOnly];
-
-            saveStoredItems(PRODUCT_CATEGORIES_STORAGE_KEY, merged);
-            setCategories(merged);
+            saveStoredItems(PRODUCT_CATEGORIES_STORAGE_KEY, list);
+            setCategories(list);
             setIsLive(true);
           }
           setLoading(false);
@@ -664,7 +704,7 @@ export function useRealtimeProductCategories() {
         }
       );
     } catch (err) {
-      console.warn('Firestore subscription fallback:', err);
+      console.warn('Firestore subscription note:', err);
     }
 
     return () => {
@@ -692,11 +732,14 @@ export async function addProductCategory(category: Omit<ProductCategory, 'id'> &
   const updatedList = [...current.filter((c) => c.id !== id), cleaned];
   saveStoredItems(PRODUCT_CATEGORIES_STORAGE_KEY, updatedList, PRODUCT_CATEGORIES_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist to server catalog storage
+  await syncItemToServerCatalog('shop_categories', cleaned, 'save');
+
+  // 3. Write to Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'shop_categories', id);
     await setDoc(docRef, cleaned);
-  }, 1200, `Add category ${id}`);
+  }, 1500, `Add category ${id}`);
 
   return id;
 }
@@ -719,11 +762,14 @@ export async function updateProductCategory(id: string, updates: Partial<Product
   }
   saveStoredItems(PRODUCT_CATEGORIES_STORAGE_KEY, updatedList, PRODUCT_CATEGORIES_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist to server catalog storage
+  await syncItemToServerCatalog('shop_categories', cleaned, 'save');
+
+  // 3. Write to Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'shop_categories', id);
     await setDoc(docRef, cleaned, { merge: true });
-  }, 1200, `Update category ${id}`);
+  }, 1500, `Update category ${id}`);
 }
 
 export async function deleteProductCategory(id: string): Promise<void> {
@@ -732,10 +778,13 @@ export async function deleteProductCategory(id: string): Promise<void> {
   const updatedList = current.filter((c) => c.id !== id);
   saveStoredItems(PRODUCT_CATEGORIES_STORAGE_KEY, updatedList, PRODUCT_CATEGORIES_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist deletion to server catalog storage
+  await syncItemToServerCatalog('shop_categories', id, 'delete');
+
+  // 3. Delete from Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'shop_categories', id);
     await deleteDoc(docRef);
-  }, 1200, `Delete category ${id}`);
+  }, 1500, `Delete category ${id}`);
 }
 

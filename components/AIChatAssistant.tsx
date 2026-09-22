@@ -19,6 +19,7 @@ import {
   X,
   Minus,
   Sparkles,
+  Headset,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +38,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { useSettings } from "@/components/SettingsProvider";
 
 export interface ChatMessage {
   id: string;
@@ -87,25 +89,50 @@ const INITIAL_MESSAGES: ChatMessage[] = [
 
 const SUGGESTIONS = [
   "👑 How do I book Protocol VIP hostesses?",
-  "🛍️ What luxury products are in Elimi Shop?",
-  "🖨️ Print roll-up banners & prices",
+  "👗 What gala dresses or suits are available for rent?",
+  "💻 How can Elimi build our mobile app or website?",
   "🚗 How to rent a Mercedes V-Class or Prado?",
-  "🎬 Tell me about Elimi Media YouTube shows",
+  "🛍️ What luxury products are in Elimi Shop?",
+  "🖨️ Print roll-up banners & corporate merchandise",
 ];
 
 const THINKING_STEPS = [
-  "Mapping from ELIMI services...",
-  "Analyzing live data & pricing...",
-  "Cross-referencing catalog availability...",
+  "Analyzing message intent...",
+  "Consulting live database collections...",
   "Synthesizing tailored recommendation...",
 ];
 
 export default function AIChatAssistant() {
+  const settings = useSettings();
   const shouldReduceMotion = useReducedMotion();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [showTooltip, setShowTooltip] = useState<boolean>(true);
   const [inputQuery, setInputQuery] = useState<string>("");
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  const formattedWhatsApp = (settings.whatsappNumber || "25769992984").replace(/[^0-9]/g, "");
+
+  const initialMessagesList: ChatMessage[] = [
+    {
+      id: "welcome-msg",
+      sender: "ai",
+      text: `Muraho! 👋 I am **Monica**, your **ELIMI AI Concierge**.\n\nHow can I assist you today with our luxury services in Burundi?\n\n- 👑 **Protocol Staffing & VIP Escort**\n- 👗 **Allocations & Gala Wardrobe/Gear Rentals**\n- 💻 **Digital Solutions & Web Platforms**\n- 🚗 **Luxury Chauffeured Fleet**\n- 🛍️ **Elimi Boutique & Tech Shop**\n- 🖨️ **Print Banners & Branding**\n- 📞 **Direct WhatsApp Concierge**`,
+      timestamp: "Just now",
+      actions: [
+        { label: "👑 Protocol Hub", href: "/protocol" },
+        { label: "👗 Allocations / Rents", href: "/allocations" },
+        { label: "💻 Digital Solutions", href: "/digital-solutions" },
+        { label: "🚗 Luxury Fleet", href: "/cars" },
+        { label: "🛍️ Shop Boutique", href: "/shop" },
+        { label: "🖨️ Print Solutions", href: "/print" },
+        {
+          label: "💬 WhatsApp Desk",
+          href: `https://wa.me/${formattedWhatsApp}`,
+          isExternal: true,
+        },
+      ],
+    },
+  ];
+
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessagesList);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [thinkingStepIndex, setThinkingStepIndex] = useState<number>(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -478,46 +505,29 @@ export default function AIChatAssistant() {
               </motion.div>
             )}
 
-            {/* Main Floating Trigger Button with ELIMI Logo */}
+            {/* Main Floating Trigger Button with only Headset icon */}
             <motion.button
               id="elimi-ai-chat-trigger"
               type="button"
               onClick={handleOpen}
-              initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0.95, opacity: 0 }}
+              initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={shouldReduceMotion ? { opacity: 0 } : { scale: 0.95, opacity: 0 }}
-              transition={{ duration: shouldReduceMotion ? 0.05 : 0.18, ease: EMIL_EASINGS.easeOut }}
-              whileHover={shouldReduceMotion ? undefined : { scale: 1.03 }}
-              whileTap={shouldReduceMotion ? undefined : { scale: 0.96 }}
-              className="relative flex items-center gap-2.5 bg-[#0D52FF] hover:bg-blue-700 text-white px-4 py-3.5 rounded-full shadow-2xl border border-white/20 active:scale-[0.97] transition-all cursor-pointer group"
-              aria-label="Open Elimi AI assistant (Monica)"
+              exit={shouldReduceMotion ? { opacity: 0 } : { scale: 0.9, opacity: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0.05 : 0.2, ease: EMIL_EASINGS.easeOut }}
+              whileHover={
+                shouldReduceMotion
+                  ? undefined
+                  : {
+                      scale: 1.1,
+                      rotate: [0, -6, 6, 0],
+                      transition: { duration: 0.25 },
+                    }
+              }
+              whileTap={shouldReduceMotion ? undefined : { scale: 0.92 }}
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-[#0B57FF] hover:bg-[#0948D9] text-white shadow-xl shadow-[#0B57FF]/30 border border-white/20 transition-colors duration-200 cursor-pointer"
+              aria-label="Open Monica AI Assistant"
             >
-              {/* ELIMI Logo inside Trigger Button */}
-              <div className="relative w-8 h-8 rounded-full bg-white flex items-center justify-center p-1 border border-white/40 shadow-inner overflow-hidden">
-                <Image
-                  src="/assets/icons/ELIMI_LOGO.svg"
-                  alt="Elimi Logo"
-                  width={24}
-                  height={24}
-                  className="object-contain"
-                  referrerPolicy="no-referrer"
-                />
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-blue-700 animate-pulse" />
-              </div>
-
-              <div className="text-left pr-1">
-                <div className="text-xs font-bold tracking-tight leading-none flex items-center gap-1.5">
-                  <span>Elimi AI assistant</span>
-                  <span className="text-[9px] bg-white/25 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">
-                    Monica
-                  </span>
-                </div>
-                <div className="text-[10px] text-blue-100 font-medium mt-0.5">
-                  24/7 VIP Concierge
-                </div>
-              </div>
-
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300 transition-transform" />
+              <Headset className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
             </motion.button>
           </div>
         )}

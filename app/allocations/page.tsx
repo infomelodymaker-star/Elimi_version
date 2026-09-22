@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useCurrency } from "@/components/SettingsProvider";
 import ElimiHeader from '@/components/ElimiHeader';
 import { useCmsPage } from '@/lib/firestore-cms';
+import AllocationsHeroCarousel, { AllocationSlide } from '@/components/allocations/AllocationsHeroCarousel';
 import {
   useRealtimeRentalCategories,
   useRealtimeRentalItems,
@@ -35,9 +36,11 @@ export default function AllocationsPage() {
   const { data: cmsAllocationsPage } = useCmsPage('allocations');
 
   const heroContent = cmsAllocationsPage?.sections?.find(s => s.id === 'hero' || s.type === 'hero')?.content;
-  const heroBadge = heroContent?.badge || 'Catalogue & Staff à Louer';
-  const heroTitle = heroContent?.title || 'Catalogue de Location';
-  const heroDescription = heroContent?.description || 'Trouvez la tenue idéale, nos équipements de prestige et nos équipes d\'experts pour tous vos événements, galas et séjours d\'exception.';
+  const heroBadge = heroContent?.badge;
+  const heroTitle = heroContent?.headline || heroContent?.title || 'Tenues de bureau';
+  const heroDescription = heroContent?.subheadline || heroContent?.description || 'Costumes modernes, tailleurs fluides et chemises structurées pour une élégance professionnelle affirmée.';
+  const heroSlides = heroContent?.slides as AllocationSlide[] | undefined;
+  const heroAutoPlayInterval = heroContent?.autoPlayInterval || 5000;
 
   // Search & Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -194,37 +197,40 @@ export default function AllocationsPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#F8FAFC] text-slate-900 font-sans flex flex-col justify-between antialiased selection:bg-[#0D52FF] selection:text-white">
-      {/* Platform Header */}
-      <ElimiHeader />
+      {/* Platform Header & Full Width Hero Section */}
+      <div className="relative w-full">
+        {/* Header lies on top of the hero: standard on mobile, transparent on desktop at top, blurry on scroll */}
+        <ElimiHeader
+          transparentOnDesktopTop={true}
+          className="sticky top-0 z-40"
+        />
 
-      {/* Main Container */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-8">
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-          <Link href="/" className="hover:text-slate-700 transition-colors">
-            Accueil
-          </Link>
-          <span>/</span>
-          <span className="text-[#0D52FF]">Autres Locations</span>
+        {/* Full-width Hero Component: 100% full bleed, 0 margin */}
+        <div className="w-full -mt-[60px] sm:-mt-[64px] lg:-mt-[68px]">
+          <AllocationsHeroCarousel
+            slides={heroSlides}
+            autoPlayInterval={heroAutoPlayInterval}
+            fallbackTitle={heroTitle}
+            fallbackSubtitle={heroDescription}
+            fallbackBadge={heroBadge}
+          />
         </div>
+      </div>
 
-        {/* Hero Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-slate-200/80">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#0D52FF] border border-blue-100 mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              {heroBadge}
-            </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
-              {heroTitle}
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600 max-w-2xl mt-1.5">
-              {heroDescription}
-            </p>
+      {/* Main Content Container */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6 sm:space-y-8">
+        {/* Breadcrumb Navigation & Catalog Counter */}
+        <div className="flex items-center justify-between gap-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <div className="flex items-center gap-2">
+            <Link href="/" className="hover:text-slate-700 transition-colors">
+              Accueil
+            </Link>
+            <span>/</span>
+            <span className="text-[#0D52FF] font-bold">Autres Locations</span>
           </div>
 
-          <div className="text-sm font-semibold text-slate-500 whitespace-nowrap">
-            <span className="text-slate-900 font-bold text-lg">{filteredItems.length}</span>{' '}
+          <div className="text-xs font-semibold text-slate-500 whitespace-nowrap hidden sm:block">
+            <span className="text-slate-900 font-bold text-sm">{filteredItems.length}</span>{' '}
             {filteredItems.length > 1 ? 'articles disponibles' : 'article disponible'}
           </div>
         </div>
@@ -232,7 +238,7 @@ export default function AllocationsPage() {
         {/* =========================================================================
             1. FIRST ROW: CATEGORY CHOOSER CAROUSEL (Matching Screenshots & Video)
            ========================================================================= */}
-        <div className="space-y-3 relative group">
+        <div id="catalog-section" className="space-y-3 relative group pt-2 scroll-mt-20">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
               Explorer par catégorie

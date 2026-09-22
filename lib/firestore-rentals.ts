@@ -592,14 +592,18 @@ export const RENTAL_ITEMS_STORAGE_KEY = 'elimi_rental_items_storage';
 export const RENTAL_ITEMS_SYNC_EVENT = 'elimi_sync_rental_items';
 
 export function useRealtimeRentalCategories() {
-  const [categories, setCategories] = useState<RentalCategory[]>(() =>
-    getStoredItems<RentalCategory>(RENTAL_CATEGORIES_STORAGE_KEY, INITIAL_RENTAL_CATEGORIES)
-  );
+  const [categories, setCategories] = useState<RentalCategory[]>(INITIAL_RENTAL_CATEGORIES);
   const [loading, setLoading] = useState<boolean>(false);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
-    // 1. Custom sync event listener
+    // 1. Hydrate storage on mount
+    queueMicrotask(() => {
+      const stored = getStoredItems<RentalCategory>(RENTAL_CATEGORIES_STORAGE_KEY, INITIAL_RENTAL_CATEGORIES);
+      setCategories(stored);
+    });
+
+    // 2. Custom sync event listener
     const handleSync = () => {
       const updated = getStoredItems<RentalCategory>(RENTAL_CATEGORIES_STORAGE_KEY, INITIAL_RENTAL_CATEGORIES);
       setCategories(updated);
@@ -608,7 +612,7 @@ export function useRealtimeRentalCategories() {
     window.addEventListener(RENTAL_CATEGORIES_SYNC_EVENT, handleSync);
     window.addEventListener('storage', handleSync);
 
-    // 2. Optional live subscription
+    // 3. Live subscription
     let unsubscribe: (() => void) | undefined;
     try {
       const colRef = collection(db, 'rental_categories');
@@ -622,25 +626,22 @@ export function useRealtimeRentalCategories() {
             });
             list.sort((a, b) => (a.order || 999) - (b.order || 999));
 
-            const currentStored = getStoredItems<RentalCategory>(RENTAL_CATEGORIES_STORAGE_KEY, INITIAL_RENTAL_CATEGORIES);
-            const liveIds = new Set(list.map((c) => c.id));
-            const locallyAddedOnly = currentStored.filter((c) => !liveIds.has(c.id) && c.id.startsWith('cat-'));
-            const merged = [...list, ...locallyAddedOnly];
-
-            saveStoredItems(RENTAL_CATEGORIES_STORAGE_KEY, merged);
-            setCategories(merged);
+            saveStoredItems(RENTAL_CATEGORIES_STORAGE_KEY, list);
+            setCategories(list);
             setIsLive(true);
+          } else {
+            seedInitialRentalsIfEmpty().catch(() => {});
           }
           setLoading(false);
         },
         (error) => {
-          console.warn('Rental categories snapshot note (using resilient cache):', error?.message || error);
+          console.warn('Rental categories snapshot note (using cache):', error?.message || error);
           setCategories(getStoredItems<RentalCategory>(RENTAL_CATEGORIES_STORAGE_KEY, INITIAL_RENTAL_CATEGORIES));
           setLoading(false);
         }
       );
     } catch (err) {
-      console.warn('Firestore subscription fallback:', err);
+      console.warn('Firestore subscription note:', err);
     }
 
     return () => {
@@ -654,14 +655,18 @@ export function useRealtimeRentalCategories() {
 }
 
 export function useRealtimeRentalItems() {
-  const [items, setItems] = useState<RentalItem[]>(() =>
-    getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS)
-  );
+  const [items, setItems] = useState<RentalItem[]>(INITIAL_RENTAL_ITEMS);
   const [loading, setLoading] = useState<boolean>(false);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
-    // 1. Custom sync event listener
+    // 1. Hydrate storage on mount
+    queueMicrotask(() => {
+      const stored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
+      setItems(stored);
+    });
+
+    // 2. Custom sync event listener
     const handleSync = () => {
       const updated = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
       setItems(updated);
@@ -670,7 +675,7 @@ export function useRealtimeRentalItems() {
     window.addEventListener(RENTAL_ITEMS_SYNC_EVENT, handleSync);
     window.addEventListener('storage', handleSync);
 
-    // 2. Optional live subscription
+    // 3. Live subscription
     let unsubscribe: (() => void) | undefined;
     try {
       const colRef = collection(db, 'rental_items');
@@ -683,25 +688,22 @@ export function useRealtimeRentalItems() {
               list.push({ id: d.id, ...(d.data() as Omit<RentalItem, 'id'>) });
             });
 
-            const currentStored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
-            const liveIds = new Set(list.map((i) => i.id));
-            const locallyAddedOnly = currentStored.filter((i) => !liveIds.has(i.id) && i.id.startsWith('item-'));
-            const merged = [...list, ...locallyAddedOnly];
-
-            saveStoredItems(RENTAL_ITEMS_STORAGE_KEY, merged);
-            setItems(merged);
+            saveStoredItems(RENTAL_ITEMS_STORAGE_KEY, list);
+            setItems(list);
             setIsLive(true);
+          } else {
+            seedInitialRentalsIfEmpty().catch(() => {});
           }
           setLoading(false);
         },
         (error) => {
-          console.warn('Rental items snapshot note (using resilient cache):', error?.message || error);
+          console.warn('Rental items snapshot note (using cache):', error?.message || error);
           setItems(getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS));
           setLoading(false);
         }
       );
     } catch (err) {
-      console.warn('Firestore subscription fallback:', err);
+      console.warn('Firestore subscription note:', err);
     }
 
     return () => {
@@ -712,6 +714,85 @@ export function useRealtimeRentalItems() {
   }, []);
 
   return { items, loading, isLive };
+}
+
+/**
+ * Hook to subscribe in real-time to a single rental item document by ID.
+ */
+export function useRealtimeRentalItem(itemId: string) {
+  const [item, setItem] = useState<RentalItem | null>(() => {
+    if (!itemId) return null;
+    return INITIAL_RENTAL_ITEMS.find((i) => i.id === itemId) || null;
+  });
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isLive, setIsLive] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!itemId) {
+      queueMicrotask(() => {
+        setLoading(false);
+        setItem(null);
+      });
+      return;
+    }
+
+    // Check stored items on mount
+    queueMicrotask(() => {
+      const stored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
+      const foundStored = stored.find((i) => i.id === itemId) || INITIAL_RENTAL_ITEMS.find((i) => i.id === itemId);
+      if (foundStored) {
+        setItem(foundStored);
+      }
+    });
+
+    const handleSync = () => {
+      const latestStored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
+      const matched = latestStored.find((i) => i.id === itemId);
+      if (matched) setItem(matched);
+    };
+
+    window.addEventListener(RENTAL_ITEMS_SYNC_EVENT, handleSync);
+    window.addEventListener('storage', handleSync);
+
+    let unsubscribe: (() => void) | undefined;
+    try {
+      const docRef = doc(db, 'rental_items', itemId);
+      unsubscribe = onSnapshot(
+        docRef,
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const liveDoc = {
+              ...(docSnap.data() as RentalItem),
+              id: docSnap.id,
+            };
+            setItem(liveDoc);
+            setIsLive(true);
+          } else {
+            const latest = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
+            const found = latest.find((i) => i.id === itemId) || null;
+            setItem(found);
+          }
+          setLoading(false);
+        },
+        (err) => {
+          console.warn('Firestore single rental item listener note:', err);
+          setLoading(false);
+        }
+      );
+    } catch {
+      queueMicrotask(() => {
+        setLoading(false);
+      });
+    }
+
+    return () => {
+      window.removeEventListener(RENTAL_ITEMS_SYNC_EVENT, handleSync);
+      window.removeEventListener('storage', handleSync);
+      if (unsubscribe) unsubscribe();
+    };
+  }, [itemId]);
+
+  return { item, loading, isLive };
 }
 
 function removeUndefinedFields<T extends Record<string, any>>(obj: T): T {
@@ -743,11 +824,14 @@ export async function addRentalCategory(category: Omit<RentalCategory, 'id'> & {
   const updatedList = [...current.filter((c) => c.id !== id), cleaned];
   saveStoredItems(RENTAL_CATEGORIES_STORAGE_KEY, updatedList, RENTAL_CATEGORIES_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist to server catalog storage
+  await syncItemToServerCatalog('rental_categories', cleaned, 'save');
+
+  // 3. Write to Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_categories', id);
     await setDoc(docRef, cleaned);
-  }, 1200, `Add rental category ${id}`);
+  }, 1500, `Add rental category ${id}`);
 
   return id;
 }
@@ -770,11 +854,14 @@ export async function updateRentalCategory(id: string, updates: Partial<RentalCa
   }
   saveStoredItems(RENTAL_CATEGORIES_STORAGE_KEY, updatedList, RENTAL_CATEGORIES_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist to server catalog storage
+  await syncItemToServerCatalog('rental_categories', cleaned, 'save');
+
+  // 3. Write to Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_categories', id);
     await setDoc(docRef, cleaned, { merge: true });
-  }, 1200, `Update rental category ${id}`);
+  }, 1500, `Update rental category ${id}`);
 }
 
 export async function deleteRentalCategory(id: string): Promise<void> {
@@ -783,11 +870,14 @@ export async function deleteRentalCategory(id: string): Promise<void> {
   const updatedList = current.filter((c) => c.id !== id);
   saveStoredItems(RENTAL_CATEGORIES_STORAGE_KEY, updatedList, RENTAL_CATEGORIES_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist deletion to server catalog storage
+  await syncItemToServerCatalog('rental_categories', id, 'delete');
+
+  // 3. Delete from Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_categories', id);
     await deleteDoc(docRef);
-  }, 1200, `Delete rental category ${id}`);
+  }, 1500, `Delete rental category ${id}`);
 }
 
 export async function addRentalItem(item: Omit<RentalItem, 'id'> & { id?: string }): Promise<string> {
@@ -805,11 +895,14 @@ export async function addRentalItem(item: Omit<RentalItem, 'id'> & { id?: string
   const updatedList = [cleaned, ...current.filter((i) => i.id !== id)];
   saveStoredItems(RENTAL_ITEMS_STORAGE_KEY, updatedList, RENTAL_ITEMS_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist to server catalog storage
+  await syncItemToServerCatalog('rental_items', cleaned, 'save');
+
+  // 3. Write to Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_items', id);
     await setDoc(docRef, cleaned);
-  }, 1200, `Add rental item ${id}`);
+  }, 1500, `Add rental item ${id}`);
 
   return id;
 }
@@ -832,11 +925,14 @@ export async function updateRentalItem(id: string, updates: Partial<RentalItem>)
   }
   saveStoredItems(RENTAL_ITEMS_STORAGE_KEY, updatedList, RENTAL_ITEMS_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist to server catalog storage
+  await syncItemToServerCatalog('rental_items', cleaned, 'save');
+
+  // 3. Write to Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_items', id);
     await setDoc(docRef, cleaned, { merge: true });
-  }, 1200, `Update rental item ${id}`);
+  }, 1500, `Update rental item ${id}`);
 }
 
 export async function deleteRentalItem(id: string): Promise<void> {
@@ -845,11 +941,14 @@ export async function deleteRentalItem(id: string): Promise<void> {
   const updatedList = current.filter((i) => i.id !== id);
   saveStoredItems(RENTAL_ITEMS_STORAGE_KEY, updatedList, RENTAL_ITEMS_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist deletion to server catalog storage
+  await syncItemToServerCatalog('rental_items', id, 'delete');
+
+  // 3. Delete from Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_items', id);
     await deleteDoc(docRef);
-  }, 1200, `Delete rental item ${id}`);
+  }, 1500, `Delete rental item ${id}`);
 }
 
 export async function seedInitialRentalsIfEmpty(): Promise<boolean> {

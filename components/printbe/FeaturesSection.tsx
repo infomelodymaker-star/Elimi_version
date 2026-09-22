@@ -59,6 +59,8 @@ export default function FeaturesSection({ onLearnMore, content }: FeaturesSectio
                 <img
                   src={mainImg}
                   alt="Custom Box Packaging"
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                   className="w-full h-auto object-cover group-hover:scale-[1.02] transition-transform duration-500"
                 />
               </div>
@@ -68,6 +70,8 @@ export default function FeaturesSection({ onLearnMore, content }: FeaturesSectio
                 <img
                   src={secondaryImg}
                   alt="Packaging Mockups"
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                   className="w-full h-auto object-cover"
                 />
               </div>

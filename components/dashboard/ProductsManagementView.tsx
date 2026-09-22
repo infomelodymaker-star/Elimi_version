@@ -1374,21 +1374,28 @@ export default function ProductsManagementView() {
                   <label className="block text-xs font-medium text-zinc-700">
                     Main Image URL *
                   </label>
-                  <label className="relative overflow-hidden cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded-lg transition-colors border border-blue-200">
-                    <span className="material-symbols-outlined text-[16px]">upload</span>
-                    <span>Upload Image (ImgBB)</span>
+                  <label className={`relative overflow-hidden cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold ${isUploading ? 'bg-blue-100 text-blue-400 cursor-not-allowed' : 'bg-blue-50 hover:bg-blue-100 text-blue-700'} px-3 py-1 rounded-lg transition-colors border border-blue-200`}>
+                    <span className={`material-symbols-outlined text-[16px] ${isUploading ? 'animate-spin text-blue-600' : ''}`}>
+                      {isUploading ? 'progress_activity' : 'cloud_upload'}
+                    </span>
+                    <span>{isUploading ? 'Uploading to ImgBB...' : 'Upload Image (ImgBB)'}</span>
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleUploadMainImage}
                       disabled={isUploading}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
                     />
                   </label>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100 shrink-0 shadow-xs flex items-center justify-center">
-                    {formData.image ? (
+                    {isUploading ? (
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <span className="material-symbols-outlined text-blue-600 text-lg animate-spin">progress_activity</span>
+                        <span className="text-[9px] text-blue-600 font-medium">Uploading</span>
+                      </div>
+                    ) : formData.image ? (
                       <img
                         src={formData.image}
                         alt="Preview"
@@ -1416,16 +1423,18 @@ export default function ProductsManagementView() {
                 <div className="pt-2">
                   <div className="text-[11px] font-medium text-zinc-600 mb-1.5 flex items-center justify-between">
                     <span>Gallery Carousel Images (Used for thumbnail strip on product details page):</span>
-                    <label className="relative overflow-hidden cursor-pointer inline-flex items-center gap-1 text-[11px] font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md transition-colors border border-blue-200">
-                      <span className="material-symbols-outlined text-[14px]">upload</span>
-                      <span>Upload Gallery Photos</span>
+                    <label className={`relative overflow-hidden cursor-pointer inline-flex items-center gap-1 text-[11px] font-semibold ${isUploading ? 'bg-blue-100 text-blue-400 cursor-not-allowed' : 'bg-blue-50 hover:bg-blue-100 text-blue-700'} px-2.5 py-1 rounded-md transition-colors border border-blue-200`}>
+                      <span className={`material-symbols-outlined text-[14px] ${isUploading ? 'animate-spin text-blue-600' : ''}`}>
+                        {isUploading ? 'progress_activity' : 'add_photo_alternate'}
+                      </span>
+                      <span>{isUploading ? 'Uploading Photos...' : 'Upload Gallery Photos'}</span>
                       <input
                         type="file"
                         accept="image/*"
                         multiple
                         onChange={handleUploadGalleryImages}
                         disabled={isUploading}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
                       />
                     </label>
                   </div>
@@ -1672,8 +1681,10 @@ export default function ProductsManagementView() {
                 <label className="block text-xs font-medium text-zinc-700 mb-1">Image URL</label>
                 <div className="flex gap-2">
                   <input type="text" value={catFormData.imageUrl} onChange={(e) => setCatFormData({ ...catFormData, imageUrl: e.target.value })} className="flex-1 w-full h-9 px-3 rounded-lg border border-zinc-200 text-sm" placeholder="https://..." />
-                  <label className="h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold cursor-pointer flex items-center gap-1.5 shadow-sm transition-all whitespace-nowrap">
-                    <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
+                  <label className={`h-9 px-4 rounded-lg ${isUploading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} text-white text-xs font-semibold cursor-pointer flex items-center gap-1.5 shadow-sm transition-all whitespace-nowrap`}>
+                    <span className={`material-symbols-outlined text-[16px] ${isUploading ? 'animate-spin' : ''}`}>
+                      {isUploading ? 'progress_activity' : 'cloud_upload'}
+                    </span>
                     <span>{isUploading ? 'Uploading...' : 'Upload'}</span>
                     <input
                       type="file"

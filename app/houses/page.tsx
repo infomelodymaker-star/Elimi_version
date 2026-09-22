@@ -54,7 +54,7 @@ function HousesContent() {
     setMapZoom(region.zoom);
   };
 
-  const heroImage = heroContent?.image || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1600';
+  const heroImage = heroContent?.image || heroContent?.backgroundImage || heroContent?.showcaseImage || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1600';
   const heroBadge = heroContent?.badge || 'Villas & Penthouses';
   const heroHeadline = heroContent?.headline || 'Let\'s find your perfect fit.';
   const heroSubheadline = heroContent?.subheadline || 'Browse prestige villas, modern apartments, and executive residences for purchase or long-term lease.';

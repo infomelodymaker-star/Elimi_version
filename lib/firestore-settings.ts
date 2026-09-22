@@ -12,10 +12,10 @@ export interface GlobalSettings {
 
 export const DEFAULT_SETTINGS: GlobalSettings = {
   usdToBifRate: 2850, // Default fallback
-  contactEmail: 'contact@elimi.com',
-  contactPhone: '+257 79 12 34 56',
-  phoneNumber: '+257 79 12 34 56',
-  whatsappNumber: '25779123456',
+  contactEmail: 'elimiburundi@gmail.com',
+  contactPhone: '+257 69 99 29 84',
+  phoneNumber: '+257 69 99 29 84',
+  whatsappNumber: '25769992984',
 };
 
 export const SETTINGS_STORAGE_KEY = 'elimi_global_settings_storage';

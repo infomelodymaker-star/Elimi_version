@@ -1,467 +1,541 @@
 /**
  * Comprehensive Knowledge Base & Real-Time Context Engine for ELIMI AI Assistant (Monica).
- * Contains domain knowledge, business models, pricing rules, service tiers, and live Firestore sync.
+ * Features:
+ * 1. Dynamic Contact Information retrieval directly from Firestore 'settings' document.
+ * 2. Intent-Based Context Routing: Analyzes incoming user messages to consult ONLY relevant domain data,
+ *    substantially reducing token usage and boosting response speed.
+ * 3. Real data integration across Allocations/Other Rents, Protocol, Digital Solutions, Luxury Fleet,
+ *    Boutique Products, Residences, Print, and Media.
  */
 
 import { BOUTIQUE_PRODUCTS, Product } from './products';
 import { SAMPLE_CARS, Car } from './firestore-cars';
 import { SAMPLE_HOUSES, House } from './firestore-houses';
-import { MARKET_PRODUCTS } from '../app/media/data';
-import { collection, getDocs } from 'firebase/firestore';
+import { INITIAL_RENTAL_ITEMS, INITIAL_RENTAL_CATEGORIES, RentalItem, RentalCategory } from './firestore-rentals';
+import { INITIAL_EVENT_SERVICES, EventServiceItem } from './firestore-event-services';
+import { DEFAULT_SETTINGS, GlobalSettings } from './firestore-settings';
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 
-export interface BusinessKnowledge {
-  company: {
-    name: string;
-    assistantName: string;
-    tagline: string;
-    location: string;
-    operatingRegions: string[];
-    phone: string;
-    whatsapp: string;
-    email: string;
-    hours: string;
-    currency: {
-      primary: string;
-      secondary: string;
-      exchangeRateNote: string;
-    };
-  };
-  pillars: Record<string, any>;
-  faqAndRules: Record<string, string>;
+export interface DomainIntents {
+  rentals: boolean;          // Allocations, other rents, gala dresses, suits, AV gear, event items
+  protocol: boolean;         // VIP Protocol officers, hostesses, event staffing, summit packages
+  digitalSolutions: boolean; // Mobile apps, web development, custom software, SEO, Google Maps integration
+  cars: boolean;             // Luxury chauffeured fleet, Mercedes V-Class, Prado, Maybach, Escalade
+  houses: boolean;           // High-end villas, apartments, residential real estate for rent/sale
+  products: boolean;         // Boutique shop items, fashion, drones, tech, nail kits, baskets
+  print: boolean;            // Roll-up banners, merchandise, corporate stationery, fast proofing
+  media: boolean;            // YouTube channel @elimimedia, Police Elimi, Muvuto, video productions
+  contact: boolean;          // Contact information, phone, WhatsApp, location, exchange rate
+  isGeneralQuery: boolean;   // Greeting, general overview, or broad multi-service question
 }
 
-export const ELIMI_BUSINESS_KNOWLEDGE: BusinessKnowledge = {
-  company: {
-    name: 'ELIMI Group',
-    assistantName: 'Monica',
-    tagline: 'Your Premier VIP Protocol, E-Commerce, Printing & Digital Media Partner in Burundi',
-    location: 'Bujumbura, Burundi',
-    operatingRegions: ['Bujumbura', 'Gitega', 'Ngozi', 'Kirundo', 'East Africa (EAC)', 'Great Lakes Region'],
-    phone: '+257 64 44 45 46',
-    whatsapp: 'https://wa.me/25764444546 (+257 64 44 45 46)',
-    email: 'elimiofficiel@gmail.com',
-    hours: 'Monday to Friday: 09:00 - 17:00 (24/7 on-call VIP concierge dispatch via WhatsApp)',
-    currency: {
-      primary: 'BIF (Burundian Franc)',
-      secondary: 'USD ($)',
-      exchangeRateNote: 'Approx. 1 USD = 2,900 - 3,000 BIF. Both currencies accepted for all transactions.',
-    },
-  },
-  pillars: {
-    protocolAndMobility: {
-      route: '/protocol',
-      name: 'ELIMI Protocol & VIP Escort Services',
-      description: 'Diplomatic, corporate, and private event protocol staffing, delegation stewardship, and luxury chauffeured fleet.',
-      tiers: [
-        {
-          tier: 'Tier 1: Certified Protocol Officers',
-          role: 'Governance, Diplomatic Precedence & Command',
-          responsibilities: [
-            'State summit & international conference coordination',
-            'Order of precedence for heads of state, ministers, and corporate executives',
-            'National flag & anthem etiquette and dais/podium choreography',
-            'Bilateral treaty and MOU signing ceremony supervision',
-          ],
-        },
-        {
-          tier: 'Tier 2: VIP Hostesses & Escorts',
-          role: 'High-Level Hospitality & Delegation Flow',
-          responsibilities: [
-            'Multilingual welcoming (French, English, Kirundi, Swahili)',
-            'Airport tarmac receiving lines & VIP lounge stewardess service',
-            'Red carpet registration, badge distribution, and reserved seating ushering',
-            'Cocktail gala & banquet table coordination',
-          ],
-        },
-        {
-          tier: 'Tier 3: Floor & Press Marshals',
-          role: 'Operational Security & Media Logistics',
-          responsibilities: [
-            'Crowd dynamics & high-traffic corridor management',
-            'Media pool positioning, press conference staging & microphone coordination',
-            'Motorcade staging and executive vehicle arrival/departure alignment',
-          ],
-        },
-        {
-          tier: 'Tier 4: Ceremonial & Stage Attendants',
-          role: 'Stage Presence & Presentation Logistics',
-          responsibilities: [
-            'White-glove trophy, medal, and plaque handovers',
-            'Ribbon-cutting & ceremonial shears presentation',
-            'Speaker timing cues and rostrum readiness',
-          ],
-        },
-      ],
-      eventSizingPackages: [
-        {
-          name: 'Executive Bilateral Package',
-          recommendedStaff: '4 - 8 specialists',
-          idealFor: 'Diplomatic meetings, executive roundtables, private VIP dinners',
-          fleetOption: '1-2 Mercedes V-Class or Prado escort vehicles',
-        },
-        {
-          name: 'Corporate Summit & Conference Package',
-          recommendedStaff: '12 - 24 specialists',
-          idealFor: 'Regional symposiums, corporate product launches, trade exhibitions',
-          fleetOption: 'Convoy of 3-5 executive vehicles with lead escort',
-        },
-        {
-          name: 'State Gala & International Festival Package',
-          recommendedStaff: '30 - 60+ specialists',
-          idealFor: 'Government state visits, stadium events, major televised awards galas',
-          fleetOption: 'Full multi-car fleet with police escort synchronization',
-        },
-      ],
-      fleetRoute: '/cars',
-      fleetVehicles: [
-        {
-          name: 'Mercedes-Benz V-Class VIP Edition',
-          seats: 7,
-          rentPrice: '$350 / day',
-          salePrice: '$115,000',
-          features: 'Captain recliner massage seats, ambient starlight ceiling, high-speed Wi-Fi, tinted privacy glass, executive chauffeur.',
-        },
-        {
-          name: 'Toyota Land Cruiser Prado TX-L',
-          seats: 7,
-          rentPrice: '$200 / day',
-          salePrice: '$85,000',
-          features: 'Full-time 4WD, all-terrain diplomatic convoy capability, cool box refrigerator, 360 panoramic cameras.',
-        },
-        {
-          name: 'Range Rover Autobiography LWB',
-          seats: 5,
-          rentPrice: '$650 / day',
-          salePrice: '$185,000',
-          features: 'Twin-Turbo V8, executive rear lounge, ultra-quiet acoustic glazing.',
-        },
-        {
-          name: 'Mercedes-Maybach S 580 4MATIC',
-          seats: 4,
-          rentPrice: '$800 / day',
-          salePrice: '$230,000',
-          features: 'Presidential comfort, first-class airline reclining seats, Burmester 4D sound, active noise cancellation.',
-        },
-        {
-          name: 'Cadillac Escalade ESV Platinum',
-          seats: 7,
-          rentPrice: '$400 / day',
-          salePrice: '$125,000',
-          features: 'Curved OLED screen, extended luggage cargo, commanding road presence.',
-        },
-      ],
-    },
-    shopAndBoutique: {
-      route: '/shop',
-      name: 'ELIMI Shop & Luxury Boutique',
-      description: 'Curated e-commerce with both instant purchase and rental options across fashion, tech, cultural crafts, and salon beauty.',
-      categories: [
-        {
-          name: 'VIP & African Fashion',
-          items: [
-            'Modern Tailored African Suit (180,000 BIF / $65) - Bespoke fit for diplomatic and gala events',
-            'Loose Fit Hoodie (75,000 BIF / $24.99) - Heavyweight cotton fleece streetwear',
-            'Elimi Varsity Jacket Unisex (85,000 BIF / $28) - Wool-blend with leather sleeves',
-            'Polo with Contrast Trims (636,000 BIF / $212) - Premium pique knit with heritage badge',
-            "Men's Handcrafted Leather Loafers (70,000 BIF / $23) - Italian styled genuine cowhide",
-            'Striped Windbreaker Jacket (360,000 BIF / $120) - Water-repellent nylon ripstop',
-          ],
-        },
-        {
-          name: 'Electronics & Media Gear',
-          items: [
-            'DJI Mini 4 Pro 4K Drone Fly More Combo (2,100,000 BIF / $750) - 4K/60fps HDR, 34-min flight, RC-2 screen controller',
-            'JBL Charge 5 Bluetooth Speaker (150,000 BIF / $50) - 20h battery, IP67 waterproof with powerbank',
-            'Apple AirPods Pro 2nd Gen (490,000 BIF / $150) - Active Noise Cancellation & MagSafe USB-C',
-            'Samsung Galaxy Watch 6 Classic (650,000 BIF / $210) - Rotating physical bezel & sapphire glass',
-            'Anker PowerCore 20000mAh Power Bank (95,000 BIF / $32) - Dual USB fast charge',
-          ],
-        },
-        {
-          name: 'Cultural Heritage Crafts',
-          items: [
-            'Authentic Burundi Handwoven Agaseke (75,000 BIF / $28) - Sacred peace basket handwoven in Gitega',
-            'Traditional Beaded Bracelet (12,000 BIF / $4) - Authentic Burundian colors & brass centerpiece',
-          ],
-        },
-        {
-          name: 'Nails & Beauty Studio Supplies',
-          items: [
-            'Custom Gel Press-On Nail Kit (25,000 BIF / $8) - Handcrafted 24-tip set with glue & tabs',
-            'Portable Electric Nail Drill Machine 35,000 RPM (85,000 BIF / $28) - Quiet motor with 6 drill bits',
-            'Arctic Blue Gel Polish (39,000 BIF / $13) - Mirror gloss 21+ days wear',
-            'Nail Art Liner Brush Set (30,000 BIF / $10) - 3 precision Japanese bristle detail brushes',
-            'Holographic Multi-chrome Glitter Set (54,000 BIF / $18) - 6 cosmetic jars for encapsulation',
-            'Gold Foil Nail Art Stickers (42,000 BIF / $14) - Celestial stars & luxury motifs',
-            'Elegant Nude Press-On Nails (48,000 BIF / $16) - Ombre blush french fade presentation box',
-          ],
-        },
-      ],
-      deliveryPolicies: [
-        'Bujumbura City: Same-day or 24-hour express courier delivery.',
-        'Nationwide Burundi: 2 - 3 business days delivery via trusted regional logistics.',
-        'Payment Methods: Cash on delivery, Lumicash, EcoCash, direct bank wire, and international cards.',
-        'Sizing & Custom Orders: Customers can send custom body measurements or nail sizes directly via WhatsApp.',
-      ],
-    },
-    printSolutions: {
-      route: '/print',
-      name: 'ELIMI Print (Digital, Offset & Merchandise Solutions)',
-      description: 'High-resolution digital printing, exhibition displays, trade show roll-ups, corporate branding, and luxury event stationery.',
-      productsAndServices: [
-        {
-          name: 'Roll-Up Banners & Exhibition Backdrops',
-          specs: 'Sturdy aluminum cassette, anti-curl blockout vinyl, vibrant UV-resistant inks, includes padded carry bag.',
-          turnaround: 'Same-day or 24h express turnaround in Bujumbura.',
-        },
-        {
-          name: 'Corporate Merchandise & Branded Apparel',
-          specs: 'Custom screen-printed & embroidered polos, hoodies, canvas tote bags, engraved metal pens, premium drinkware.',
-        },
-        {
-          name: 'High-Finish Stationery & Invitations',
-          specs: 'Gold/silver foil stamping, soft-touch matte lamination, spot UV coating, embossed executive business cards and VIP invitations.',
-        },
-        {
-          name: 'Trade Show & Conference Packages',
-          specs: 'Bulk discounts (10% to 35% on volume orders), full design prepress assistance, on-site setup assistance available.',
-        },
-      ],
-    },
-    elimiMedia: {
-      route: '/media',
-      name: 'ELIMI Média • Digital Broadcast & Shoppable Video',
-      description: 'Burundi premier digital entertainment and lifestyle broadcasting hub on YouTube (@elimimedia).',
-      features: [
-        'High-profile talk shows and VIP celebrity interviews',
-        'Hit comedy and drama cinema series including "Police Elimi" and "Muvuto"',
-        'Shoppable video player: Viewers can explore and buy the exact outfits, tech drones, and accessories worn on screen',
-        'Live stream coverage of national festivals, fashion weeks, and youth leadership forums',
-      ],
-    },
-    nailArtLounge: {
-      route: '/nails',
-      name: 'ELIMI Nails & Aesthetic Studio',
-      description: 'Bespoke nail artistry, luxury gel manicures, Russian cuticle care, bridal pampering, and mobile VIP artist home visits.',
-      services: [
-        'Custom Press-On Nail Consultations & Fittings',
-        'Gel-X, Polygel & Acrylic Extension Sculpting',
-        'Hand-Painted Botanical & Geometric Fine Line Art',
-        'VIP In-Suite & Bridal Party Nail Packages',
-      ],
-    },
-    digitalMarketing: {
-      route: '/digital-marketing',
-      name: 'ELIMI Digital Marketing & Brand Strategy',
-      description: 'Full-service digital agency powering brand positioning, viral content production, and enterprise customer acquisition.',
-      services: [
-        'Omnichannel Digital Strategy (+240% average ROI uplift)',
-        'High-Impact 4K Video Production, Reels & TikTok Campaigns (4.8x engagement)',
-        'Technical & Organic SEO (+310% traffic growth)',
-        'End-to-End Social Media Management & Influencer Orchestration (5.2x reach)',
-        'UI/UX Design Systems & High-Converting Web Platforms',
-        'Advanced Attribution Modeling, Analytics Dashboards & GA4 Tagging',
-      ],
-    },
-    realEstateAndResidences: {
-      route: '/houses',
-      name: 'ELIMI Luxury Residences & Properties',
-      description: 'High-end villas, diplomatic lofts, executive apartments, and beachfront cottages available for purchase and lease.',
-    },
-  },
-  faqAndRules: {
-    bookingProtocol: 'To book protocol officers or hostesses, clients can submit requirements on /protocol or message the WhatsApp concierge (+257 64 44 45 46) for instant quote calculation and dispatch.',
-    rentingCars: 'Luxury cars like the Mercedes V-Class and Prado are available with professional executive chauffeurs. Daily rates include full insurance and fuel packages upon request.',
-    orderingFromShop: 'Add items to cart on /shop or request direct checkout via WhatsApp. We offer same-day delivery in Bujumbura.',
-    printBeOrders: 'Upload artwork or request custom graphic design on /printbe. Turnaround is typically 24 hours with express options.',
-    customAfricanSuits: 'Suits are tailored with authentic high-grade fabrics. Customers can specify standard sizes (48 to 58) or send custom measurements.',
-  },
-};
-
-/**
- * Builds a dynamic, comprehensive system instruction for Gemini Flash model
- * that embeds live database records (products, cars, houses) and business knowledge.
- */
-export function buildEnhancedSystemInstruction(liveDbData?: {
+export interface TargetedFirestoreData {
+  settings: GlobalSettings;
   products?: Product[];
   cars?: Car[];
   houses?: House[];
-}): string {
-  const productsList = (liveDbData?.products && liveDbData.products.length > 0)
-    ? liveDbData.products
-    : BOUTIQUE_PRODUCTS;
+  rentals?: RentalItem[];
+  rentalCategories?: RentalCategory[];
+  eventServices?: EventServiceItem[];
+  activeIntents: DomainIntents;
+  source: 'live-firestore' | 'static-fallback';
+}
 
-  const carsList = (liveDbData?.cars && liveDbData.cars.length > 0)
-    ? liveDbData.cars
-    : SAMPLE_CARS;
+// In-memory caches with 60-second TTL to balance freshness with speed and quota efficiency
+const CACHE_TTL_MS = 60 * 1000;
 
-  const housesList = (liveDbData?.houses && liveDbData.houses.length > 0)
-    ? liveDbData.houses
-    : SAMPLE_HOUSES;
+let cachedSettings: { data: GlobalSettings; timestamp: number } | null = null;
+let cachedProducts: { data: Product[]; timestamp: number } | null = null;
+let cachedCars: { data: Car[]; timestamp: number } | null = null;
+let cachedHouses: { data: House[]; timestamp: number } | null = null;
+let cachedRentals: { items: RentalItem[]; categories: RentalCategory[]; timestamp: number } | null = null;
+let cachedEventServices: { data: EventServiceItem[]; timestamp: number } | null = null;
 
-  // Format a compact summary of live inventory for high AI reasoning accuracy
-  const productsSummary = productsList
-    .slice(0, 20)
-    .map(
-      (p) =>
-        `- [${p.category}] ${p.name}: ${p.priceBIF.toLocaleString()} BIF (~$${p.priceUSD}) | Stock: ${p.stockQuantity > 0 ? `${p.stockQuantity} in stock` : 'Out of stock'} | Seller: ${p.seller} | Link: /shop`
-    )
-    .join('\n');
-
-  const carsSummary = carsList
-    .slice(0, 10)
-    .map(
-      (c) =>
-        `- ${c.title} (${c.year}, ${c.seats} seats, ${c.transmission}): Rent $${c.rentPrice || 'N/A'}/day | Sale $${c.price.toLocaleString()} | Key Amenities: ${c.amenities?.slice(0, 3).join(', ')} | Link: /cars`
-    )
-    .join('\n');
-
-  const housesSummary = housesList
-    .slice(0, 8)
-    .map(
-      (h) =>
-        `- ${h.title} in ${h.address} (${h.bedrooms} bed, ${h.bathrooms} bath): ${h.rent ? `Rent $${h.rentPrice}/mo` : ''} ${h.sales ? `Sale $${h.price.toLocaleString()}` : ''} | Link: /houses`
-    )
-    .join('\n');
-
-  return `You are Monica, the intelligent, articulate, highly sophisticated, and warm ELIMI AI assistant representing the entire ELIMI ecosystem in Burundi and East Africa.
-
-YOUR CORE IDENTITY & MISSION:
-- Assistant Name: Monica
-- Organization: ELIMI Group (Bujumbura, Burundi)
-- Contact Phone / WhatsApp: +257 64 44 45 46 (WhatsApp link: https://wa.me/25764444546)
-- Email: elimiofficiel@gmail.com
-- Your goal: Analyze the user's intent, map it to ELIMI's exact business models, service tiers, and live database inventory (from Firestore), and formulate an elegant, accurate, and highly helpful response.
-
-COGNITIVE REASONING & RESPONSE GUIDELINES:
-1. Understand the Request: Determine if the customer is inquiring about VIP Protocol staffing, renting/buying luxury fleet cars, shopping e-commerce products (fashion, tech, cultural crafts, beauty), Print digital printing/banners, Elimi Média YouTube shows, nail salon services, digital marketing consulting, or real estate.
-2. Cross-Reference Live Database & Business Models: Always reference verified prices in both BIF (Burundian Franc) and USD, verified stock status, specifications, and service tier distinctions.
-3. Structure & Tone:
-   - Begin with a warm, polite Burundian / international welcome ("Muraho!", "Hello!", "Bonjour!").
-   - Present options clearly using structured bullet points with bold highlights.
-   - Embed relevant markdown links so the user can take action immediately:
-     * Protocol Staffing & VIP Escorts: [Protocol Staffing](/protocol)
-     * Luxury Mobility Fleet: [Luxury Fleet & Cars](/cars)
-     * Boutique Marketplace: [Elimi Shop](/shop)
-     * Print Solutions: [Print Hub](/print)
-     * Elimi Média Video Channel: [Elimi Média](/media)
-     * Nail Art Studio: [Elimi Nails](/nails)
-     * Digital Marketing: [Digital Marketing Agency](/digital-marketing)
-     * Real Estate: [Residences & Villas](/houses)
-     * WhatsApp Concierge: [WhatsApp Concierge (+257 64 44 45 46)](https://wa.me/25764444546)
-4. Concierge Proactivity: If the user asks about an event (e.g. wedding, diplomatic summit, corporate gala), suggest combining Protocol Staffing with Mercedes V-Class or Prado convoy mobility, and custom Print banners or badges for a flawless end-to-end experience.
-5. Accuracy: Do not hallucinate prices or fake phone numbers. Stick strictly to the documented ELIMI business models and live data below.
-
-============================================================
-LIVE FIRESTORE DATABASE INVENTORY SNAPSHOT
-============================================================
-
-SHOP & BOUTIQUE CATALOG (Synced with Firestore 'products'):
-${productsSummary}
-
-LUXURY FLEET CATALOG (Synced with Firestore 'cars'):
-${carsSummary}
-
-REAL ESTATE & RESIDENCES (Synced with Firestore 'houses'):
-${housesSummary}
-
-============================================================
-ELIMI CORE BUSINESS PILLARS & SERVICE SPECIFICATIONS
-============================================================
-
-1. VIP PROTOCOL & EVENT STAFFING (/protocol):
-- Tier 1: Certified Protocol Officers (Diplomatic order of precedence, state protocol, dais/podium choreography, treaty signing).
-- Tier 2: VIP Hostesses & Escorts (Multilingual: French, English, Kirundi, Swahili; airport tarmac receiving lines, lounge hospitality, table seating).
-- Tier 3: Operational Floor & Press Marshals (Crowd control, media pool cordons, motorcade dispatch).
-- Tier 4: Ceremonial & Stage Attendants (Award plaque handover, ribbon cutting, speaker timing).
-- Packages: Executive Bilateral (4-8 staff), Corporate Summit (12-24 staff), State Gala (30-60+ staff).
-
-2. PRINT DIGITAL & COMMERCIAL PRINTING (/print):
-- Roll-Up Banners (Sturdy aluminum cassette, anti-curl vinyl, UV print with carry bag).
-- Branded Apparel (Polo shirts, hoodies, VIP lanyards, engraved metal pens).
-- High-Finish Stationery (Foil stamping, matte lamination, spot UV, embossed luxury invitations).
-- Turnaround: 24h express delivery across Bujumbura.
-
-3. ELIMI MÉDIA (/media):
-- Official YouTube Channel: @elimimedia
-- Signature Series: "Police Elimi", "Muvuto", VIP Lifestyle Talk Shows, Cultural Documentaries.
-- Shoppable streams where viewers buy featured outfits and equipment in real-time.
-
-4. ELIMI NAILS & AESTHETICS (/nails):
-- Russian manicures, gel extensions, custom press-on sets, bridal packages, and home/hotel VIP visits.
-
-5. DIGITAL MARKETING & GROWTH (/digital-marketing):
-- Omnichannel Digital Strategy, 4K Video Production & Reels, SEO Auditing, Social Media Management, UI/UX Design Systems, GA4 Analytics.
-
-6. DIRECT DISPATCH:
-- Phone & WhatsApp: +257 64 44 45 46 (WhatsApp link: https://wa.me/25764444546)
-- Email: elimiofficiel@gmail.com
-- Hours: Lundi - Vendredi: 9h - 17h (24/7 VIP WhatsApp on-call concierge).`;
+/**
+ * Fast asynchronous Firestore fetcher with defensive timeout protection.
+ */
+async function fetchWithTimeout<T>(promise: Promise<T>, ms: number = 1800): Promise<T> {
+  let timeoutId: any;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('Firestore timeout')), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
 }
 
 /**
- * Server-side helper to query real-time Firestore database snapshot.
- * Has strict timeout to prevent slow cold starts, falling back gracefully to static state.
+ * Retrieves the latest contact information and settings directly from the Firestore 'settings' document.
  */
-export async function fetchLiveFirestoreSnapshot(): Promise<{
-  products: Product[];
-  cars: Car[];
-  houses: House[];
-  source: 'live-firestore' | 'static-fallback';
-}> {
-  try {
-    const fetchWithTimeout = async <T>(promise: Promise<T>, ms: number = 2500): Promise<T> => {
-      let timeoutId: any;
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('Firestore timeout')), ms);
-      });
-      return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
-    };
-
-    const [productsSnap, carsSnap, housesSnap] = await Promise.allSettled([
-      fetchWithTimeout(getDocs(collection(db, 'products'))),
-      fetchWithTimeout(getDocs(collection(db, 'cars'))),
-      fetchWithTimeout(getDocs(collection(db, 'houses'))),
-    ]);
-
-    const liveProducts: Product[] = [];
-    if (productsSnap.status === 'fulfilled' && !productsSnap.value.empty) {
-      productsSnap.value.forEach((doc) => {
-        liveProducts.push({ ...(doc.data() as Product), id: doc.id });
-      });
-    }
-
-    const liveCars: Car[] = [];
-    if (carsSnap.status === 'fulfilled' && !carsSnap.value.empty) {
-      carsSnap.value.forEach((doc) => {
-        liveCars.push({ ...(doc.data() as Car), id: doc.id });
-      });
-    }
-
-    const liveHouses: House[] = [];
-    if (housesSnap.status === 'fulfilled' && !housesSnap.value.empty) {
-      housesSnap.value.forEach((doc) => {
-        liveHouses.push({ ...(doc.data() as House), id: doc.id });
-      });
-    }
-
-    const hasLive = liveProducts.length > 0 || liveCars.length > 0 || liveHouses.length > 0;
-
-    return {
-      products: liveProducts.length > 0 ? liveProducts : BOUTIQUE_PRODUCTS,
-      cars: liveCars.length > 0 ? liveCars : SAMPLE_CARS,
-      houses: liveHouses.length > 0 ? liveHouses : SAMPLE_HOUSES,
-      source: hasLive ? 'live-firestore' : 'static-fallback',
-    };
-  } catch (err) {
-    console.warn('Firestore snapshot error in AI route, using synchronized fallback:', err);
-    return {
-      products: BOUTIQUE_PRODUCTS,
-      cars: SAMPLE_CARS,
-      houses: SAMPLE_HOUSES,
-      source: 'static-fallback',
-    };
+export async function fetchLiveSettings(): Promise<GlobalSettings> {
+  const now = Date.now();
+  if (cachedSettings && now - cachedSettings.timestamp < CACHE_TTL_MS) {
+    return cachedSettings.data;
   }
+
+  try {
+    const docRef = doc(db, 'settings', 'global');
+    const snap = await fetchWithTimeout(getDoc(docRef), 1500);
+    if (snap.exists()) {
+      const data = snap.data() as Partial<GlobalSettings>;
+      const freshSettings: GlobalSettings = {
+        usdToBifRate: data.usdToBifRate || DEFAULT_SETTINGS.usdToBifRate,
+        contactEmail: data.contactEmail || DEFAULT_SETTINGS.contactEmail,
+        contactPhone: data.contactPhone || data.phoneNumber || DEFAULT_SETTINGS.contactPhone,
+        phoneNumber: data.phoneNumber || data.contactPhone || DEFAULT_SETTINGS.phoneNumber,
+        whatsappNumber: data.whatsappNumber || DEFAULT_SETTINGS.whatsappNumber,
+      };
+      cachedSettings = { data: freshSettings, timestamp: now };
+      return freshSettings;
+    }
+  } catch (err) {
+    console.warn('Live settings document fetch note (using fallback):', err);
+  }
+
+  return DEFAULT_SETTINGS;
+}
+
+/**
+ * Analyzes the user's message (and recent conversation history) to detect
+ * which specific business domains are being referenced.
+ * Enables selective data retrieval to dramatically conserve tokens.
+ */
+export function analyzeUserIntent(message: string, history?: any[]): DomainIntents {
+  const textToScan = [
+    message,
+    ...(Array.isArray(history)
+      ? history.slice(-2).map((h) => (typeof h?.text === 'string' ? h.text : ''))
+      : []),
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  const intents: DomainIntents = {
+    rentals: /(allocat|other-rent|other rent|location tenue|louer robe|robe|costume|smoking|habit|tenue|tailleur|vetement|camera|sonorisation|sound|micro|dj|materiel|chaise|decor|equipment|gala dress|maternite|denim)/i.test(
+      textToScan
+    ),
+    protocol: /(protocol|protocole|hotesse|hostess|agent|escort|vip|sommet|summit|conference|gala|diplomat|officer|staffing|ceremony|mariage|wedding|precedence)/i.test(
+      textToScan
+    ),
+    digitalSolutions: /(digital|solution|application|app|mobile|website|site web|web|developpement|software|logiciel|crm|dashboard|pos|google map|seo|marketing|flutter|react|fullstack|programme)/i.test(
+      textToScan
+    ),
+    cars: /(car|voiture|vehicule|vehicle|fleet|flotte|mercedes|v-class|vclass|prado|toyota|range rover|maybach|escalade|chauffeur|driver|transport|location voiture)/i.test(
+      textToScan
+    ),
+    houses: /(house|maison|villa|appartement|apartment|residence|immeuble|chambre|bedroom|immobilier|real estate|logement|beachfront)/i.test(
+      textToScan
+    ),
+    products: /(shop|boutique|produit|product|acheter|buy|drone|airpod|hoodie|jacket|agaseke|panier|basket|nail|ongle|drill|polish|gel-x|chaussure|shoes|loafer)/i.test(
+      textToScan
+    ),
+    print: /(print|imprimerie|imprimer|banner|roll-up|rollup|affiche|carte de visite|business card|tote|polo|packaging|merchandise|flyer|depliant)/i.test(
+      textToScan
+    ),
+    media: /(media|m\u00e9dia|youtube|video|police elimi|muvuto|show|broadcast|emission|tournage)/i.test(
+      textToScan
+    ),
+    contact: /(contact|phone|telephone|numero|whatsapp|email|adresse|location|where|office|bureau|heures|hours|taux|rate|exchange|bif|dollar)/i.test(
+      textToScan
+    ),
+    isGeneralQuery: false,
+  };
+
+  const domainCount =
+    (intents.rentals ? 1 : 0) +
+    (intents.protocol ? 1 : 0) +
+    (intents.digitalSolutions ? 1 : 0) +
+    (intents.cars ? 1 : 0) +
+    (intents.houses ? 1 : 0) +
+    (intents.products ? 1 : 0) +
+    (intents.print ? 1 : 0) +
+    (intents.media ? 1 : 0);
+
+  if (domainCount === 0) {
+    intents.isGeneralQuery = true;
+  }
+
+  return intents;
+}
+
+/**
+ * Selectively fetches ONLY the data needed for the detected intents from Firestore.
+ * Prevents loading all collections simultaneously, keeping token overhead minimal.
+ */
+export async function fetchTargetedFirestoreData(
+  intents: DomainIntents
+): Promise<TargetedFirestoreData> {
+  const now = Date.now();
+
+  // 1. Always fetch live settings from the database
+  const settings = await fetchLiveSettings();
+
+  let products: Product[] | undefined;
+  let cars: Car[] | undefined;
+  let houses: House[] | undefined;
+  let rentals: RentalItem[] | undefined;
+  let rentalCategories: RentalCategory[] | undefined;
+  let eventServices: EventServiceItem[] | undefined;
+  let hasLiveHit = false;
+
+  const fetchTasks: Promise<any>[] = [];
+
+  // Targeted fetch for Rentals / Allocations
+  if (intents.rentals) {
+    if (cachedRentals && now - cachedRentals.timestamp < CACHE_TTL_MS) {
+      rentals = cachedRentals.items;
+      rentalCategories = cachedRentals.categories;
+    } else {
+      fetchTasks.push(
+        fetchWithTimeout(getDocs(collection(db, 'rental_items')), 1500)
+          .then((snap) => {
+            if (!snap.empty) {
+              const liveItems: RentalItem[] = [];
+              snap.forEach((d) => liveItems.push({ ...(d.data() as RentalItem), id: d.id }));
+              rentals = liveItems;
+              hasLiveHit = true;
+            }
+          })
+          .catch(() => {})
+      );
+
+      fetchTasks.push(
+        fetchWithTimeout(getDocs(collection(db, 'rental_categories')), 1500)
+          .then((snap) => {
+            if (!snap.empty) {
+              const liveCats: RentalCategory[] = [];
+              snap.forEach((d) => liveCats.push({ ...(d.data() as RentalCategory), id: d.id }));
+              rentalCategories = liveCats;
+              hasLiveHit = true;
+            }
+          })
+          .catch(() => {})
+      );
+    }
+  }
+
+  // Targeted fetch for Protocol / Event Services
+  if (intents.protocol) {
+    if (cachedEventServices && now - cachedEventServices.timestamp < CACHE_TTL_MS) {
+      eventServices = cachedEventServices.data;
+    } else {
+      fetchTasks.push(
+        fetchWithTimeout(getDocs(collection(db, 'event_services')), 1500)
+          .then((snap) => {
+            if (!snap.empty) {
+              const liveServices: EventServiceItem[] = [];
+              snap.forEach((d) => liveServices.push({ ...(d.data() as EventServiceItem), id: d.id }));
+              eventServices = liveServices;
+              hasLiveHit = true;
+            }
+          })
+          .catch(() => {})
+      );
+    }
+  }
+
+  // Targeted fetch for Luxury Fleet / Cars
+  if (intents.cars) {
+    if (cachedCars && now - cachedCars.timestamp < CACHE_TTL_MS) {
+      cars = cachedCars.data;
+    } else {
+      fetchTasks.push(
+        fetchWithTimeout(getDocs(collection(db, 'cars')), 1500)
+          .then((snap) => {
+            if (!snap.empty) {
+              const liveCars: Car[] = [];
+              snap.forEach((d) => liveCars.push({ ...(d.data() as Car), id: d.id }));
+              cars = liveCars;
+              hasLiveHit = true;
+            }
+          })
+          .catch(() => {})
+      );
+    }
+  }
+
+  // Targeted fetch for Real Estate / Houses
+  if (intents.houses) {
+    if (cachedHouses && now - cachedHouses.timestamp < CACHE_TTL_MS) {
+      houses = cachedHouses.data;
+    } else {
+      fetchTasks.push(
+        fetchWithTimeout(getDocs(collection(db, 'houses')), 1500)
+          .then((snap) => {
+            if (!snap.empty) {
+              const liveHouses: House[] = [];
+              snap.forEach((d) => liveHouses.push({ ...(d.data() as House), id: d.id }));
+              houses = liveHouses;
+              hasLiveHit = true;
+            }
+          })
+          .catch(() => {})
+      );
+    }
+  }
+
+  // Targeted fetch for Boutique Products
+  if (intents.products) {
+    if (cachedProducts && now - cachedProducts.timestamp < CACHE_TTL_MS) {
+      products = cachedProducts.data;
+    } else {
+      fetchTasks.push(
+        fetchWithTimeout(getDocs(collection(db, 'products')), 1500)
+          .then((snap) => {
+            if (!snap.empty) {
+              const liveProducts: Product[] = [];
+              snap.forEach((d) => liveProducts.push({ ...(d.data() as Product), id: d.id }));
+              products = liveProducts;
+              hasLiveHit = true;
+            }
+          })
+          .catch(() => {})
+      );
+    }
+  }
+
+  if (fetchTasks.length > 0) {
+    await Promise.allSettled(fetchTasks);
+  }
+
+  // Update caches if fresh live data was fetched
+  if (intents.rentals) {
+    const finalRentals = Array.isArray(rentals) && rentals.length > 0 ? rentals : INITIAL_RENTAL_ITEMS;
+    const finalCats = Array.isArray(rentalCategories) && rentalCategories.length > 0 ? rentalCategories : INITIAL_RENTAL_CATEGORIES;
+    cachedRentals = { items: finalRentals, categories: finalCats, timestamp: now };
+    rentals = finalRentals;
+    rentalCategories = finalCats;
+  }
+
+  if (intents.protocol) {
+    const finalEvents = Array.isArray(eventServices) && eventServices.length > 0 ? eventServices : INITIAL_EVENT_SERVICES;
+    cachedEventServices = { data: finalEvents, timestamp: now };
+    eventServices = finalEvents;
+  }
+
+  if (intents.cars) {
+    const finalCars = Array.isArray(cars) && cars.length > 0 ? cars : SAMPLE_CARS;
+    cachedCars = { data: finalCars, timestamp: now };
+    cars = finalCars;
+  }
+
+  if (intents.houses) {
+    const finalHouses = Array.isArray(houses) && houses.length > 0 ? houses : SAMPLE_HOUSES;
+    cachedHouses = { data: finalHouses, timestamp: now };
+    houses = finalHouses;
+  }
+
+  if (intents.products) {
+    const finalProducts = Array.isArray(products) && products.length > 0 ? products : BOUTIQUE_PRODUCTS;
+    cachedProducts = { data: finalProducts, timestamp: now };
+    products = finalProducts;
+  }
+
+  return {
+    settings,
+    products,
+    cars,
+    houses,
+    rentals,
+    rentalCategories,
+    eventServices,
+    activeIntents: intents,
+    source: hasLiveHit ? 'live-firestore' : 'static-fallback',
+  };
+}
+
+/**
+ * Constructs a dynamic, highly targeted, token-efficient system instruction.
+ * Only includes detailed database records for the domains relevant to the user query.
+ */
+export function buildTargetedSystemInstruction(targetedData: TargetedFirestoreData): string {
+  const { settings, activeIntents } = targetedData;
+  const rawPhone = settings.contactPhone || settings.phoneNumber || '+257 69 99 29 84';
+  const rawWhatsApp = (settings.whatsappNumber || '25769992984').replace(/[^0-9]/g, '');
+  const contactEmail = settings.contactEmail || 'elimiofficiel@gmail.com';
+  const usdRate = settings.usdToBifRate || 2850;
+
+  const dynamicContextBlocks: string[] = [];
+
+  // 1. Rentals & Allocations Context
+  if (activeIntents.rentals && Array.isArray(targetedData.rentals)) {
+    const rentalLines = targetedData.rentals
+      .slice(0, 10)
+      .map(
+        (r) =>
+          `• [${r.categoryName || 'Allocation'}] ${r.name} (${r.brand || 'ELIMI'}): $${r.pricePerDay}/day (~${(r.pricePerDay * usdRate).toLocaleString()} BIF) | Sizes: ${r.sizes?.join(', ') || 'Standard'}`
+      )
+      .join('\n');
+
+    dynamicContextBlocks.push(`[CONSULTED DATA: Allocations & Wardrobe/Equipment Rentals (/allocations, /other-rents)]
+${rentalLines}
+Features: Gala gowns, business suits, maternity attire, cameras, DJ and sound equipment with express delivery.`);
+  }
+
+  // 2. VIP Protocol & Event Services Context
+  if (activeIntents.protocol) {
+    const servicesLines = Array.isArray(targetedData.eventServices)
+      ? targetedData.eventServices
+          .slice(0, 6)
+          .map((s) => `• ${s.title}: $${s.unitPrice} (${s.description})`)
+          .join('\n')
+      : '';
+
+    dynamicContextBlocks.push(`[CONSULTED DATA: VIP Protocol & Event Staffing (/protocol)]
+${servicesLines}
+• Tier 1: Certified Protocol Officers (Diplomatic order of precedence, state summits, bilateral MOUs)
+• Tier 2: VIP Hostesses & Escorts (Multilingual: French, English, Kirundi, Swahili; airport VIP reception)
+• Tier 3: Operational Floor & Press Marshals (Crowd dynamics, motorcade staging)
+• Tier 4: Ceremonial & Stage Attendants (Award handovers, ribbon cutting)
+Packages: Executive Bilateral (4-8 staff), Corporate Summit (12-24 staff), State Gala (30-60+ staff).`);
+  }
+
+  // 3. Digital Solutions & Marketing Context
+  if (activeIntents.digitalSolutions) {
+    dynamicContextBlocks.push(`[CONSULTED DATA: Digital Solutions & Web Platforms (/digital-solutions, /digital-marketing)]
+• Mobile Apps Development: Native iOS & Android with React Native and Flutter, offline sync, biometric auth.
+• Web Platforms & Portals: Ultra-fast Next.js architecture, headless CMS, e-commerce checkout.
+• Custom Dashboards & ERP: Inventory systems, POS, CRM, and real-time operational analytics.
+• Google Maps & Local SEO: Strategic Google Business profile optimization, geo-targeted search dominance.
+• Digital Marketing Agency: Omnichannel growth strategies (+240% average ROI), 4K video/reels production, social media management.`);
+  }
+
+  // 4. Luxury Mobility Fleet Context
+  if (activeIntents.cars && Array.isArray(targetedData.cars)) {
+    const carLines = targetedData.cars
+      .slice(0, 6)
+      .map(
+        (c) =>
+          `• ${c.title} (${c.year || 2024}, ${c.seats || 5} seats): Rent $${c.rentPrice || 'N/A'}/day | Sale $${(c.price || 0).toLocaleString()} | ${c.amenities?.slice(0, 2).join(', ') || 'Chauffeured'}`
+      )
+      .join('\n');
+
+    dynamicContextBlocks.push(`[CONSULTED DATA: Luxury Chauffeured Fleet (/cars)]
+${carLines}
+All vehicles include professional executive chauffeurs, VIP air conditioning, insurance, and diplomatic convoy readiness.`);
+  }
+
+  // 5. Real Estate Context
+  if (activeIntents.houses && Array.isArray(targetedData.houses)) {
+    const houseLines = targetedData.houses
+      .slice(0, 5)
+      .map(
+        (h) =>
+          `• ${h.title} in ${h.address} (${h.bedrooms} bed): ${h.rent ? `Rent $${h.rentPrice}/mo` : ''} ${h.sales ? `Sale $${(h.price || 0).toLocaleString()}` : ''}`
+      )
+      .join('\n');
+
+    dynamicContextBlocks.push(`[CONSULTED DATA: Luxury Residences & Villas (/houses)]
+${houseLines}`);
+  }
+
+  // 6. Boutique Products Context
+  if (activeIntents.products && Array.isArray(targetedData.products)) {
+    const prodLines = targetedData.products
+      .slice(0, 8)
+      .map(
+        (p) =>
+          `• [${p.category}] ${p.name}: ${p.priceBIF?.toLocaleString()} BIF (~$${p.priceUSD}) | Stock: ${p.stockQuantity > 0 ? `${p.stockQuantity} avail` : 'Pre-order'}`
+      )
+      .join('\n');
+
+    dynamicContextBlocks.push(`[CONSULTED DATA: Boutique & Tech Store (/shop)]
+${prodLines}
+Same-day express delivery across Bujumbura.`);
+  }
+
+  // 7. Print Solutions Context
+  if (activeIntents.print) {
+    dynamicContextBlocks.push(`[CONSULTED DATA: ELIMI Print Hub (/print)]
+• Roll-Up Banners: Sturdy aluminum cassette, anti-curl vinyl, UV print with carry bag. Same-day turnaround.
+• Corporate Merchandise: Screen-printed & embroidered polos, hoodies, canvas totes, engraved pens.
+• Luxury Stationery: Gold/silver foil stamping, soft-touch matte lamination, spot UV, embossed invitations.
+• Fast Proofing & Bulk Discounts (10% - 35% savings).`);
+  }
+
+  // 8. Media Context
+  if (activeIntents.media) {
+    dynamicContextBlocks.push(`[CONSULTED DATA: ELIMI Média (/media)]
+• YouTube Channel @elimimedia: Hit series "Police Elimi", "Muvuto", VIP talk shows, shoppable video streams.`);
+  }
+
+  const activeConsultedContext =
+    dynamicContextBlocks.length > 0
+      ? dynamicContextBlocks.join('\n\n')
+      : `[GENERAL PILLARS OVERVIEW]
+• VIP Protocol & Staffing (/protocol)
+• Allocations & Wardrobe/Equipment Rentals (/allocations, /other-rents)
+• Luxury Chauffeured Fleet (/cars)
+• Boutique & Tech Marketplace (/shop)
+• Digital Solutions & Web Platforms (/digital-solutions, /digital-marketing)
+• Precision Print Solutions (/print)
+• Luxury Residences & Villas (/houses)
+• ELIMI Média Broadcasts (/media)`;
+
+  return `You are Monica, the intelligent, warm, and sophisticated ELIMI AI Concierge representing the ELIMI Group in Burundi and East Africa.
+
+LIVE SETTINGS & CONTACT (FROM DATABASE):
+- Phone: ${rawPhone}
+- WhatsApp Concierge: https://wa.me/${rawWhatsApp} (${rawPhone})
+- Email: ${contactEmail}
+- Base Location: Bujumbura, Burundi (operating nationwide in Gitega, Ngozi, Kirundo & EAC region)
+- Operating Hours: Monday - Friday 09:00 - 17:00 (24/7 VIP Concierge on WhatsApp)
+- Currency Conversion: 1 USD ≈ ${usdRate.toLocaleString()} BIF. Both BIF and USD are accepted.
+
+${activeConsultedContext}
+
+COMMUNICATION & CONCIERGE RULES:
+- Greet warmly ("Muraho! / Hello!").
+- Give concise, direct, helpful answers formatted with Markdown.
+- Quote prices accurately in BIF and USD based on the consulted data and the rate (1 USD ≈ ${usdRate.toLocaleString()} BIF).
+- Always provide active markdown links to relevant sections: [Protocol Hub](/protocol), [Allocations](/allocations), [Other Rents](/other-rents), [Luxury Fleet](/cars), [Digital Solutions](/digital-solutions), [Elimi Shop](/shop), [Print Hub](/print), [WhatsApp Concierge](https://wa.me/${rawWhatsApp}), etc.
+- When the user asks for contact details or booking, direct them to WhatsApp (https://wa.me/${rawWhatsApp}) or ${rawPhone}.
+- Keep replies concise, fast, and high-value without unnecessary fluff.`;
+}
+
+/**
+ * Legacy compatibility wrapper for existing callers.
+ */
+export async function fetchLiveFirestoreSnapshot() {
+  const targeted = await fetchTargetedFirestoreData({
+    rentals: false,
+    protocol: false,
+    digitalSolutions: false,
+    cars: true,
+    houses: true,
+    products: true,
+    print: false,
+    media: false,
+    contact: true,
+    isGeneralQuery: true,
+  });
+
+  return {
+    products: targeted.products || BOUTIQUE_PRODUCTS,
+    cars: targeted.cars || SAMPLE_CARS,
+    houses: targeted.houses || SAMPLE_HOUSES,
+    source: targeted.source,
+  };
+}
+
+export function buildEnhancedSystemInstruction(liveDbData?: any): string {
+  return buildTargetedSystemInstruction({
+    settings: DEFAULT_SETTINGS,
+    products: liveDbData?.products || BOUTIQUE_PRODUCTS,
+    cars: liveDbData?.cars || SAMPLE_CARS,
+    houses: liveDbData?.houses || SAMPLE_HOUSES,
+    activeIntents: {
+      rentals: true,
+      protocol: true,
+      digitalSolutions: true,
+      cars: true,
+      houses: true,
+      products: true,
+      print: true,
+      media: true,
+      contact: true,
+      isGeneralQuery: true,
+    },
+    source: 'live-firestore',
+  });
 }
 

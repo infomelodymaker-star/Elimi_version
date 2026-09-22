@@ -54,7 +54,7 @@ function CarsContent() {
     setMapZoom(region.zoom);
   };
 
-  const heroImage = heroContent?.image || 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=1600';
+  const heroImage = heroContent?.image || heroContent?.backgroundImage || heroContent?.showcaseImage || 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=1600';
   const heroBadge = heroContent?.badge || 'Prestige & Escort';
   const heroHeadline = heroContent?.headline || 'Let\'s find your perfect ride.';
   const heroSubheadline = heroContent?.subheadline || 'Browse prestige vehicles for certified purchase or rent for VIP protocol, executive travel, and special diplomatic missions.';

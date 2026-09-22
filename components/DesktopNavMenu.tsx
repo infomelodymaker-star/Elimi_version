@@ -542,7 +542,7 @@ export default function DesktopNavMenu() {
                   <NavigationMenuLink
                     render={
                       <a
-                        href="https://facebook.com/elimiofficiel"
+                        href="https://facebook.com/elimiburundi"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
@@ -574,7 +574,7 @@ export default function DesktopNavMenu() {
                   <NavigationMenuLink
                     render={
                       <a
-                        href="https://instagram.com/elimiofficiel"
+                        href="https://instagram.com/elimi_burundi"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"

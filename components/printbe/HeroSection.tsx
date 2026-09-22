@@ -30,7 +30,7 @@ export default function HeroSection({ onGetStarted, onViewGallery, content }: He
   const ratingText = content?.ratingText || '4.9/5 Rating';
   const proofingText = content?.proofingText || 'Fast Proofing';
   const savingsText = content?.savingsText || 'Bulk Savings';
-  const showcaseImg = content?.showcaseImage || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAfjh90sExcRfDYSImAmQgvy4JnHa9v-8z9hHPkWtHGiVvqmpU-j3aFsCWZL5XWF9hAejCMD3F4Ej_QjuiJD3QoTy4OHKqQg1eTKa0vlEyfE4RlA9rrMWr6LPp6Cq_rfDvXNNLPtlcJSO9L7NiuTfzwaTJKm-I1GvhmiOya6popyQj7sodvOXGLCeL4Xn34f22MCAtnp4RBV1gjujMAZ6FfK0YFFDq3YmPJgpkSXxtW7EnQnTl1a52f';
+  const showcaseImg = content?.showcaseImage || content?.backgroundImage || content?.image || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAfjh90sExcRfDYSImAmQgvy4JnHa9v-8z9hHPkWtHGiVvqmpU-j3aFsCWZL5XWF9hAejCMD3F4Ej_QjuiJD3QoTy4OHKqQg1eTKa0vlEyfE4RlA9rrMWr6LPp6Cq_rfDvXNNLPtlcJSO9L7NiuTfzwaTJKm-I1GvhmiOya6popyQj7sodvOXGLCeL4Xn34f22MCAtnp4RBV1gjujMAZ6FfK0YFFDq3YmPJgpkSXxtW7EnQnTl1a52f';
   const avatars = content?.avatars && content.avatars.length > 0 ? content.avatars : [
     'https://lh3.googleusercontent.com/aida-public/AB6AXuCxRnqsFxxJC3yPYvykWUeIFI3tJecopSYfzl10XZNgCIIxbjwvp7jvNhGqEVns40gd10tPOWuGIwKFqtCtUQ38klIzOJzLHFUHOTrQLlz-zNigs77qY_bekQHQzBWwZfDJKivPz1095jBlOJSd1W4H1UqPrLnRmBoDfXre_tzDC0Udm3agNwkojQSRL0_uY8ZN7bsycRWvefdObzXAvXhh5dz9qwoCZXlaTScZmeThcQfWTVk6uI9r',
     'https://lh3.googleusercontent.com/aida-public/AB6AXuDvyw7yDYyDWXy1swZ6TXmGxv8DSm-oCu9Cr0671aQlw8KMJGl981sBVzQgKQ_-xDV0nm9jccZjfsEsvI815AlSF5szhtKuZBxrXbKoGJHQjTKWYkJCM9u0GVpBjg4wjCIZJQsoqC0ocCd6j15et1i6EXgIJuDUk0R8wxeGcx-sgC1iz4K4v0ZXLlVX8sNHjSmzUGZL6oRU9WxVful6PF3SEP1ngfcMd1UrUeFlLILbPpvsbkionfqg',
@@ -124,6 +124,8 @@ export default function HeroSection({ onGetStarted, onViewGallery, content }: He
               <img
                 src={showcaseImg}
                 alt="Printing Products Display"
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
                 className="w-full h-full object-cover rounded-xl transform group-hover:scale-[1.02] transition-transform duration-500"
               />
             </div>

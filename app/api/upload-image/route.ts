@@ -136,12 +136,24 @@ export async function POST(req: NextRequest) {
           // Non-JSON response
         }
 
-        if (imgbbResponse.ok && result?.success && (result.data?.display_url || result.data?.url)) {
-          const hostedUrl =
+        if (imgbbResponse.ok && result?.success) {
+          // Prioritize direct image link (i.ibb.co) over HTML viewer link (ibb.co)
+          let hostedUrl =
+            result.data?.image?.url ||
+            (result.data?.display_url?.includes('i.ibb.co') ? result.data?.display_url : '') ||
+            (result.data?.url?.includes('i.ibb.co') ? result.data?.url : '') ||
             result.data?.display_url ||
             result.data?.url ||
-            result.data?.image?.url ||
             localPublicUrl;
+
+          // If the link is an HTML viewer page (e.g. ibb.co/xyz without i.ibb.co), prefer localPublicUrl
+          // so the user and public site get a working direct image immediately!
+          if (
+            hostedUrl.includes('ibb.co/') &&
+            !hostedUrl.includes('i.ibb.co')
+          ) {
+            hostedUrl = localPublicUrl;
+          }
 
           return NextResponse.json({
             success: true,

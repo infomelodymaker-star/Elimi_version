@@ -16,6 +16,7 @@ interface ElimiHeaderProps {
   onCartClick?: () => void;
   cartCount?: number;
   showCart?: boolean;
+  transparentOnDesktopTop?: boolean;
 }
 
 export default function ElimiHeader({
@@ -24,11 +25,24 @@ export default function ElimiHeader({
   onCartClick,
   cartCount = 0,
   showCart,
+  transparentOnDesktopTop = false,
 }: ElimiHeaderProps) {
   const pathname = usePathname();
   const shouldShowCart = showCart ?? (pathname?.startsWith('/shop') || Boolean(onCartClick));
 
   const [internalCount, setInternalCount] = useState(cartCount);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleScroll = () => {
+        setIsScrolled(window.scrollY > 20);
+      };
+      handleScroll();
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -44,8 +58,17 @@ export default function ElimiHeader({
 
   const displayCount = cartCount > 0 ? cartCount : internalCount;
 
+  // Header background logic:
+  // - On Mobile: always standard solid/translucent header as it was originally.
+  // - On Desktop: if transparentOnDesktopTop is enabled, transparent at top, and gets blurry frosted bg on scroll.
+  const headerBgClass = transparentOnDesktopTop
+    ? isScrolled
+      ? 'bg-white/90 lg:bg-white/80 backdrop-blur-xl border-b border-slate-200/80 lg:border-white/20 shadow-xs lg:shadow-[0px_4px_24px_0px_rgba(15,23,42,0.04)]'
+      : 'bg-white/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-b border-[#0F172A]/8 lg:border-transparent shadow-[0px_4px_24px_0px_rgba(15,23,42,0.02)] lg:shadow-none'
+    : 'bg-white/95 backdrop-blur-md border-b border-[#0F172A]/8 shadow-[0px_4px_24px_0px_rgba(15,23,42,0.02)]';
+
   return (
-    <header className={`${isSticky ? 'sticky top-0 z-40' : 'relative z-30'} w-full bg-white/95 backdrop-blur-md border-b border-[#0F172A]/8 shadow-[0px_4px_24px_0px_rgba(15,23,42,0.02)] transition-all ${className}`}>
+    <header className={`${isSticky ? 'sticky top-0 z-40' : 'relative z-30'} w-full transition-all duration-300 ${headerBgClass} ${className}`}>
       {/* BEGIN: Desktop Navigation Bar */}
       <div className="hidden lg:flex w-full max-w-[1200px] mx-auto items-center justify-between px-6 py-3.5 gap-4">
         {/* Buy Button */}

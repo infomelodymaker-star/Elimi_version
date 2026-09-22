@@ -6,7 +6,7 @@ import Link from 'next/link';
 import ElimiHeader from '@/components/ElimiHeader';
 import GoogleLocationMap from '@/components/GoogleLocationMap';
 import ImageLightboxModal from '@/components/ImageLightboxModal';
-import { useRealtimeHouses } from '@/lib/firestore-houses';
+import { useRealtimeHouse } from '@/lib/firestore-houses';
 import { useSettings } from '@/components/SettingsProvider';
 import {
   Bed,
@@ -26,9 +26,8 @@ import {
 export default function HouseDetailPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { houses, loading } = useRealtimeHouses();
+  const { house, loading } = useRealtimeHouse(id);
   const { whatsappNumber, phoneNumber } = useSettings();
-  const house = houses.find((h) => h.id === id);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);

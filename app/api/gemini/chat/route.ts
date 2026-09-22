@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import {
-  buildEnhancedSystemInstruction,
-  fetchLiveFirestoreSnapshot,
+  analyzeUserIntent,
+  fetchTargetedFirestoreData,
+  buildTargetedSystemInstruction,
 } from '@/lib/ai-knowledge-base';
 
 export const dynamic = 'force-dynamic';
+
+// Valid Flash models ordered for fallback on quota exhaustion or temporary unavailability
+const GEMINI_MODELS_CASCADE = [
+  'gemini-3.8-flash',
+  'gemini-flash-latest',
+  'gemini-3.1-flash-lite',
+];
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,22 +26,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Step 1: Analyze user message & conversation intent to determine which collections to consult
+    const intents = analyzeUserIntent(message, history);
+
+    // Step 2: Dynamically query ONLY relevant Firestore collections + live database settings
+    const targetedDbData = await fetchTargetedFirestoreData(intents);
+
+    // Step 3: Extract live WhatsApp / Phone / Email directly from database settings
+    const settings = targetedDbData.settings;
+    const rawWhatsApp = (settings.whatsappNumber || '25769992984').replace(/[^0-9]/g, '');
+    const rawPhone = settings.contactPhone || settings.phoneNumber || '+257 69 99 29 84';
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey.trim() === '') {
       return NextResponse.json({
-        text: `⚠️ **GEMINI API Key Required**\n\nMonica is powered by Google's Gemini Flash model family (\`gemini-3.7-flash\`). To enable full conversational AI reasoning and real-time Firestore database analysis, please add your **GEMINI_API_KEY** in the **AI Studio Settings / Secrets** panel.`,
+        text: `Muraho! 👋 I am Monica from ELIMI. Our AI service is currently in standby mode, but our team is available 24/7 on [WhatsApp Concierge (${rawPhone})](https://wa.me/${rawWhatsApp}) for all VIP Protocol, Allocations & Rents, Luxury Fleet, Shop, Digital Solutions, and Print orders.`,
         source: 'missing-key',
       });
     }
 
-    // Step 1: Query live Firestore collections in real-time (products, cars, houses)
-    const liveDbData = await fetchLiveFirestoreSnapshot();
+    // Step 4: Build token-optimized targeted system prompt containing only relevant queried domains
+    const systemInstruction = buildTargetedSystemInstruction(targetedDbData);
 
-    // Step 2: Build dynamic system instructions containing company knowledge & live inventory
-    const systemInstruction = buildEnhancedSystemInstruction(liveDbData);
-
-    // Step 3: Initialize GoogleGenAI SDK
+    // Step 5: Initialize GoogleGenAI SDK
     const ai = new GoogleGenAI({
       apiKey,
       httpOptions: {
@@ -43,115 +59,84 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Step 4: Construct multi-turn contents
+    // Step 6: Construct multi-turn contents (optimized history to conserve tokens)
     const contents: any[] = [];
 
     if (Array.isArray(history) && history.length > 0) {
-      for (const item of history.slice(-10)) {
+      // Keep only the most recent 6 messages to minimize token usage
+      for (const item of history.slice(-6)) {
         if (item.sender === 'user' && item.text) {
           contents.push({
             role: 'user',
-            parts: [{ text: item.text }],
+            parts: [{ text: item.text.slice(0, 500) }],
           });
         } else if (item.sender === 'ai' && item.text) {
           contents.push({
             role: 'model',
-            parts: [{ text: item.text }],
+            parts: [{ text: item.text.slice(0, 700) }],
           });
         }
       }
     }
 
-    // Append the user's latest full prompt
+    // Append the user's latest prompt
     contents.push({
       role: 'user',
       parts: [{ text: message.trim() }],
     });
 
-    // Step 5: Call Gemini Flash model via official SDK with retry & multi-model fallback
-    const modelsToTry = [
-      'gemini-3.7-flash',
-      'gemini-3.1-flash-lite',
-      'gemini-flash-latest',
-      'gemini-2.5-flash',
-    ];
     let generatedReply: string | null = null;
-    let lastError: any = null;
+    let successfulModel: string | null = null;
 
-    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    // Step 7: Multi-model automatic fallback on quota exhaustion / availability
+    for (const modelName of GEMINI_MODELS_CASCADE) {
+      try {
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents,
+          config: {
+            systemInstruction,
+            temperature: 0.6,
+            topP: 0.95,
+          },
+        });
 
-    for (const modelName of modelsToTry) {
-      let attempts = 0;
-      const maxAttempts = 2;
-
-      while (attempts < maxAttempts) {
-        attempts++;
-        try {
-          const response = await ai.models.generateContent({
-            model: modelName,
-            contents,
-            config: {
-              systemInstruction,
-              temperature: 0.7,
-              topP: 0.95,
-            },
-          });
-
-          if (response.text && response.text.trim().length > 0) {
-            generatedReply = response.text.trim();
-            break;
-          }
-        } catch (err: any) {
-          lastError = err;
-          const status = err?.status || err?.code || 0;
-          const messageStr = String(err?.message || '');
-          const isTransient =
-            status === 503 ||
-            status === 429 ||
-            messageStr.includes('503') ||
-            messageStr.includes('429') ||
-            messageStr.includes('high demand') ||
-            messageStr.includes('UNAVAILABLE') ||
-            messageStr.includes('RESOURCE_EXHAUSTED');
-
-          if (isTransient && attempts < maxAttempts) {
-            // Brief backoff before re-attempting or cascading
-            await sleep(600 * attempts);
-            continue;
-          }
-          // Move to next candidate model in flash family
+        if (response.text && response.text.trim().length > 0) {
+          generatedReply = response.text.trim();
+          successfulModel = modelName;
           break;
         }
-      }
-
-      if (generatedReply) {
-        break;
+      } catch (err: any) {
+        console.warn(`Model ${modelName} attempt failed (trying next fallback):`, err?.message || err);
+        // Continue loop to try next model in fallback cascade immediately
+        continue;
       }
     }
 
     if (!generatedReply) {
-      const errMsg =
-        lastError?.message ||
-        'The Gemini model is currently experiencing high temporary demand.';
+      // Graceful fallback response when quota is exceeded across all models
       return NextResponse.json({
-        text: `The AI service experienced a temporary high-demand spike. Please try your question again in a moment.\n\n*(Details: ${errMsg})*`,
-        source: 'error',
+        text: `Muraho! 👋 I am Monica from ELIMI. We are currently experiencing high inquiry volume. For immediate assistance with Protocol Staffing, Allocations & Rents, Luxury Car Fleet, Shop orders, Digital Solutions, or Custom Printing in Burundi, please contact our direct [WhatsApp Concierge (${rawPhone})](https://wa.me/${rawWhatsApp}) or explore our [Protocol Hub](/protocol), [Allocations & Rents](/allocations), [Luxury Fleet](/cars), [Digital Solutions](/digital-solutions), [Elimi Shop](/shop), and [Print Solutions](/print).`,
+        source: 'fallback-quota',
+        dbStatus: targetedDbData.source,
       });
     }
 
     return NextResponse.json({
       text: generatedReply,
-      source: 'gemini-flash',
-      dbStatus: liveDbData.source,
+      source: successfulModel || 'gemini-flash',
+      dbStatus: targetedDbData.source,
     });
   } catch (err: any) {
     console.error('Unhandled error in Gemini chat route:', err);
     return NextResponse.json(
       {
-        text: `Error processing your request with Monica AI: ${err?.message || 'Server error'}. Please check your API key configuration.`,
+        text: `Muraho! I am Monica from ELIMI. Please connect directly with our 24/7 team via [WhatsApp Concierge](https://wa.me/25769992984) for instant booking and inquiries.`,
         source: 'error',
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }
+
+

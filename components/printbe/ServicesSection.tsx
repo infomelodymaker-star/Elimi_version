@@ -100,6 +100,8 @@ export default function ServicesSection({ onSelectCategory, content }: ServicesS
                 <img
                   src={item.image}
                   alt={item.title}
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                   className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                 />
               </div>

@@ -12,7 +12,7 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { getStoredItems, saveStoredItems, runFirestoreTaskSafe } from './firestore-sync';
+import { getStoredItems, saveStoredItems, runFirestoreTaskSafe, syncItemToServerCatalog, fetchServerCatalog } from './firestore-sync';
 
 export interface AvailableUnit {
   unitId: string;
@@ -262,13 +262,21 @@ export function useRealtimeHouses() {
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
-    // 1. Hydrate from local storage on client mount
+    // 1. Initial stored items loaded on mount to prevent SSR mismatch
     queueMicrotask(() => {
       const initialStored = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
       setHouses(initialStored);
+
+      // Fetch from server catalog to sync across browsers/devices
+      fetchServerCatalog<House>('houses').then((serverHouses) => {
+        if (serverHouses && serverHouses.length > 0) {
+          saveStoredItems(HOUSES_STORAGE_KEY, serverHouses);
+          setHouses(serverHouses);
+        }
+      }).catch(() => {});
     });
 
-    // 2. Listen to custom sync events
+    // 2. Listen to custom sync events and storage
     const handleSync = () => {
       const updated = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
       setHouses(updated);
@@ -277,7 +285,7 @@ export function useRealtimeHouses() {
     window.addEventListener(HOUSES_SYNC_EVENT, handleSync);
     window.addEventListener('storage', handleSync);
 
-    // 2. Optional live subscription to Firestore without blocking the UI
+    // 3. Live subscription to Firestore
     let unsubscribe: (() => void) | undefined;
     try {
       const q = collection(db, HOUSES_COLLECTION);
@@ -294,26 +302,22 @@ export function useRealtimeHouses() {
               });
             });
 
-            // Merge with local houses
-            const currentStored = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
-            const liveIds = new Set(liveHouses.map((h) => h.id));
-            const locallyAddedOnly = currentStored.filter((h) => !liveIds.has(h.id) && h.id.startsWith('house-'));
-            const merged = [...liveHouses, ...locallyAddedOnly];
-
-            saveStoredItems(HOUSES_STORAGE_KEY, merged);
-            setHouses(merged);
+            saveStoredItems(HOUSES_STORAGE_KEY, liveHouses);
+            setHouses(liveHouses);
             setIsLive(true);
+          } else {
+            forceUpdateHousesSchema().catch(() => {});
           }
           setLoading(false);
         },
         (err) => {
-          console.warn('Firestore onSnapshot error (using resilient cache):', err?.message || err);
+          console.warn('Firestore onSnapshot note (using cache):', err?.message || err);
           setHouses(getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES));
           setLoading(false);
         }
       );
     } catch (err: any) {
-      console.warn('Firestore houses listener setup fallback:', err);
+      console.warn('Firestore houses listener setup note:', err);
     }
 
     return () => {
@@ -324,6 +328,85 @@ export function useRealtimeHouses() {
   }, []);
 
   return { houses, loading, error, isLive };
+}
+
+/**
+ * Hook to subscribe in real-time to a single house document by ID.
+ */
+export function useRealtimeHouse(houseId: string) {
+  const [house, setHouse] = useState<House | null>(() => {
+    if (!houseId) return null;
+    return SAMPLE_HOUSES.find((h) => h.id === houseId) || null;
+  });
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isLive, setIsLive] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!houseId) {
+      queueMicrotask(() => {
+        setLoading(false);
+        setHouse(null);
+      });
+      return;
+    }
+
+    // Check stored items on mount
+    queueMicrotask(() => {
+      const stored = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
+      const foundStored = stored.find((h) => h.id === houseId) || SAMPLE_HOUSES.find((h) => h.id === houseId);
+      if (foundStored) {
+        setHouse(foundStored);
+      }
+    });
+
+    const handleSync = () => {
+      const latestStored = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
+      const matched = latestStored.find((h) => h.id === houseId);
+      if (matched) setHouse(matched);
+    };
+
+    window.addEventListener(HOUSES_SYNC_EVENT, handleSync);
+    window.addEventListener('storage', handleSync);
+
+    let unsubscribe: (() => void) | undefined;
+    try {
+      const docRef = doc(db, HOUSES_COLLECTION, houseId);
+      unsubscribe = onSnapshot(
+        docRef,
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const liveDoc = {
+              ...(docSnap.data() as House),
+              id: docSnap.id,
+            };
+            setHouse(liveDoc);
+            setIsLive(true);
+          } else {
+            const latest = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
+            const found = latest.find((h) => h.id === houseId) || null;
+            setHouse(found);
+          }
+          setLoading(false);
+        },
+        (err) => {
+          console.warn('Firestore single house listener note:', err);
+          setLoading(false);
+        }
+      );
+    } catch {
+      queueMicrotask(() => {
+        setLoading(false);
+      });
+    }
+
+    return () => {
+      window.removeEventListener(HOUSES_SYNC_EVENT, handleSync);
+      window.removeEventListener('storage', handleSync);
+      if (unsubscribe) unsubscribe();
+    };
+  }, [houseId]);
+
+  return { house, loading, isLive };
 }
 
 function removeUndefinedFields<T extends Record<string, any>>(obj: T): T {
@@ -352,11 +435,14 @@ export async function addHouseToFirestore(house: House): Promise<void> {
   const updatedList = [cleaned, ...current.filter((h) => h.id !== house.id)];
   saveStoredItems(HOUSES_STORAGE_KEY, updatedList, HOUSES_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist to server catalog storage
+  await syncItemToServerCatalog('houses', cleaned, 'save');
+
+  // 3. Write to Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, HOUSES_COLLECTION, house.id);
     await setDoc(docRef, cleaned);
-  }, 1200, `Add house ${house.id}`);
+  }, 1500, `Add house ${house.id}`);
 }
 
 export async function updateHouseInFirestore(
@@ -379,11 +465,14 @@ export async function updateHouseInFirestore(
   }
   saveStoredItems(HOUSES_STORAGE_KEY, updatedList, HOUSES_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist to server catalog storage
+  await syncItemToServerCatalog('houses', cleanedUpdates, 'save');
+
+  // 3. Write to Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, HOUSES_COLLECTION, houseId);
     await setDoc(docRef, cleanedUpdates, { merge: true });
-  }, 1200, `Update house ${houseId}`);
+  }, 1500, `Update house ${houseId}`);
 }
 
 export async function deleteHouseFromFirestore(houseId: string): Promise<void> {
@@ -392,11 +481,14 @@ export async function deleteHouseFromFirestore(houseId: string): Promise<void> {
   const updatedList = current.filter((h) => h.id !== houseId);
   saveStoredItems(HOUSES_STORAGE_KEY, updatedList, HOUSES_SYNC_EVENT);
 
-  // 2. Non-blocking background sync to Firestore
+  // 2. Persist deletion to server catalog storage
+  await syncItemToServerCatalog('houses', houseId, 'delete');
+
+  // 3. Delete from Firestore with safety timeout
   runFirestoreTaskSafe(async () => {
     const docRef = doc(db, HOUSES_COLLECTION, houseId);
     await deleteDoc(docRef);
-  }, 1200, `Delete house ${houseId}`);
+  }, 1500, `Delete house ${houseId}`);
 }
 
 export async function seedInitialHousesIfEmpty(): Promise<boolean> {

@@ -106,7 +106,7 @@ export default function SettingsManagementView() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-zinc-700 mb-1">WhatsApp Number (e.g., 25779123456)</label>
+                <label className="block text-xs font-medium text-zinc-700 mb-1">WhatsApp Number (e.g., 25769992984)</label>
                 <input
                   type="text"
                   value={settings.whatsappNumber || ''}
