@@ -45,7 +45,7 @@ Our legacy is built on bridging local craftsmanship and talent with internationa
 3. REAL ESTATE & ACCOMMODATION: Tenancy and lease deposits are held under formal escrow and governed by the Burundian Civil Code and tenancy agreements.`,
     licensePolicy: `ELIMI is a registered corporate entity operating in full compliance with the Ministry of Commerce, Transport authorities, and public registry of the Republic of Burundi. All security personnel, transport fleet vehicles, and commercial activities are fully insured, certified, and compliant with relevant domestic and international trade treaties.`,
     contactEmail: 'compliance@elimi.bi',
-    contactPhone: '+257 79 000 000',
+    contactPhone: '+257 69 992 984',
   };
 
   const tabs = [
@@ -197,11 +197,11 @@ Our legacy is built on bridging local craftsmanship and talent with internationa
                 <span>{policyContent.contactEmail || 'compliance@elimi.bi'}</span>
               </a>
               <a
-                href={`tel:${policyContent.contactPhone || '+25779000000'}`}
+                href={`tel:${policyContent.contactPhone || '+25769992984'}`}
                 className="flex items-center gap-1.5 text-[#64748B] hover:text-[#0F172A]"
               >
                 <Phone className="w-3.5 h-3.5" />
-                <span>{policyContent.contactPhone || '+257 79 000 000'}</span>
+                <span>{policyContent.contactPhone || '+257 69 992 984'}</span>
               </a>
             </div>
             <button

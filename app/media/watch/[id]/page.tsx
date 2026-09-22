@@ -659,7 +659,7 @@ export default function VideoWatchPage({ params }: { params: Promise<{ id: strin
                           )}
 
                           <a
-                            href={`https://wa.me/25764444546?text=${encodeURIComponent(`Hello ELIMI team, I am interested in ${slide.badge} services.`)}`}
+                            href={`https://wa.me/25769992984?text=${encodeURIComponent(`Hello ELIMI team, I am interested in ${slide.badge} services.`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-center cursor-pointer"

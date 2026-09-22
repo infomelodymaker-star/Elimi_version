@@ -850,11 +850,11 @@ export default function DigitalSolutionsPage() {
               </a>
 
               <a
-                href={`tel:${settings.phoneNumber || '+257 79 000 000'}`}
+                href={`tel:${settings.phoneNumber || '+257 69 992 984'}`}
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-slate-800 text-slate-200 font-semibold text-sm hover:bg-slate-700 transition-all border border-slate-700"
               >
                 <Phone className="w-4 h-4" />
-                <span>Call Concierge: {settings.phoneNumber || '+257 79 000 000'}</span>
+                <span>Call Concierge: {settings.phoneNumber || '+257 69 992 984'}</span>
               </a>
             </div>
           </div>

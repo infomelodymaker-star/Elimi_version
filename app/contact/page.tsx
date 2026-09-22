@@ -66,7 +66,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-slate-900 text-lg">Téléphone & WhatsApp</h3>
-                  <p className="text-slate-600 mt-1">{settings.phoneNumber || settings.whatsappNumber || settings.contactPhone || '+257 64 44 45 46'}</p>
+                  <p className="text-slate-600 mt-1">{settings.phoneNumber || settings.whatsappNumber || settings.contactPhone || '+257 69 99 29 84'}</p>
                 </div>
               </div>
 

@@ -109,7 +109,7 @@ export default function ShopHeader({
         <div className="flex items-center gap-3">
           {/* WhatsApp Direct Concierge */}
           <a
-            href="https://wa.me/25779000000?text=Hello%20ELIMI%20Boutique,%20I%20have%20an%20inquiry%20about%20a%20product"
+            href="https://wa.me/25769992984?text=Hello%20ELIMI%20Boutique,%20I%20have%20an%20inquiry%20about%20a%20product"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:flex items-center gap-2 bg-[#F2F4F8] hover:bg-slate-200/80 text-[#181B25] font-semibold text-xs py-2 px-3.5 rounded-full border border-slate-200/70 transition-colors"

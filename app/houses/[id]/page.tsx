@@ -140,7 +140,7 @@ export default function HouseDetailPage() {
                     {house.rent ? 'Monthly Lease Rate' : 'Outright Purchase Price'}
                   </div>
                   <a
-                    href="tel:+25779000000"
+                    href="tel:+25769992984"
                     className="bg-[#0D52FF] text-white px-6 py-3 rounded-xl text-xs sm:text-sm font-medium hover:bg-[#0b45d6] transition-colors shadow-sm text-center flex items-center justify-center gap-1.5"
                   >
                     <Phone className="w-3.5 h-3.5" />
@@ -172,7 +172,7 @@ export default function HouseDetailPage() {
                     </div>
                     <div className="w-full sm:w-1/4 sm:text-right">
                       <a
-                        href="tel:+25779000000"
+                        href="tel:+25769992984"
                         className="bg-[#0D52FF] text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#0b45d6] transition-colors w-full sm:auto inline-flex items-center justify-center gap-1"
                       >
                         <span>{house.rent ? 'Apply to Lease' : 'Purchase Inquire'}</span>

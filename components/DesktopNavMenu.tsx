@@ -510,7 +510,7 @@ export default function DesktopNavMenu() {
                   <NavigationMenuLink
                     render={
                       <a
-                        href="https://wa.me/25764444546"
+                        href="https://wa.me/25769992984"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
@@ -531,7 +531,7 @@ export default function DesktopNavMenu() {
                             <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-[#0D52FF] transition-colors" />
                           </div>
                           <div className="text-[11px] text-slate-500 group-hover:text-slate-700 truncate transition-colors">
-                            +257 64 44 45 46 • Instant protocol chat
+                            +257 69 99 29 84 • Instant protocol chat
                           </div>
                         </div>
                       </a>

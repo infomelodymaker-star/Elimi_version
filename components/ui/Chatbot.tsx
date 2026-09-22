@@ -85,7 +85,7 @@ export function Chatbot({
         { label: "👑 Protocol Hub", href: "/protocol" },
         { label: "🛍️ Elimi Shop", href: "/shop" },
         { label: "🖨️ PrintBe", href: "/printbe" },
-        { label: "💬 WhatsApp Desk", href: "https://wa.me/25764444546", isExternal: true },
+        { label: "💬 WhatsApp Desk", href: "https://wa.me/25769992984", isExternal: true },
       ],
     },
   ])
@@ -231,7 +231,7 @@ export function Chatbot({
       }
       actions.push({
         label: "💬 WhatsApp Desk",
-        href: "https://wa.me/25764444546",
+        href: "https://wa.me/25769992984",
         isExternal: true,
       })
 
@@ -249,10 +249,10 @@ export function Chatbot({
         id: makeMessageId("err"),
         role: "assistant",
         content:
-          "Thank you for contacting ELIMI Concierge! Our team is available on WhatsApp (+257 64 44 45 46) for fast assistance with protocol staffing, vehicle fleet rentals, and luxury shopping.",
+          "Thank you for contacting ELIMI Concierge! Our team is available on WhatsApp (+257 69 992 984) for fast assistance with protocol staffing, vehicle fleet rentals, and luxury shopping.",
         timestamp: getCurrentTimestamp(),
         actions: [
-          { label: "💬 Chat on WhatsApp", href: "https://wa.me/25764444546", isExternal: true },
+          { label: "💬 Chat on WhatsApp", href: "https://wa.me/25769992984", isExternal: true },
           { label: "👑 Protocol Page", href: "/protocol" },
         ],
       }

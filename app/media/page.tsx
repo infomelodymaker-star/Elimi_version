@@ -1565,7 +1565,7 @@ export default function MediaPage() {
                 </Link>
 
                 <a
-                  href="https://wa.me/25764444546?text=Hello%20Elimi!%20I%20saw%20an%20item%20in%20your%20Media%20video%20and%20want%20to%20buy."
+                  href="https://wa.me/25769992984?text=Hello%20Elimi!%20I%20saw%20an%20item%20in%20your%20Media%20video%20and%20want%20to%20buy."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-white/15 hover:bg-white/25 text-white font-semibold px-6 py-3.5 rounded-full text-sm border border-white/30 backdrop-blur-xs transition flex items-center gap-2"
@@ -1646,7 +1646,7 @@ export default function MediaPage() {
             </h5>
             <div className="space-y-2 text-xs text-slate-400">
               <p>📍 Boulevard Mwezi Gisabo, Bujumbura</p>
-              <p>📞 Media Desk: +257 64 44 45 46</p>
+              <p>📞 Media Desk: +257 69 99 29 84</p>
               <p>✉️ elimiofficiel@gmail.com</p>
             </div>
           </div>
@@ -2053,7 +2053,7 @@ export default function MediaPage() {
 
                 <div className="flex items-center gap-2">
                   <a
-                    href={`https://wa.me/25764444546?text=Hello%20Elimi!%20I%20want%20to%20order%20the%20${encodeURIComponent(quickProductModal.name)}%20featured%20in%20Elimi%20Media.`}
+                    href={`https://wa.me/25769992984?text=Hello%20Elimi!%20I%20want%20to%20order%20the%20${encodeURIComponent(quickProductModal.name)}%20featured%20in%20Elimi%20Media.`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => {

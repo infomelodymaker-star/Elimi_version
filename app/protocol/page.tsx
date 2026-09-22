@@ -122,9 +122,9 @@ export default function ProtocolPage() {
   const settings = useSettings();
   const { data: cmsData } = useCmsPage('protocol');
 
-  const contactPhone = settings.contactPhone || '+257 64 44 45 46';
+  const contactPhone = settings.contactPhone || '+257 69 99 29 84';
   const phoneTelLink = `tel:${contactPhone.replace(/\s+/g, '')}`;
-  const whatsappNum = settings.whatsappNumber || '25764444546';
+  const whatsappNum = settings.whatsappNumber || '25769992984';
   const whatsappLink = `https://wa.me/${whatsappNum.replace(/\+/g, '')}`;
 
   // Parse CMS sections safely

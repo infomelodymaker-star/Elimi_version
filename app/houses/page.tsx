@@ -446,13 +446,13 @@ function HousesContent() {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 max-w-md mx-auto sm:max-w-none">
             <a
-              href="tel:+25779000000"
+              href="tel:+25769992984"
               className="bg-[#0B57FF] text-white px-8 py-3.5 rounded-full text-sm font-semibold hover:bg-[#0948D9] transition-colors shadow-xs"
             >
               Schedule a Consultation
             </a>
             <a
-              href="tel:+25779000000"
+              href="tel:+25769992984"
               className="border border-[#1D4ED8] bg-transparent text-[#0F172A] px-8 py-3.5 rounded-full text-sm font-semibold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
             >
               <Phone className="w-4 h-4 text-[#0B57FF]" />

@@ -80,7 +80,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
       { label: "🎬 Elimi Média", href: "/media" },
       {
         label: "💬 WhatsApp Desk",
-        href: "https://wa.me/25764444546",
+        href: "https://wa.me/25769992984",
         isExternal: true,
       },
     ],
@@ -331,7 +331,7 @@ export default function AIChatAssistant() {
       }
       actions.push({
         label: "💬 WhatsApp Desk",
-        href: "https://wa.me/25764444546",
+        href: "https://wa.me/25769992984",
         isExternal: true,
       });
 
@@ -350,12 +350,12 @@ export default function AIChatAssistant() {
       const errorMsg: ChatMessage = {
         id: createMessageId("err"),
         sender: "ai",
-        text: "Thank you for reaching out! Our team is available on WhatsApp (+257 64 44 45 46) to assist with all your protocol, fleet, and shopping inquiries in Burundi.",
+        text: "Thank you for reaching out! Our team is available on WhatsApp (+257 69 992 984) to assist with all your protocol, fleet, and shopping inquiries in Burundi.",
         timestamp: getTimestampString(),
         actions: [
           {
             label: "💬 Chat on WhatsApp",
-            href: "https://wa.me/25764444546",
+            href: "https://wa.me/25769992984",
             isExternal: true,
           },
           { label: "👑 Protocol Page", href: "/protocol" },
