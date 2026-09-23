@@ -164,8 +164,12 @@ export async function seedInitialProductsIfEmpty(): Promise<boolean> {
     }
     isSeedingInProgress = false;
     return false;
-  } catch (err) {
-    console.error('Error checking or seeding Firestore products:', err);
+  } catch (err: any) {
+    if (err?.code === 'permission-denied' || err?.message?.includes('Missing or insufficient permissions')) {
+      console.warn('[Firestore] Boutique products seeding requires authenticated admin privileges.');
+    } else {
+      console.warn('[Firestore] Note checking or seeding boutique products:', err?.message || err);
+    }
     isSeedingInProgress = false;
     return false;
   }
@@ -228,8 +232,9 @@ export function useRealtimeProducts() {
             setProducts(liveProducts);
             setIsLive(true);
           } else {
-            // If empty in Firestore, trigger background seeding so public catalog is ready
-            seedInitialProductsIfEmpty().catch(() => {});
+            // Firestore collection is empty; use local cache or boutique sample products without writing
+            const cached = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
+            setProducts(cached);
           }
           setLoading(false);
         },
@@ -373,10 +378,10 @@ export async function addProductToFirestore(product: Product): Promise<void> {
   await syncItemToServerCatalog('products', cleaned, 'save');
 
   // 3. Write to Firestore with safety timeout (never hangs UI)
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, PRODUCTS_COLLECTION, product.id);
     await setDoc(docRef, cleaned);
-  }, 1500, `Add product ${product.id}`);
+  }, 10000, `Add product ${product.id}`);
 }
 
 /**
@@ -406,10 +411,10 @@ export async function updateProductInFirestore(
   await syncItemToServerCatalog('products', cleanedUpdates, 'save');
 
   // 3. Write to Firestore with safety timeout (never hangs UI)
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, PRODUCTS_COLLECTION, productId);
     await setDoc(docRef, cleanedUpdates, { merge: true });
-  }, 1500, `Update product ${productId}`);
+  }, 10000, `Update product ${productId}`);
 }
 
 /**
@@ -425,10 +430,10 @@ export async function deleteProductFromFirestore(productId: string): Promise<voi
   await syncItemToServerCatalog('products', productId, 'delete');
 
   // 3. Delete from Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, PRODUCTS_COLLECTION, productId);
     await deleteDoc(docRef);
-  }, 1500, `Delete product ${productId}`);
+  }, 10000, `Delete product ${productId}`);
 }
 
 /**
@@ -736,10 +741,10 @@ export async function addProductCategory(category: Omit<ProductCategory, 'id'> &
   await syncItemToServerCatalog('shop_categories', cleaned, 'save');
 
   // 3. Write to Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'shop_categories', id);
     await setDoc(docRef, cleaned);
-  }, 1500, `Add category ${id}`);
+  }, 10000, `Add category ${id}`);
 
   return id;
 }
@@ -766,10 +771,10 @@ export async function updateProductCategory(id: string, updates: Partial<Product
   await syncItemToServerCatalog('shop_categories', cleaned, 'save');
 
   // 3. Write to Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'shop_categories', id);
     await setDoc(docRef, cleaned, { merge: true });
-  }, 1500, `Update category ${id}`);
+  }, 10000, `Update category ${id}`);
 }
 
 export async function deleteProductCategory(id: string): Promise<void> {
@@ -782,9 +787,9 @@ export async function deleteProductCategory(id: string): Promise<void> {
   await syncItemToServerCatalog('shop_categories', id, 'delete');
 
   // 3. Delete from Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'shop_categories', id);
     await deleteDoc(docRef);
-  }, 1500, `Delete category ${id}`);
+  }, 10000, `Delete category ${id}`);
 }
 

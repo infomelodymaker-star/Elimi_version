@@ -238,7 +238,7 @@ export async function forceUpdateCarsSchema(): Promise<boolean> {
   if (isCarSeedingInProgress) return false;
   try {
     isCarSeedingInProgress = true;
-    console.log('Forcing schema update for all cars in Firestore...');
+    console.log('Syncing cars schema in Firestore...');
     const batch = writeBatch(db);
     for (const car of SAMPLE_CARS) {
       const docRef = doc(db, CARS_COLLECTION, car.id);
@@ -251,8 +251,12 @@ export async function forceUpdateCarsSchema(): Promise<boolean> {
     console.log('Successfully updated cars schema in Firestore');
     isCarSeedingInProgress = false;
     return true;
-  } catch (err) {
-    console.error('Error updating Firestore cars schema:', err);
+  } catch (err: any) {
+    if (err?.code === 'permission-denied' || err?.message?.includes('Missing or insufficient permissions')) {
+      console.warn('[Firestore] Cars schema write requires authenticated admin privileges.');
+    } else {
+      console.warn('[Firestore] Note updating cars schema:', err?.message || err);
+    }
     isCarSeedingInProgress = false;
     return false;
   }
@@ -312,7 +316,9 @@ export function useRealtimeCars() {
             setCars(liveCars);
             setIsLive(true);
           } else {
-            forceUpdateCarsSchema().catch(() => {});
+            // Firestore collection is currently empty; keep stored or default cars without writing
+            const stored = getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS);
+            setCars(stored);
           }
           setLoading(false);
         },
@@ -445,10 +451,10 @@ export async function addCarToFirestore(car: Car): Promise<void> {
   await syncItemToServerCatalog('cars', cleaned, 'save');
 
   // 3. Write to Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, CARS_COLLECTION, car.id);
     await setDoc(docRef, cleaned);
-  }, 1500, `Add car ${car.id}`);
+  }, 10000, `Add car ${car.id}`);
 }
 
 export async function updateCarInFirestore(
@@ -475,10 +481,10 @@ export async function updateCarInFirestore(
   await syncItemToServerCatalog('cars', cleanedUpdates, 'save');
 
   // 3. Write to Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, CARS_COLLECTION, carId);
     await setDoc(docRef, cleanedUpdates, { merge: true });
-  }, 1500, `Update car ${carId}`);
+  }, 10000, `Update car ${carId}`);
 }
 
 export async function deleteCarFromFirestore(carId: string): Promise<void> {
@@ -491,10 +497,10 @@ export async function deleteCarFromFirestore(carId: string): Promise<void> {
   await syncItemToServerCatalog('cars', carId, 'delete');
 
   // 3. Delete from Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, CARS_COLLECTION, carId);
     await deleteDoc(docRef);
-  }, 1500, `Delete car ${carId}`);
+  }, 10000, `Delete car ${carId}`);
 }
 
 export async function seedInitialCarsIfEmpty(): Promise<boolean> {

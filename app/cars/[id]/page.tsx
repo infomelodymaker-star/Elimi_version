@@ -6,7 +6,7 @@ import Link from 'next/link';
 import ElimiHeader from '@/components/ElimiHeader';
 import GoogleLocationMap from '@/components/GoogleLocationMap';
 import ImageLightboxModal from '@/components/ImageLightboxModal';
-import { useRealtimeCar } from '@/lib/firestore-cars';
+import { useRealtimeCar, useRealtimeCars } from '@/lib/firestore-cars';
 import { useSettings } from '@/components/SettingsProvider';
 import {
   Users,
@@ -27,6 +27,7 @@ export default function CarDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const { car, loading } = useRealtimeCar(id);
+  const { cars } = useRealtimeCars();
   const { whatsappNumber, phoneNumber } = useSettings();
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -139,7 +140,7 @@ export default function CarDetailPage() {
                 </div>
                 <div className="pt-4 md:pt-0 border-t md:border-t-0 border-gray-200 md:text-right flex flex-col justify-center shrink-0">
                   <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-                    {car.rentPrice ? `$${car.rentPrice.toLocaleString()}/day` : `$${car.price.toLocaleString()}`}
+                    {car.rentPrice ? `$${Number(car.rentPrice || 0).toLocaleString()}/day` : `$${Number(car.price || 0).toLocaleString()}`}
                   </div>
                   <div className="text-xs uppercase tracking-wider text-gray-500 mb-4 font-semibold">
                     {car.rent ? 'Daily Rental Rate' : 'Outright Sale Price'}
@@ -162,7 +163,7 @@ export default function CarDetailPage() {
               </h4>
               <div className="space-y-3">
                 {(car.availableUnits || [
-                  { unitId: 'VIP-01', availableDate: 'Available Today', price: car.rentPrice || car.price, isRent: car.rent }
+                  { unitId: 'VIP-01', availableDate: 'Available Today', price: car.rentPrice || car.price || 0, isRent: car.rent }
                 ]).map((unit, idx) => (
                   <div key={idx} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-xl shadow-sm border border-gray-200/60 gap-3">
                     <div className="font-semibold text-gray-900 text-sm sm:text-base w-full sm:w-1/4">
@@ -173,7 +174,7 @@ export default function CarDetailPage() {
                       <span>{unit.availableDate}</span>
                     </div>
                     <div className="font-bold text-gray-900 text-sm sm:text-base w-full sm:w-1/4">
-                      ${unit.price.toLocaleString()}{unit.isRent ? '/day' : ''}
+                      ${Number(unit.price || 0).toLocaleString()}{unit.isRent ? '/day' : ''}
                     </div>
                     <div className="w-full sm:w-1/4 sm:text-right">
                       <a
@@ -389,10 +390,10 @@ export default function CarDetailPage() {
                   <div className="p-5 flex-grow flex flex-col">
                     <h3 className="font-serif text-lg font-bold mb-1 text-gray-900 line-clamp-1 group-hover:text-[#0D52FF] transition-colors">{nearbyCar.title}</h3>
                     <p className="text-xs text-gray-500 mb-4 line-clamp-1">
-                      {nearbyCar.address.split(',')[0]} · {nearbyCar.seats} Seats · {nearbyCar.transmission}
+                      {(nearbyCar.address || 'ELIMI Hub').split(',')[0]} · {nearbyCar.seats || 5} Seats · {nearbyCar.transmission || 'Automatic'}
                     </p>
                     <div className="mt-auto font-bold text-sm text-[#0D52FF]">
-                      {nearbyCar.rentPrice ? `$${nearbyCar.rentPrice.toLocaleString()}/day` : `$${nearbyCar.price.toLocaleString()}`}
+                      {nearbyCar.rentPrice ? `$${Number(nearbyCar.rentPrice || 0).toLocaleString()}/day` : `$${Number(nearbyCar.price || 0).toLocaleString()}`}
                     </div>
                   </div>
                 </article>

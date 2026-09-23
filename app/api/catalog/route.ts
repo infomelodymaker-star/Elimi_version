@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { BOUTIQUE_PRODUCTS } from '@/lib/products';
+import { SAMPLE_CARS } from '@/lib/firestore-cars';
+import { SAMPLE_HOUSES } from '@/lib/firestore-houses';
+import { INITIAL_RENTAL_ITEMS, INITIAL_RENTAL_CATEGORIES } from '@/lib/firestore-rentals';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +62,14 @@ function getInitialData(collectionName: string): any[] {
       return BOUTIQUE_PRODUCTS;
     case 'shop_categories':
       return DEFAULT_SHOP_CATEGORIES;
+    case 'cars':
+      return SAMPLE_CARS;
+    case 'houses':
+      return SAMPLE_HOUSES;
+    case 'rental_items':
+      return INITIAL_RENTAL_ITEMS;
+    case 'rental_categories':
+      return INITIAL_RENTAL_CATEGORIES;
     default:
       return [];
   }

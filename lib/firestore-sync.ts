@@ -60,7 +60,7 @@ export function saveStoredObject<T>(key: string, data: T, eventName?: string): v
  */
 export function runFirestoreTaskSafe<T>(
   task: () => Promise<T>,
-  timeoutMs: number = 1500,
+  timeoutMs: number = 10000,
   taskDescription: string = 'Firestore task'
 ): Promise<T | null> {
   return new Promise<T | null>((resolve) => {
@@ -69,7 +69,7 @@ export function runFirestoreTaskSafe<T>(
     const timer = setTimeout(() => {
       if (!resolved) {
         resolved = true;
-        console.warn(`[Circuit Breaker] ${taskDescription} took longer than ${timeoutMs}ms. Continuing without blocking.`);
+        console.warn(`[Firestore Safe Task] ${taskDescription} took longer than ${timeoutMs}ms.`);
         resolve(null);
       }
     }, timeoutMs);
@@ -86,7 +86,7 @@ export function runFirestoreTaskSafe<T>(
         if (!resolved) {
           resolved = true;
           clearTimeout(timer);
-          console.warn(`[Background Task Handled] ${taskDescription} note:`, err?.message || err);
+          console.error(`[Firestore Task Failed] ${taskDescription}:`, err?.code || '', err?.message || err);
           resolve(null);
         }
       });

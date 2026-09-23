@@ -55,7 +55,7 @@ let cachedEventServices: { data: EventServiceItem[]; timestamp: number } | null 
 /**
  * Fast asynchronous Firestore fetcher with defensive timeout protection.
  */
-async function fetchWithTimeout<T>(promise: Promise<T>, ms: number = 1800): Promise<T> {
+async function fetchWithTimeout<T>(promise: Promise<T>, ms: number = 5000): Promise<T> {
   let timeoutId: any;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error('Firestore timeout')), ms);

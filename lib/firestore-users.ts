@@ -204,7 +204,7 @@ async function syncRegistry(accounts: RegisteredAccount[]): Promise<void> {
         },
         { merge: true }
       ),
-      1500,
+      8000,
       null
     );
   } catch (e) {
@@ -226,7 +226,7 @@ export async function registerUserWithQuotaCheck(
     let existingDocData: RegisteredAccount | null = null;
 
     try {
-      const docSnap = await withTimeout(getDoc(userDocRef), 1500, null as any);
+      const docSnap = await withTimeout(getDoc(userDocRef), 8000, null as any);
       if (docSnap && docSnap.exists()) {
         existingDocData = docSnap.data() as RegisteredAccount;
       }
@@ -264,7 +264,7 @@ export async function registerUserWithQuotaCheck(
           displayName: user.displayName || byEmail.displayName,
         };
         try {
-          await withTimeout(setDoc(userDocRef, updatedAccount, { merge: true }), 1500, null);
+          await withTimeout(setDoc(userDocRef, updatedAccount, { merge: true }), 8000, null);
         } catch (setErr) {
           console.warn('Set doc warning:', setErr);
         }
@@ -323,7 +323,7 @@ export async function registerUserWithQuotaCheck(
 
     // Store the new authorized account in Firestore
     try {
-      await withTimeout(setDoc(userDocRef, newAccount, { merge: true }), 1500, null);
+      await withTimeout(setDoc(userDocRef, newAccount, { merge: true }), 8000, null);
     } catch (setErr) {
       console.warn('Store user doc warning:', setErr);
     }

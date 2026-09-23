@@ -630,7 +630,8 @@ export function useRealtimeRentalCategories() {
             setCategories(list);
             setIsLive(true);
           } else {
-            seedInitialRentalsIfEmpty().catch(() => {});
+            const stored = getStoredItems<RentalCategory>(RENTAL_CATEGORIES_STORAGE_KEY, INITIAL_RENTAL_CATEGORIES);
+            setCategories(stored);
           }
           setLoading(false);
         },
@@ -692,7 +693,8 @@ export function useRealtimeRentalItems() {
             setItems(list);
             setIsLive(true);
           } else {
-            seedInitialRentalsIfEmpty().catch(() => {});
+            const stored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
+            setItems(stored);
           }
           setLoading(false);
         },
@@ -828,10 +830,10 @@ export async function addRentalCategory(category: Omit<RentalCategory, 'id'> & {
   await syncItemToServerCatalog('rental_categories', cleaned, 'save');
 
   // 3. Write to Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_categories', id);
     await setDoc(docRef, cleaned);
-  }, 1500, `Add rental category ${id}`);
+  }, 10000, `Add rental category ${id}`);
 
   return id;
 }
@@ -858,10 +860,10 @@ export async function updateRentalCategory(id: string, updates: Partial<RentalCa
   await syncItemToServerCatalog('rental_categories', cleaned, 'save');
 
   // 3. Write to Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_categories', id);
     await setDoc(docRef, cleaned, { merge: true });
-  }, 1500, `Update rental category ${id}`);
+  }, 10000, `Update rental category ${id}`);
 }
 
 export async function deleteRentalCategory(id: string): Promise<void> {
@@ -874,10 +876,10 @@ export async function deleteRentalCategory(id: string): Promise<void> {
   await syncItemToServerCatalog('rental_categories', id, 'delete');
 
   // 3. Delete from Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_categories', id);
     await deleteDoc(docRef);
-  }, 1500, `Delete rental category ${id}`);
+  }, 10000, `Delete rental category ${id}`);
 }
 
 export async function addRentalItem(item: Omit<RentalItem, 'id'> & { id?: string }): Promise<string> {
@@ -899,10 +901,10 @@ export async function addRentalItem(item: Omit<RentalItem, 'id'> & { id?: string
   await syncItemToServerCatalog('rental_items', cleaned, 'save');
 
   // 3. Write to Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_items', id);
     await setDoc(docRef, cleaned);
-  }, 1500, `Add rental item ${id}`);
+  }, 10000, `Add rental item ${id}`);
 
   return id;
 }
@@ -929,10 +931,10 @@ export async function updateRentalItem(id: string, updates: Partial<RentalItem>)
   await syncItemToServerCatalog('rental_items', cleaned, 'save');
 
   // 3. Write to Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_items', id);
     await setDoc(docRef, cleaned, { merge: true });
-  }, 1500, `Update rental item ${id}`);
+  }, 10000, `Update rental item ${id}`);
 }
 
 export async function deleteRentalItem(id: string): Promise<void> {
@@ -945,10 +947,10 @@ export async function deleteRentalItem(id: string): Promise<void> {
   await syncItemToServerCatalog('rental_items', id, 'delete');
 
   // 3. Delete from Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, 'rental_items', id);
     await deleteDoc(docRef);
-  }, 1500, `Delete rental item ${id}`);
+  }, 10000, `Delete rental item ${id}`);
 }
 
 export async function seedInitialRentalsIfEmpty(): Promise<boolean> {
@@ -983,8 +985,12 @@ export async function seedInitialRentalsIfEmpty(): Promise<boolean> {
       await batch.commit();
     }
     return true;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, 'seedRentals');
+  } catch (error: any) {
+    if (error?.code === 'permission-denied' || error?.message?.includes('Missing or insufficient permissions')) {
+      console.warn('[Firestore] Rental seeding requires authenticated admin privileges.');
+    } else {
+      handleFirestoreError(error, OperationType.WRITE, 'seedRentals');
+    }
     return false;
   }
 }

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import ElimiHeader from '@/components/ElimiHeader';
 import GoogleLocationMap from '@/components/GoogleLocationMap';
 import ImageLightboxModal from '@/components/ImageLightboxModal';
-import { useRealtimeHouse } from '@/lib/firestore-houses';
+import { useRealtimeHouse, useRealtimeHouses } from '@/lib/firestore-houses';
 import { useSettings } from '@/components/SettingsProvider';
 import {
   Bed,
@@ -27,6 +27,7 @@ export default function HouseDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const { house, loading } = useRealtimeHouse(id);
+  const { houses } = useRealtimeHouses();
   const { whatsappNumber, phoneNumber } = useSettings();
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -134,7 +135,7 @@ export default function HouseDetailPage() {
                 </div>
                 <div className="pt-4 md:pt-0 border-t md:border-t-0 border-gray-200 md:text-right flex flex-col justify-center shrink-0">
                   <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-                    {house.rentPrice ? `$${house.rentPrice.toLocaleString()}/mo` : `$${house.price.toLocaleString()}`}
+                    {house.rentPrice ? `$${Number(house.rentPrice || 0).toLocaleString()}/mo` : `$${Number(house.price || 0).toLocaleString()}`}
                   </div>
                   <div className="text-xs uppercase tracking-wider text-gray-500 mb-4 font-semibold">
                     {house.rent ? 'Monthly Lease Rate' : 'Outright Purchase Price'}
@@ -157,7 +158,7 @@ export default function HouseDetailPage() {
               </h4>
               <div className="space-y-3">
                 {(house.availableUnits || [
-                  { unitId: 'ESTATE-01', availableDate: 'Available for Immediate Move-in', price: house.rentPrice || house.price, isRent: house.rent }
+                  { unitId: 'ESTATE-01', availableDate: 'Available for Immediate Move-in', price: house.rentPrice || house.price || 0, isRent: house.rent }
                 ]).map((unit, idx) => (
                   <div key={idx} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-xl shadow-sm border border-gray-200/60 gap-3">
                     <div className="font-semibold text-gray-900 text-sm sm:text-base w-full sm:w-1/4">
@@ -168,7 +169,7 @@ export default function HouseDetailPage() {
                       <span>{unit.availableDate}</span>
                     </div>
                     <div className="font-bold text-gray-900 text-sm sm:text-base w-full sm:w-1/4">
-                      ${unit.price.toLocaleString()}{house.rent ? '/mo' : ''}
+                      ${Number(unit.price || 0).toLocaleString()}{house.rent ? '/mo' : ''}
                     </div>
                     <div className="w-full sm:w-1/4 sm:text-right">
                       <a
@@ -385,10 +386,10 @@ export default function HouseDetailPage() {
                   <div className="p-5 flex-grow flex flex-col">
                     <h3 className="font-serif text-lg font-bold mb-1 text-gray-900 line-clamp-1 group-hover:text-[#0D52FF] transition-colors">{nearbyHouse.title}</h3>
                     <p className="text-xs text-gray-500 mb-4 line-clamp-1">
-                      {nearbyHouse.address.split(',')[0]} · {nearbyHouse.bedrooms} Beds · {nearbyHouse.bathrooms} Baths
+                      {(nearbyHouse.address || 'ELIMI Residence').split(',')[0]} · {nearbyHouse.bedrooms || 3} Beds · {nearbyHouse.bathrooms || 2} Baths
                     </p>
                     <div className="mt-auto font-bold text-sm text-[#0D52FF]">
-                      {nearbyHouse.rentPrice ? `$${nearbyHouse.rentPrice.toLocaleString()}/mo` : `$${nearbyHouse.price.toLocaleString()}`}
+                      {nearbyHouse.rentPrice ? `$${Number(nearbyHouse.rentPrice || 0).toLocaleString()}/mo` : `$${Number(nearbyHouse.price || 0).toLocaleString()}`}
                     </div>
                   </div>
                 </article>

@@ -232,7 +232,7 @@ export async function forceUpdateHousesSchema(): Promise<boolean> {
   if (isSeedingInProgress) return false;
   try {
     isSeedingInProgress = true;
-    console.log('Forcing schema update for all houses in Firestore...');
+    console.log('Syncing houses schema in Firestore...');
     const batch = writeBatch(db);
     for (const house of SAMPLE_HOUSES) {
       const docRef = doc(db, HOUSES_COLLECTION, house.id);
@@ -245,8 +245,12 @@ export async function forceUpdateHousesSchema(): Promise<boolean> {
     console.log('Successfully updated houses schema in Firestore');
     isSeedingInProgress = false;
     return true;
-  } catch (err) {
-    console.error('Error updating Firestore houses schema:', err);
+  } catch (err: any) {
+    if (err?.code === 'permission-denied' || err?.message?.includes('Missing or insufficient permissions')) {
+      console.warn('[Firestore] Houses schema write requires authenticated admin privileges.');
+    } else {
+      console.warn('[Firestore] Note updating houses schema:', err?.message || err);
+    }
     isSeedingInProgress = false;
     return false;
   }
@@ -306,7 +310,9 @@ export function useRealtimeHouses() {
             setHouses(liveHouses);
             setIsLive(true);
           } else {
-            forceUpdateHousesSchema().catch(() => {});
+            // Firestore collection is currently empty; keep stored or default houses without writing
+            const stored = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
+            setHouses(stored);
           }
           setLoading(false);
         },
@@ -439,10 +445,10 @@ export async function addHouseToFirestore(house: House): Promise<void> {
   await syncItemToServerCatalog('houses', cleaned, 'save');
 
   // 3. Write to Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, HOUSES_COLLECTION, house.id);
     await setDoc(docRef, cleaned);
-  }, 1500, `Add house ${house.id}`);
+  }, 10000, `Add house ${house.id}`);
 }
 
 export async function updateHouseInFirestore(
@@ -459,7 +465,7 @@ export async function updateHouseInFirestore(
     updatedAt: new Date().toISOString(),
   });
 
-  const updatedList = current.map((h) => (h.id === houseId ? cleanedUpdates : h));
+  const updatedList = current.map((c) => (c.id === houseId ? cleanedUpdates : c));
   if (!updatedList.some((h) => h.id === houseId)) {
     updatedList.push(cleanedUpdates);
   }
@@ -469,10 +475,10 @@ export async function updateHouseInFirestore(
   await syncItemToServerCatalog('houses', cleanedUpdates, 'save');
 
   // 3. Write to Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, HOUSES_COLLECTION, houseId);
     await setDoc(docRef, cleanedUpdates, { merge: true });
-  }, 1500, `Update house ${houseId}`);
+  }, 10000, `Update house ${houseId}`);
 }
 
 export async function deleteHouseFromFirestore(houseId: string): Promise<void> {
@@ -485,10 +491,10 @@ export async function deleteHouseFromFirestore(houseId: string): Promise<void> {
   await syncItemToServerCatalog('houses', houseId, 'delete');
 
   // 3. Delete from Firestore with safety timeout
-  runFirestoreTaskSafe(async () => {
+  await runFirestoreTaskSafe(async () => {
     const docRef = doc(db, HOUSES_COLLECTION, houseId);
     await deleteDoc(docRef);
-  }, 1500, `Delete house ${houseId}`);
+  }, 10000, `Delete house ${houseId}`);
 }
 
 export async function seedInitialHousesIfEmpty(): Promise<boolean> {
