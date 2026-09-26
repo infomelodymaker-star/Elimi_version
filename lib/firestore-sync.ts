@@ -4,6 +4,8 @@
  * and circuit-breaker timeout wrapping for Firestore calls to prevent UI hangs.
  */
 
+import { auth } from './firebase';
+
 export function getStoredItems<T>(key: string, fallback: T[]): T[] {
   if (typeof window === 'undefined') return fallback;
   try {
@@ -109,9 +111,25 @@ export async function syncItemToServerCatalog(
         ? { collection, action: 'delete', id: typeof itemOrId === 'string' ? itemOrId : itemOrId?.id }
         : { collection, action: 'save', item: itemOrId };
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const idToken = await currentUser.getIdToken();
+        if (idToken) {
+          headers['Authorization'] = `Bearer ${idToken}`;
+        }
+      }
+    } catch {
+      // Non-blocking token retrieval
+    }
+
     await fetch('/api/catalog', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
     });
   } catch (err: any) {

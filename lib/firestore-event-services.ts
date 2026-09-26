@@ -9,8 +9,8 @@ import {
   deleteDoc,
   writeBatch,
 } from 'firebase/firestore';
-import { db } from './firebase';
-import { getStoredItems, saveStoredItems, runFirestoreTaskSafe } from './firestore-sync';
+import { db, auth } from './firebase';
+import { getStoredItems, saveStoredItems, syncItemToServerCatalog } from './firestore-sync';
 
 export interface EventServiceTag {
   iconType: 'car' | 'users' | 'shield' | 'video' | 'zap' | 'utensils' | 'file';
@@ -115,14 +115,18 @@ export const EVENT_SERVICES_STORAGE_KEY = 'elimi_event_services_storage';
 export const EVENT_SERVICES_SYNC_EVENT = 'elimi_sync_event_services';
 
 export function useRealtimeEventServices() {
-  const [services, setServices] = useState<EventServiceItem[]>(() =>
-    getStoredItems<EventServiceItem>(EVENT_SERVICES_STORAGE_KEY, INITIAL_EVENT_SERVICES)
-  );
+  const [services, setServices] = useState<EventServiceItem[]>(INITIAL_EVENT_SERVICES);
   const [loading, setLoading] = useState(false);
   const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
-    // 1. Sync event handler
+    // 1. Initial stored items loaded on mount to prevent SSR hydration mismatch
+    queueMicrotask(() => {
+      const initialStored = getStoredItems<EventServiceItem>(EVENT_SERVICES_STORAGE_KEY, INITIAL_EVENT_SERVICES);
+      setServices(initialStored);
+    });
+
+    // 2. Sync event handler
     const handleSync = () => {
       const updated = getStoredItems<EventServiceItem>(EVENT_SERVICES_STORAGE_KEY, INITIAL_EVENT_SERVICES);
       setServices(updated);
@@ -131,7 +135,7 @@ export function useRealtimeEventServices() {
     window.addEventListener(EVENT_SERVICES_SYNC_EVENT, handleSync);
     window.addEventListener('storage', handleSync);
 
-    // 2. Safe Firestore live listener
+    // 3. Safe Firestore live listener
     let unsubscribe: (() => void) | undefined;
     try {
       const q = collection(db, EVENT_SERVICES_COLLECTION);
@@ -180,10 +184,16 @@ export function useRealtimeEventServices() {
 }
 
 function removeUndefinedFields<T extends Record<string, any>>(obj: T): T {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj
+      .filter((item) => item !== undefined)
+      .map((item) => (typeof item === 'object' && item !== null ? removeUndefinedFields(item) : item)) as unknown as T;
+  }
   const result: any = {};
   for (const [key, value] of Object.entries(obj)) {
     if (value !== undefined) {
-      if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+      if (value && typeof value === 'object') {
         result[key] = removeUndefinedFields(value);
       } else {
         result[key] = value;
@@ -194,6 +204,11 @@ function removeUndefinedFields<T extends Record<string, any>>(obj: T): T {
 }
 
 export async function addEventServiceToFirestore(item: EventServiceItem): Promise<void> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('Authentication required: You must be logged in as an authenticated admin in the dashboard to add event services.');
+  }
+
   const cleaned: EventServiceItem = removeUndefinedFields({
     ...item,
     enabled: item.enabled ?? true,
@@ -205,18 +220,23 @@ export async function addEventServiceToFirestore(item: EventServiceItem): Promis
   const updatedList = [cleaned, ...current.filter((s) => s.id !== item.id)];
   saveStoredItems(EVENT_SERVICES_STORAGE_KEY, updatedList, EVENT_SERVICES_SYNC_EVENT);
 
-  try {
-    const docRef = doc(db, EVENT_SERVICES_COLLECTION, item.id);
-    await setDoc(docRef, cleaned);
-  } catch (err) {
-    console.error(`Error adding event service ${item.id} to Firestore:`, err);
-  }
+  // Sync to server catalog
+  syncItemToServerCatalog('event_services', cleaned, 'save').catch(() => {});
+
+  // Direct Firestore write to (default) database collection event_services
+  const docRef = doc(db, EVENT_SERVICES_COLLECTION, item.id);
+  await setDoc(docRef, cleaned);
 }
 
 export async function updateEventServiceInFirestore(
   serviceId: string,
   updates: Partial<EventServiceItem>
 ): Promise<void> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('Authentication required: You must be logged in as an authenticated admin in the dashboard to update event services.');
+  }
+
   const current = getStoredItems<EventServiceItem>(EVENT_SERVICES_STORAGE_KEY, INITIAL_EVENT_SERVICES);
   const existing = current.find((s) => s.id === serviceId) || INITIAL_EVENT_SERVICES.find((s) => s.id === serviceId) || { id: serviceId, title: '', description: '', unitPrice: 0, defaultQuantity: 1, image: '', enabled: true, tags: [] } as EventServiceItem;
   
@@ -233,39 +253,47 @@ export async function updateEventServiceInFirestore(
   }
   saveStoredItems(EVENT_SERVICES_STORAGE_KEY, updatedList, EVENT_SERVICES_SYNC_EVENT);
 
-  try {
-    const docRef = doc(db, EVENT_SERVICES_COLLECTION, serviceId);
-    await setDoc(docRef, cleanedUpdates, { merge: true });
-  } catch (err) {
-    console.error(`Error updating event service ${serviceId} in Firestore:`, err);
-  }
+  // Sync to server catalog
+  syncItemToServerCatalog('event_services', cleanedUpdates, 'save').catch(() => {});
+
+  // Direct Firestore write
+  const docRef = doc(db, EVENT_SERVICES_COLLECTION, serviceId);
+  await setDoc(docRef, cleanedUpdates, { merge: true });
 }
 
 export async function deleteEventServiceFromFirestore(serviceId: string): Promise<void> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('Authentication required: You must be logged in as an authenticated admin in the dashboard to delete event services.');
+  }
+
   const current = getStoredItems<EventServiceItem>(EVENT_SERVICES_STORAGE_KEY, INITIAL_EVENT_SERVICES);
   const updatedList = current.filter((s) => s.id !== serviceId);
   saveStoredItems(EVENT_SERVICES_STORAGE_KEY, updatedList, EVENT_SERVICES_SYNC_EVENT);
 
-  try {
-    const docRef = doc(db, EVENT_SERVICES_COLLECTION, serviceId);
-    await deleteDoc(docRef);
-  } catch (err) {
-    console.error(`Error deleting event service ${serviceId} from Firestore:`, err);
-  }
+  // Sync to server catalog
+  syncItemToServerCatalog('event_services', { id: serviceId }, 'delete').catch(() => {});
+
+  // Direct Firestore delete
+  const docRef = doc(db, EVENT_SERVICES_COLLECTION, serviceId);
+  await deleteDoc(docRef);
 }
 
-export async function seedInitialEventServices(): Promise<void> {
-  try {
-    const batch = writeBatch(db);
-    for (const service of INITIAL_EVENT_SERVICES) {
-      const docRef = doc(db, EVENT_SERVICES_COLLECTION, service.id);
-      batch.set(docRef, {
-        ...service,
-        updatedAt: new Date().toISOString(),
-      }, { merge: true });
-    }
-    await batch.commit();
-  } catch (err) {
-    console.error('Error seeding event services:', err);
+export async function seedInitialEventServices(): Promise<{ count: number }> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('Authentication required: You must be logged in as an authenticated admin to seed event services.');
   }
+
+  const batch = writeBatch(db);
+  for (const service of INITIAL_EVENT_SERVICES) {
+    const cleaned = removeUndefinedFields({
+      ...service,
+      updatedAt: new Date().toISOString(),
+    });
+    const docRef = doc(db, EVENT_SERVICES_COLLECTION, service.id);
+    batch.set(docRef, cleaned, { merge: true });
+  }
+  await batch.commit();
+  return { count: INITIAL_EVENT_SERVICES.length };
 }

@@ -874,7 +874,7 @@ export default function AllocationItemDetailPage() {
                 ID Commande: <span className="font-mono font-bold text-neutral-900">{placedOrder.id}</span>
               </p>
               <p className="text-xs text-neutral-500">
-                Votre réservation est enregistrée dans notre système. Cliquez ci-dessous pour ouvrir WhatsApp et confirmer avec l'équipe ELIMI.
+                Votre réservation est enregistrée dans notre système. Cliquez ci-dessous pour ouvrir WhatsApp et confirmer avec l&apos;équipe ELIMI.
               </p>
             </div>
 

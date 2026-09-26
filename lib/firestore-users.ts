@@ -359,11 +359,16 @@ export async function registerUserWithQuotaCheck(
  * React hook to listen to registered accounts in real-time.
  */
 export function useRegisteredAccounts() {
-  const [accounts, setAccounts] = ReactState<RegisteredAccount[]>(() => getLocalCachedAccounts());
+  const [accounts, setAccounts] = ReactState<RegisteredAccount[]>([]);
   const [loading, setLoading] = ReactState<boolean>(false);
   const [error, setError] = ReactState<string | null>(null);
 
   ReactEffect(() => {
+    // 1. Initial stored items loaded on mount to prevent SSR hydration mismatch
+    queueMicrotask(() => {
+      setAccounts(getLocalCachedAccounts());
+    });
+
     const handleSync = () => {
       setAccounts(getLocalCachedAccounts());
     };
@@ -418,12 +423,43 @@ export function useRegisteredAccounts() {
 }
 
 /**
+ * Helper to execute admin user actions through secure server API
+ */
+async function callAdminUserApi(action: 'approve' | 'revoke' | 'delete', targetUid: string): Promise<boolean> {
+  try {
+    const currentUser = auth.currentUser;
+    const token = currentUser ? await currentUser.getIdToken() : '';
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ action, targetUid }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return Boolean(data.success);
+    }
+    return false;
+  } catch (err) {
+    console.warn('Admin API route notice:', err);
+    return false;
+  }
+}
+
+/**
  * Approve a pending admin account (Super Admin capability)
  */
 export async function approveAdminUser(uid: string): Promise<boolean> {
   try {
-    const userDocRef = doc(db, USERS_COLLECTION, uid);
-    await setDoc(userDocRef, { status: 'approved' }, { merge: true });
+    const apiSuccess = await callAdminUserApi('approve', uid);
+    if (!apiSuccess) {
+      // Direct Firestore fallback
+      const userDocRef = doc(db, USERS_COLLECTION, uid);
+      await setDoc(userDocRef, { status: 'approved' }, { merge: true });
+    }
     const cached = getLocalCachedAccounts();
     const updated = cached.map((u) => (u.uid === uid ? { ...u, status: 'approved' as const } : u));
     saveLocalCachedAccounts(updated);
@@ -440,8 +476,11 @@ export async function approveAdminUser(uid: string): Promise<boolean> {
  */
 export async function revokeAdminUser(uid: string): Promise<boolean> {
   try {
-    const userDocRef = doc(db, USERS_COLLECTION, uid);
-    await setDoc(userDocRef, { status: 'pending' }, { merge: true });
+    const apiSuccess = await callAdminUserApi('revoke', uid);
+    if (!apiSuccess) {
+      const userDocRef = doc(db, USERS_COLLECTION, uid);
+      await setDoc(userDocRef, { status: 'pending' }, { merge: true });
+    }
     const cached = getLocalCachedAccounts();
     const updated = cached.map((u) => (u.uid === uid ? { ...u, status: 'pending' as const } : u));
     saveLocalCachedAccounts(updated);
@@ -458,8 +497,11 @@ export async function revokeAdminUser(uid: string): Promise<boolean> {
  */
 export async function deleteAdminUser(uid: string): Promise<boolean> {
   try {
-    const userDocRef = doc(db, USERS_COLLECTION, uid);
-    await deleteDoc(userDocRef);
+    const apiSuccess = await callAdminUserApi('delete', uid);
+    if (!apiSuccess) {
+      const userDocRef = doc(db, USERS_COLLECTION, uid);
+      await deleteDoc(userDocRef);
+    }
     const cached = getLocalCachedAccounts();
     const updated = cached.filter((u) => u.uid !== uid);
     saveLocalCachedAccounts(updated);

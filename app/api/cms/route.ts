@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { verifyServerAuth } from '@/lib/server-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,7 @@ function writeStoredPages(data: Record<string, any>): void {
   }
 }
 
+// Public read
 export async function GET() {
   try {
     const pagesMap = readStoredPages();
@@ -46,8 +48,20 @@ export async function GET() {
   }
 }
 
+// Authenticated write
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await verifyServerAuth(req);
+    if (!authResult.authenticated) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Unauthorized: Authentication required (${authResult.error || 'Invalid credentials'})`,
+        },
+        { status: 401 }
+      );
+    }
+
     const pageData = await req.json();
     if (!pageData || !pageData.id) {
       return NextResponse.json({ success: false, error: 'Invalid page data, missing id' }, { status: 400 });

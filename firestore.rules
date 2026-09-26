@@ -2,63 +2,76 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Public collections for store and website visitors
+    
+    // Boutique Products
     match /products/{productId} {
       allow read: if true;
-      allow write: if request.auth != null || true;
+      allow write: if request.auth != null;
       
+      // Customer Product Reviews
       match /reviews/{reviewId} {
-        allow read, write: if true;
+        allow read, create: if true;
+        allow update, delete: if request.auth != null;
       }
     }
     
+    // Newsletter Subscriptions
     match /newsletter_subscribers/{subscriberId} {
-      allow read, write: if true;
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
     }
     
+    // Boutique Orders
     match /orders/{orderId} {
-      allow read, write: if true;
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
     }
     
+    // Cars Fleet Catalog
     match /cars/{carId} {
       allow read: if true;
-      allow write: if request.auth != null || true;
+      allow write: if request.auth != null;
     }
     
+    // Real Estate Properties Catalog
     match /houses/{houseId} {
       allow read: if true;
-      allow write: if request.auth != null || true;
+      allow write: if request.auth != null;
     }
     
+    // Rental Allocations Categories
     match /rental_categories/{categoryId} {
       allow read: if true;
-      allow write: if request.auth != null || true;
+      allow write: if request.auth != null;
     }
 
+    // Rental Allocation Items
     match /rental_items/{itemId} {
       allow read: if true;
-      allow write: if request.auth != null || true;
+      allow write: if request.auth != null;
     }
 
+    // Event Services
+    match /event_services/{serviceId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // CMS Editorial Content
     match /cms_pages/{pageId} {
       allow read: if true;
-      allow write: if request.auth != null || true;
+      allow write: if request.auth != null;
     }
 
-    // Admin users management & system metadata
+    // Admin & Staff User Records
     match /users/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null || true;
+      allow read, write: if request.auth != null;
     }
 
+    // System Metadata & Registration Registry
     match /system_metadata/{docId} {
       allow read: if true;
-      allow write: if request.auth != null || true;
-    }
-
-    match /{document=**} {
-      allow read, write: if true;
+      allow write: if request.auth != null;
     }
   }
 }
-

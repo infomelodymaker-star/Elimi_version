@@ -13,6 +13,7 @@ import {
   CMS_SYNC_EVENT,
   saveCmsPageToFirestore,
   cleanObjectForFirestore,
+  seedInitialCmsPagesToFirestore,
 } from '@/lib/firestore-cms';
 import {
   useRealtimeEventServices,
@@ -56,9 +57,7 @@ export default function CmsManagementView() {
   const [activeTab, setActiveTab] = useState<'event-services' | 'pages'>('event-services');
   
   // Pages State
-  const [pages, setPages] = useState<CmsPage[]>(() =>
-    getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES)
-  );
+  const [pages, setPages] = useState<CmsPage[]>(INITIAL_CMS_PAGES);
   const [loading, setLoading] = useState(false);
   const [expandedPageId, setExpandedPageId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -84,6 +83,12 @@ export default function CmsManagementView() {
   });
 
   useEffect(() => {
+    // 0. Hydrate from storage on mount
+    queueMicrotask(() => {
+      const initialStored = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
+      setPages(initialStored);
+    });
+
     // 1. Custom sync listener
     const handleSync = () => {
       const updated = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
@@ -180,7 +185,7 @@ export default function CmsManagementView() {
       showToast(`CMS section "${updatedPage.title || pageId}" updated & saved to Firestore!`, 'success');
     } catch (err: any) {
       console.error('Error saving CMS page to Firestore:', err);
-      showToast(`Saved locally & to server storage (${err?.message || 'Firestore offline'})`, 'success');
+      showToast(err?.message || 'Failed to save to Firestore. Ensure you are logged in as admin.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -380,7 +385,7 @@ export default function CmsManagementView() {
           enabled: serviceFormData.enabled !== false,
           tags: serviceFormData.tags || [],
         });
-        showToast('Service updated successfully!');
+        showToast('Service updated & saved to Firestore (event_services)!', 'success');
       } else {
         const newId = `service-${Date.now()}`;
         const newService: EventServiceItem = {
@@ -396,11 +401,12 @@ export default function CmsManagementView() {
           tags: serviceFormData.tags || [],
         };
         await addEventServiceToFirestore(newService);
-        showToast('New event service added!');
+        showToast('New event service added & saved to Firestore!', 'success');
       }
       setIsEventModalOpen(false);
-    } catch {
-      showToast('Failed to save service', 'error');
+    } catch (err: any) {
+      console.error('Error saving service:', err);
+      showToast(err?.message || 'Failed to save service. Check admin credentials.', 'error');
     }
   };
 
@@ -408,9 +414,36 @@ export default function CmsManagementView() {
     if (confirm(`Are you sure you want to delete "${title}"?`)) {
       try {
         await deleteEventServiceFromFirestore(serviceId);
-        showToast(`Service "${title}" deleted`);
-      } catch {
-        showToast('Failed to delete service', 'error');
+        showToast(`Service "${title}" deleted from Firestore`, 'success');
+      } catch (err: any) {
+        showToast(err?.message || 'Failed to delete service', 'error');
+      }
+    }
+  };
+
+  const handleSeedCmsPages = async () => {
+    if (confirm('Push and synchronize all default CMS pages to the Firestore "cms_pages" collection? This will populate the default Firestore database.')) {
+      setIsSaving(true);
+      try {
+        const res = await seedInitialCmsPagesToFirestore();
+        showToast(`Successfully pushed ${res.count} CMS pages to Firestore (cms_pages)!`, 'success');
+      } catch (err: any) {
+        console.error('Seed CMS error:', err);
+        showToast(err?.message || 'Failed to seed CMS pages to Firestore. Ensure you are logged in.', 'error');
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleSeedEventServices = async () => {
+    if (confirm('Push and synchronize default Event Services to the Firestore "event_services" collection?')) {
+      try {
+        const res = await seedInitialEventServices();
+        showToast(`Successfully pushed ${res.count} event services to Firestore!`, 'success');
+      } catch (err: any) {
+        console.error('Seed event services error:', err);
+        showToast(err?.message || 'Failed to seed event services.', 'error');
       }
     }
   };
@@ -522,12 +555,27 @@ export default function CmsManagementView() {
           {/* Action Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-zinc-200 shadow-sm">
             <div>
-              <h2 className="font-semibold text-zinc-900 text-sm">Event Builder Custom Services</h2>
-              <p className="text-xs text-zinc-500">
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-zinc-900 text-sm">Event Builder Custom Services</h2>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Firestore Live (event_services)</span>
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 mt-0.5">
                 Services shown on the homepage interactive bundle calculator. Live synced to Firestore database.
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSeedEventServices}
+                className="border border-zinc-300 hover:bg-zinc-50 text-zinc-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Push default event services to Firestore database"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Sync Default Services</span>
+              </button>
               <button
                 type="button"
                 onClick={handleOpenAddServiceModal}
@@ -656,6 +704,34 @@ export default function CmsManagementView() {
          ========================================================================= */}
       {activeTab === 'pages' && (
         <div className="space-y-4">
+          {/* Action Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-zinc-200 shadow-sm">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-zinc-900 text-sm">Editorial Landing Pages</h2>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Firestore Live (cms_pages)</span>
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Dynamic hero banners, text copy, images, and feature sections across all public pages.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSeedCmsPages}
+                disabled={isSaving}
+                className="border border-blue-200 bg-blue-50/50 hover:bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                title="Push all default pages directly into the cms_pages Firestore collection"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isSaving ? 'animate-spin' : ''}`} />
+                <span>Push Default Pages to Firestore</span>
+              </button>
+            </div>
+          </div>
+
           {pages.length === 0 ? (
             <div className="bg-white border border-zinc-200 rounded-xl p-8 text-center">
               <span className="material-symbols-outlined text-4xl text-zinc-300 mb-2">find_in_page</span>

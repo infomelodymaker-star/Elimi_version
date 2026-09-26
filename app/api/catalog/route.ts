@@ -5,6 +5,8 @@ import { BOUTIQUE_PRODUCTS } from '@/lib/products';
 import { SAMPLE_CARS } from '@/lib/firestore-cars';
 import { SAMPLE_HOUSES } from '@/lib/firestore-houses';
 import { INITIAL_RENTAL_ITEMS, INITIAL_RENTAL_CATEGORIES } from '@/lib/firestore-rentals';
+import { INITIAL_EVENT_SERVICES } from '@/lib/firestore-event-services';
+import { verifyServerAuth } from '@/lib/server-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +42,7 @@ const DEFAULT_SHOP_CATEGORIES = [
     imageUrl: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80',
     description: 'Nail extensions and beauty tools',
     order: 4,
-  }
+  },
 ];
 
 function getDataDir(): string {
@@ -70,6 +72,8 @@ function getInitialData(collectionName: string): any[] {
       return INITIAL_RENTAL_ITEMS;
     case 'rental_categories':
       return INITIAL_RENTAL_CATEGORIES;
+    case 'event_services':
+      return INITIAL_EVENT_SERVICES;
     default:
       return [];
   }
@@ -103,6 +107,7 @@ function writeCollection(collectionName: string, items: any[]): void {
   }
 }
 
+// Public read catalog
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -120,8 +125,21 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Authenticated write/modify catalog
 export async function POST(req: NextRequest) {
   try {
+    // Enforce authentication on all catalog modifications
+    const authResult = await verifyServerAuth(req);
+    if (!authResult.authenticated) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Unauthorized: Authentication required (${authResult.error || 'Invalid credentials'})`,
+        },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { collection: collectionName, action = 'save', item, items: bulkItems, id } = body;
 

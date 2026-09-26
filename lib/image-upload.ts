@@ -1,9 +1,11 @@
 'use client';
 
+import { auth } from './firebase';
+
 /**
- * Client-side image compression and direct ImgBB + server fallback upload helper.
- * Uploads directly from the user's browser to ImgBB using the configured API key,
- * ensuring images appear immediately in the user's ImgBB account and return live i.ibb.co URLs.
+ * Client-side image compression and secure server upload helper.
+ * Uploads securely through the server-side proxy `/api/upload-image`, which manages
+ * ImgBB integration and local disk fallback without exposing API keys to the browser.
  */
 
 export interface UploadResult {
@@ -59,43 +61,20 @@ export function cleanAndFormatImageUrl(url: string): string {
   return url.trim().replace(/^["']|["']$/g, '');
 }
 
-let cachedImgbbKey: string | null = null;
-let keyFetchPromise: Promise<string> | null = null;
-
 /**
- * Retrieves the ImgBB API key from the server environment or client storage.
+ * Checks if ImgBB upload is configured on the server.
  */
-export async function getImgbbApiKey(): Promise<string> {
-  if (cachedImgbbKey !== null) {
-    return cachedImgbbKey;
-  }
-
-  if (typeof window !== 'undefined') {
-    const local = localStorage.getItem('imgbb_api_key');
-    if (local && local.trim()) {
-      cachedImgbbKey = local.trim();
-      return cachedImgbbKey;
+export async function checkImgbbConfigured(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/imgbb-key');
+    if (res.ok) {
+      const data = await res.json();
+      return Boolean(data?.configured);
     }
+  } catch {
+    // Default false
   }
-
-  if (!keyFetchPromise) {
-    keyFetchPromise = fetch('/api/imgbb-key')
-      .then((res) => (res.ok ? res.json() : { key: '' }))
-      .then((data) => {
-        const k = (data?.key || '').trim();
-        cachedImgbbKey = k;
-        return k;
-      })
-      .catch((err) => {
-        console.warn('Could not fetch ImgBB key config:', err);
-        return '';
-      })
-      .finally(() => {
-        keyFetchPromise = null;
-      });
-  }
-
-  return keyFetchPromise;
+  return false;
 }
 
 /**
@@ -177,11 +156,11 @@ export async function compressImageFile(
 }
 
 /**
- * Uploads an image file safely:
- * 1. Pre-compresses image client-side.
- * 2. Attempts direct client-side upload to ImgBB via user's browser (ensures images appear in their ImgBB account).
- * 3. If direct ImgBB is unavailable or unconfigured, falls back to `/api/upload-image` on server.
- * 4. Returns live permanent URL and source.
+ * Uploads an image file safely through the server-side `/api/upload-image` endpoint:
+ * 1. Pre-compresses image client-side for rapid transport.
+ * 2. Sends multipart FormData to server `/api/upload-image`.
+ * 3. Server uploads to ImgBB (using server-side secret key) and falls back to durable disk storage.
+ * 4. Returns permanent live URL.
  */
 export async function uploadImageSafely(
   file: File,
@@ -199,93 +178,27 @@ export async function uploadImageSafely(
     .replace(/[^a-z0-9_-]/g, '-')
     .slice(0, 40);
 
-  // 1. Try direct client-side upload to ImgBB
-  const apiKey = await getImgbbApiKey();
-  if (apiKey) {
-    try {
-      const imgbbForm = new FormData();
-      // Send blob as file in FormData to ImgBB
-      imgbbForm.append('image', compressed.blob, `${safeTitle}.jpg`);
-      imgbbForm.append('name', safeTitle);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-      const imgbbRes = await fetch(
-        `https://api.imgbb.com/1/upload?key=${encodeURIComponent(apiKey)}`,
-        {
-          method: 'POST',
-          body: imgbbForm,
-          signal: controller.signal,
-        }
-      );
-
-      clearTimeout(timeoutId);
-
-      const imgbbText = await imgbbRes.text();
-      let imgbbJson: any = null;
-      try {
-        imgbbJson = JSON.parse(imgbbText);
-      } catch {
-        // Non-JSON response
-      }
-
-      if (imgbbRes.ok && imgbbJson?.success) {
-        // Asynchronously back up to local server in background
-        let localBackupUrl = '';
-        try {
-          const backupForm = new FormData();
-          backupForm.append('image', compressed.blob, `${safeTitle}.jpg`);
-          backupForm.append('name', safeTitle);
-          const backupRes = await fetch('/api/upload-image', { method: 'POST', body: backupForm });
-          if (backupRes.ok) {
-            const bJson = await backupRes.json();
-            if (bJson?.localUrl) localBackupUrl = bJson.localUrl;
-          }
-        } catch {
-          // Ignore background backup errors
-        }
-
-        let liveUrl =
-          imgbbJson.data?.image?.url ||
-          (imgbbJson.data?.display_url?.includes('i.ibb.co') ? imgbbJson.data?.display_url : '') ||
-          (imgbbJson.data?.url?.includes('i.ibb.co') ? imgbbJson.data?.url : '') ||
-          imgbbJson.data?.display_url ||
-          imgbbJson.data?.url ||
-          localBackupUrl;
-
-        // If the URL is an HTML viewer page (e.g. ibb.co/xyz without i.ibb.co), fall back to local URL
-        if (liveUrl.includes('ibb.co/') && !liveUrl.includes('i.ibb.co') && localBackupUrl) {
-          liveUrl = localBackupUrl;
-        }
-
-        const thumb = imgbbJson.data?.thumb?.url || liveUrl;
-
-        return {
-          success: true,
-          url: liveUrl,
-          thumbUrl: thumb,
-          localUrl: localBackupUrl || undefined,
-          source: 'imgbb',
-          message: 'Uploaded to ImgBB successfully!',
-        };
-      } else {
-        const errorMsg = imgbbJson?.error?.message || `ImgBB returned status ${imgbbRes.status}`;
-        console.warn('Direct ImgBB upload notice:', errorMsg, 'Attempting server fallback...');
-      }
-    } catch (directErr: any) {
-      console.warn('Direct ImgBB fetch error:', directErr?.message, 'Attempting server fallback...');
-    }
-  }
-
-  // 2. Server upload fallback (/api/upload-image)
   try {
     const formData = new FormData();
     formData.append('image', compressed.blob, file.name || `${safeTitle}.jpg`);
     formData.append('name', `${safeTitle}-${Date.now()}`);
 
+    const headers: Record<string, string> = {};
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const token = await currentUser.getIdToken();
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+      }
+    } catch {
+      // Non-blocking
+    }
+
     const res = await fetch('/api/upload-image', {
       method: 'POST',
+      headers,
       body: formData,
     });
 
@@ -312,7 +225,7 @@ export async function uploadImageSafely(
       };
     }
 
-    // 3. Fallback to compressed data URL if needed
+    // Fallback to compressed data URL if server returned error but client has compressed data
     if (compressed.dataUrl) {
       return {
         success: true,

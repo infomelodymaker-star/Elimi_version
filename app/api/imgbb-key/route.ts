@@ -24,8 +24,8 @@ export async function GET() {
   const foundKey = envKeys.find((k) => typeof k === 'string' && k.trim().length > 0) || '';
   const sanitizedKey = foundKey.trim().replace(/^["']|["']$/g, '');
 
+  // Returns configuration status only. Never expose raw API secret keys to client callers.
   return NextResponse.json({
     configured: Boolean(sanitizedKey),
-    key: sanitizedKey,
   });
 }

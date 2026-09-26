@@ -10,7 +10,13 @@ export async function GET(
 ) {
   try {
     const { filename } = await params;
-    if (!filename || filename.includes('..') || filename.includes('/')) {
+    if (
+      !filename ||
+      filename.includes('..') ||
+      filename.includes('/') ||
+      filename.includes('\\') ||
+      filename.startsWith('.')
+    ) {
       return new NextResponse('Invalid filename', { status: 400 });
     }
 
@@ -27,12 +33,14 @@ export async function GET(
     if (ext === '.png') contentType = 'image/png';
     else if (ext === '.webp') contentType = 'image/webp';
     else if (ext === '.gif') contentType = 'image/gif';
-    else if (ext === '.svg') contentType = 'image/svg+xml';
+    else if (ext === '.svg') contentType = 'application/octet-stream'; // Do not render SVGs as HTML/XML scripts
 
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000, immutable',
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'",
       },
     });
   } catch (error) {

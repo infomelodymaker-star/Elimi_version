@@ -432,9 +432,31 @@ export async function GET(req: NextRequest) {
 
     if (channelRes.ok) {
       const html = await channelRes.text();
-      const match = html.match(/ytInitialData\s*=\s*({.+?});<\/script>/);
-      if (match) {
-        const parsed = JSON.parse(match[1]);
+      let parsed: any = null;
+      try {
+        const startMarker = 'var ytInitialData = ';
+        const startIdx = html.indexOf(startMarker);
+        if (startIdx !== -1) {
+          const jsonStart = startIdx + startMarker.length;
+          const scriptEnd = html.indexOf(';</script>', jsonStart);
+          if (scriptEnd !== -1) {
+            const rawJson = html.substring(jsonStart, scriptEnd).trim();
+            if (rawJson.startsWith('{') && rawJson.endsWith('}')) {
+              parsed = JSON.parse(rawJson);
+            }
+          }
+        }
+        if (!parsed) {
+          const match = html.match(/ytInitialData\s*=\s*({[\s\S]+?});<\/script>/);
+          if (match && match[1]) {
+            parsed = JSON.parse(match[1]);
+          }
+        }
+      } catch (parseErr) {
+        // Silently skip if channel HTML structure varies
+      }
+
+      if (parsed) {
         const findLockups = (o: any, list: any[] = []) => {
           if (!o || typeof o !== 'object') return list;
           if (o.lockupViewModel) list.push(o.lockupViewModel);

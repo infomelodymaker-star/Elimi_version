@@ -12,7 +12,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { getStoredItems, saveStoredItems, runFirestoreTaskSafe } from './firestore-sync';
+import { getStoredItems, saveStoredItems, runFirestoreTaskSafe, syncItemToServerCatalog } from './firestore-sync';
 
 export interface RentalCategory {
   id: string;

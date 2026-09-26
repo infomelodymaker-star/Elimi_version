@@ -1,5 +1,5 @@
 import { doc, getDoc, onSnapshot, setDoc, collection } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import { useState, useEffect } from 'react';
 import { getStoredItems, saveStoredItems, runFirestoreTaskSafe } from './firestore-sync';
 
@@ -699,10 +699,95 @@ export const INITIAL_CMS_PAGES: CmsPage[] = [
       },
     ],
   },
+  {
+    id: 'home',
+    title: 'Home Page',
+    slug: '/',
+    lastUpdated: new Date().toISOString(),
+    sections: [
+      {
+        id: 'hero',
+        type: 'hero',
+        content: {
+          headline: 'Excellence Beyond Expectations.',
+          subheadline: 'PROFESSIONALISM. PRECISION. PRESENCE.',
+          backgroundImage: '/assets/protocol/PROTOCOL_SECTION.webp',
+        },
+      },
+    ],
+  },
 ];
 
 export const CMS_STORAGE_KEY = 'elimi_cms_pages_storage';
 export const CMS_SYNC_EVENT = 'elimi_sync_cms_pages';
+
+export function useAllCmsPages() {
+  const [pages, setPages] = useState<CmsPage[]>(INITIAL_CMS_PAGES);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // 1. Initial stored items loaded on mount to prevent SSR hydration mismatch
+    queueMicrotask(() => {
+      const initialStored = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
+      setPages(initialStored);
+    });
+
+    // 2. Storage sync listener
+    const handleSync = () => {
+      const updated = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
+      setPages(updated);
+    };
+
+    window.addEventListener(CMS_SYNC_EVENT, handleSync);
+    window.addEventListener('storage', handleSync);
+
+    // 3. Real-time Firestore collection listener
+    let unsubscribe: (() => void) | undefined;
+    try {
+      unsubscribe = onSnapshot(
+        collection(db, 'cms_pages'),
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const fsPages: CmsPage[] = [];
+            snapshot.forEach((docSnap) => {
+              fsPages.push({ id: docSnap.id, ...docSnap.data() } as CmsPage);
+            });
+
+            // Merge with initial pages to ensure no missing pages
+            const merged = INITIAL_CMS_PAGES.map((init) => {
+              const matched = fsPages.find((f) => f.id === init.id);
+              return matched || init;
+            });
+
+            fsPages.forEach((f) => {
+              if (!merged.some((m) => m.id === f.id)) {
+                merged.push(f);
+              }
+            });
+
+            setPages(merged);
+            saveStoredItems(CMS_STORAGE_KEY, merged);
+          }
+          setLoading(false);
+        },
+        (err) => {
+          console.warn('Firestore cms_pages collection listener note:', err?.message || err);
+          setLoading(false);
+        }
+      );
+    } catch {
+      queueMicrotask(() => setLoading(false));
+    }
+
+    return () => {
+      window.removeEventListener(CMS_SYNC_EVENT, handleSync);
+      window.removeEventListener('storage', handleSync);
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  return { pages, loading };
+}
 
 export function useCmsPage(pageId: string) {
   const [data, setData] = useState<CmsPage | null>(() => {
@@ -728,7 +813,6 @@ export function useCmsPage(pageId: string) {
             const curTime = current?.lastUpdated ? new Date(current.lastUpdated).getTime() : 0;
             const srvTime = serverPage.lastUpdated ? new Date(serverPage.lastUpdated).getTime() : 0;
             if (srvTime >= curTime) {
-              // Update local cache as well
               const pages = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
               const idx = pages.findIndex((p) => p.id === pageId);
               const updated = [...pages];
@@ -752,7 +836,7 @@ export function useCmsPage(pageId: string) {
     window.addEventListener(CMS_SYNC_EVENT, handleSync);
     window.addEventListener('storage', handleSync);
 
-    // 3. Safe Firestore live listener with smart timestamp check
+    // 3. Realtime Firestore live listener from (default) database collection cms_pages
     let unsubscribe: (() => void) | undefined;
     try {
       unsubscribe = onSnapshot(
@@ -764,7 +848,6 @@ export function useCmsPage(pageId: string) {
               const curTime = current?.lastUpdated ? new Date(current.lastUpdated).getTime() : 0;
               const fsTime = fsData.lastUpdated ? new Date(fsData.lastUpdated).getTime() : 0;
               if (fsTime >= curTime) {
-                // Also update local cache
                 const pages = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
                 const idx = pages.findIndex((p) => p.id === pageId);
                 const updated = [...pages];
@@ -778,7 +861,8 @@ export function useCmsPage(pageId: string) {
           }
           setLoading(false);
         },
-        () => {
+        (err) => {
+          console.warn(`Firestore onSnapshot note for page ${pageId}:`, err?.message || err);
           setLoading(false);
         }
       );
@@ -798,11 +882,14 @@ export function useCmsPage(pageId: string) {
 
 /**
  * Utility to strip undefined properties recursively for Firestore safe operations.
+ * Handles nested objects, arrays, and primitive fields.
  */
 export function cleanObjectForFirestore<T extends Record<string, any>>(obj: T): T {
   if (obj === null || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) {
-    return obj.map((item) => cleanObjectForFirestore(item)) as unknown as T;
+    return obj
+      .filter((item) => item !== undefined)
+      .map((item) => (typeof item === 'object' && item !== null ? cleanObjectForFirestore(item) : item)) as unknown as T;
   }
   const cleaned: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
@@ -817,9 +904,17 @@ export function cleanObjectForFirestore<T extends Record<string, any>>(obj: T): 
 }
 
 /**
- * Saves a CmsPage to localStorage, durable server disk storage (/api/cms), and syncs with Firestore collection 'cms_pages'.
+ * Saves a CmsPage to Firestore collection 'cms_pages', durable server disk storage (/api/cms),
+ * and local cache.
+ * Enforces that only an authenticated admin logged in through the dashboard can write.
  */
 export async function saveCmsPageToFirestore(page: CmsPage): Promise<void> {
+  // Check Firebase Auth state - only authenticated admin can write
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('Authentication required: You must be logged in as an authenticated admin in the dashboard to modify and save CMS content.');
+  }
+
   const updatedPage: CmsPage = {
     ...page,
     lastUpdated: new Date().toISOString(),
@@ -836,23 +931,47 @@ export async function saveCmsPageToFirestore(page: CmsPage): Promise<void> {
   }
   saveStoredItems(CMS_STORAGE_KEY, newPages, CMS_SYNC_EVENT);
 
-  // 2. Persist to server store via /api/cms (ensures persistence across browsers and reloads)
+  // 2. Direct write to Firestore collection 'cms_pages' in the default database
+  const cleanedData = cleanObjectForFirestore(updatedPage as any);
+  const docRef = doc(db, 'cms_pages', updatedPage.id);
+  await setDoc(docRef, cleanedData, { merge: true });
+
+  // 3. Persist to server store via /api/cms with Authorization Bearer header for multi-device sync
   try {
+    const token = await currentUser.getIdToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    };
+
     fetch('/api/cms', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(updatedPage),
     }).catch((err) => console.warn('CMS server store sync notice:', err));
   } catch {
-    // Non-blocking
+    // Non-blocking for server cache
+  }
+}
+
+/**
+ * Seed or push all default initial CMS pages to the Firestore collection 'cms_pages'.
+ * Enforces admin authentication.
+ */
+export async function seedInitialCmsPagesToFirestore(): Promise<{ count: number }> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('Authentication required: You must be logged in as an admin from the dashboard to seed CMS data.');
   }
 
-  // 3. Safe background Firestore task
-  const cleanedData = cleanObjectForFirestore(updatedPage as any);
-  await runFirestoreTaskSafe(
-    () => setDoc(doc(db, 'cms_pages', updatedPage.id), cleanedData, { merge: true }),
-    4000,
-    `Save CMS page ${updatedPage.id}`
-  );
+  let count = 0;
+  for (const page of INITIAL_CMS_PAGES) {
+    const cleaned = cleanObjectForFirestore(page as any);
+    const docRef = doc(db, 'cms_pages', page.id);
+    await setDoc(docRef, cleaned, { merge: true });
+    count++;
+  }
+
+  return { count };
 }
 

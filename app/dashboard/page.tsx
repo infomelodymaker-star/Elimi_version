@@ -238,7 +238,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setSidebarOpen(window.innerWidth >= 1024);
+      queueMicrotask(() => {
+        setSidebarOpen(window.innerWidth >= 1024);
+      });
     }
   }, []);
 

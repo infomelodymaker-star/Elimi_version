@@ -202,6 +202,39 @@
         "isSuperAdmin": { "type": "boolean", "description": "Whether user is Super Admin (slot 1)" }
       },
       "required": ["uid", "email", "createdAt", "slotNumber"]
+    },
+    "CmsPage": {
+      "title": "CmsPage",
+      "description": "An editorial page definition holding dynamic sections, hero headers, media, and features.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Page ID e.g. print, cars, houses, allocations, protocol, home, digital-solutions" },
+        "title": { "type": "string", "description": "Page title" },
+        "slug": { "type": "string", "description": "Page URL route" },
+        "sections": { "type": "array", "description": "Array of section objects with type and structured content" },
+        "lastUpdated": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["id", "title", "slug", "sections", "lastUpdated"]
+    },
+    "EventServiceItem": {
+      "title": "EventServiceItem",
+      "description": "An event service package or service addon configured with pricing and tags.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique event service ID" },
+        "title": { "type": "string", "description": "Service title" },
+        "description": { "type": "string", "description": "Service description" },
+        "unitPrice": { "type": "number", "description": "Unit price in USD" },
+        "defaultQuantity": { "type": "number", "description": "Default package quantity" },
+        "checkedByDefault": { "type": "boolean", "description": "Whether selected by default in package builder" },
+        "subtext": { "type": "string", "description": "Price unit subtext" },
+        "image": { "type": "string", "description": "Service photo URL" },
+        "enabled": { "type": "boolean", "description": "Whether service is enabled" },
+        "tags": { "type": "array", "description": "Icon and feature tag badges" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Last updated timestamp" }
+      },
+      "required": ["id", "title", "unitPrice", "enabled"]
     }
   },
   "firestore": {
@@ -240,6 +273,18 @@
     "/users/{userId}": {
       "schema": "AdminUser",
       "description": "Collection of administration accounts capped at 5 slots."
+    },
+    "/cms_pages/{pageId}": {
+      "schema": "CmsPage",
+      "description": "Collection of live editorial CMS pages for all dynamic application landing and marketing sections."
+    },
+    "/event_services/{serviceId}": {
+      "schema": "EventServiceItem",
+      "description": "Collection of interactive event services and package calculator items."
+    },
+    "/system_metadata/{docId}": {
+      "schema": { "$ref": "object" },
+      "description": "System configuration and authentication registry metadata."
     }
   }
 }

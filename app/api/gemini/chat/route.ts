@@ -5,6 +5,8 @@ import {
   fetchTargetedFirestoreData,
   buildTargetedSystemInstruction,
 } from '@/lib/ai-knowledge-base';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
+import { sanitizeString } from '@/lib/security-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +19,22 @@ const GEMINI_MODELS_CASCADE = [
 
 export async function POST(req: NextRequest) {
   try {
+    // 1. Rate Limiting: Max 25 chat requests per minute per IP
+    const clientIp = getClientIp(req);
+    const rateLimit = checkRateLimit(`gemini-chat-${clientIp}`, 25, 60 * 1000);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        {
+          text: 'Muraho! Vous envoyez des messages trop rapidement. Veuillez patienter un instant avant de continuer.',
+          source: 'rate-limited',
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': Math.ceil(rateLimit.resetMs / 1000).toString() },
+        }
+      );
+    }
+
     const { message, history } = await req.json();
 
     if (!message || typeof message !== 'string' || !message.trim()) {
@@ -26,8 +44,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Limit message size to prevent prompt injection and token stuffing
+    const cleanMessage = sanitizeString(message, 1500);
+
     // Step 1: Analyze user message & conversation intent to determine which collections to consult
-    const intents = analyzeUserIntent(message, history);
+    const intents = analyzeUserIntent(cleanMessage, history);
 
     // Step 2: Dynamically query ONLY relevant Firestore collections + live database settings
     const targetedDbData = await fetchTargetedFirestoreData(intents);
@@ -68,12 +89,12 @@ export async function POST(req: NextRequest) {
         if (item.sender === 'user' && item.text) {
           contents.push({
             role: 'user',
-            parts: [{ text: item.text.slice(0, 500) }],
+            parts: [{ text: sanitizeString(item.text, 500) }],
           });
         } else if (item.sender === 'ai' && item.text) {
           contents.push({
             role: 'model',
-            parts: [{ text: item.text.slice(0, 700) }],
+            parts: [{ text: String(item.text).slice(0, 700) }],
           });
         }
       }
@@ -82,7 +103,7 @@ export async function POST(req: NextRequest) {
     // Append the user's latest prompt
     contents.push({
       role: 'user',
-      parts: [{ text: message.trim() }],
+      parts: [{ text: cleanMessage }],
     });
 
     let generatedReply: string | null = null;
@@ -108,7 +129,6 @@ export async function POST(req: NextRequest) {
         }
       } catch (err: any) {
         console.warn(`Model ${modelName} attempt failed (trying next fallback):`, err?.message || err);
-        // Continue loop to try next model in fallback cascade immediately
         continue;
       }
     }
@@ -138,5 +158,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-

@@ -43,8 +43,10 @@ function HousesContent() {
 
   useEffect(() => {
     if (mapContent?.centerLat && mapContent?.centerLng) {
-      setMapCenter({ lat: Number(mapContent.centerLat), lng: Number(mapContent.centerLng) });
-      if (mapContent?.zoom) setMapZoom(Number(mapContent.zoom));
+      queueMicrotask(() => {
+        setMapCenter({ lat: Number(mapContent.centerLat), lng: Number(mapContent.centerLng) });
+        if (mapContent?.zoom) setMapZoom(Number(mapContent.zoom));
+      });
     }
   }, [mapContent]);
 

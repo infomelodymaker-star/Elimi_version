@@ -13,14 +13,18 @@ import { getStoredItems, saveStoredItems } from './firestore-sync';
 
 // React hook for real-time orders in Admin Dashboard
 export function useRealtimeOrders() {
-  const [orders, setOrders] = useState<BoutiqueOrder[]>(() =>
-    getStoredItems<BoutiqueOrder>(ORDERS_STORAGE_KEY, [])
-  );
+  const [orders, setOrders] = useState<BoutiqueOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 1. Listen to custom sync events
+    // 1. Initial stored items loaded on mount to prevent SSR hydration mismatch
+    queueMicrotask(() => {
+      const initialStored = getStoredItems<BoutiqueOrder>(ORDERS_STORAGE_KEY, []);
+      setOrders(initialStored);
+    });
+
+    // 2. Listen to custom sync events
     const handleSync = () => {
       const updated = getStoredItems<BoutiqueOrder>(ORDERS_STORAGE_KEY, []);
       setOrders(updated);
@@ -29,7 +33,7 @@ export function useRealtimeOrders() {
     window.addEventListener(ORDERS_SYNC_EVENT, handleSync);
     window.addEventListener('storage', handleSync);
 
-    // 2. Live Firestore listener without blocking
+    // 3. Live Firestore listener without blocking
     let unsubscribe: (() => void) | undefined;
     try {
       const ordersRef = collection(db, 'orders');

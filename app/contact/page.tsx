@@ -56,7 +56,7 @@ export default function ContactPage() {
           <div className="space-y-8">
             <h2 className="text-2xl font-bold text-slate-900">Nos Coordonnées</h2>
             <p className="text-slate-600">
-              N'hésitez pas à nous contacter directement via les coordonnées ci-dessous ou en remplissant le formulaire. Nous vous répondrons dans les plus brefs délais.
+              N&apos;hésitez pas à nous contacter directement via les coordonnées ci-dessous ou en remplissant le formulaire. Nous vous répondrons dans les plus brefs délais.
             </p>
 
             <div className="space-y-6 mt-8">
