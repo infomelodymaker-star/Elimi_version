@@ -161,27 +161,31 @@ export function addToCart(
   selectedColor?: string
 ): CartItem[] {
   const current = getSavedCart();
+  const maxStock = product.stockQuantity !== undefined ? Math.max(1, product.stockQuantity) : 99;
   const existingIndex = current.findIndex(
     (item) =>
       item.product.id === product.id &&
-      (selectedSize ? item.selectedSize === selectedSize : true)
+      (selectedSize ? item.selectedSize === selectedSize : true) &&
+      (selectedColor ? item.selectedColor === selectedColor : true)
   );
 
   let updated: CartItem[];
   if (existingIndex > -1) {
-    updated = current.map((item, idx) =>
-      idx === existingIndex
-        ? { ...item, quantity: item.quantity + quantity }
-        : item
-    );
+    updated = current.map((item, idx) => {
+      if (idx === existingIndex) {
+        const newQty = Math.min(maxStock, item.quantity + quantity);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    });
   } else {
     updated = [
       ...current,
       {
         product,
-        quantity,
-        selectedSize: selectedSize || 'Standard',
-        selectedColor: selectedColor || 'Default',
+        quantity: Math.min(maxStock, quantity),
+        selectedSize: selectedSize || (product.sizes && product.sizes[0] ? product.sizes[0] : 'Standard'),
+        selectedColor: selectedColor || (product.colors && product.colors[0] ? product.colors[0].name : undefined),
       },
     ];
   }
@@ -194,8 +198,10 @@ export function updateCartItemQuantity(productId: string, delta: number): CartIt
   const updated = current
     .map((item) => {
       if (item.product.id === productId) {
+        const maxStock = item.product.stockQuantity !== undefined ? Math.max(1, item.product.stockQuantity) : 99;
         const newQty = item.quantity + delta;
-        return newQty > 0 ? { ...item, quantity: newQty } : null;
+        if (newQty <= 0) return null;
+        return { ...item, quantity: Math.min(maxStock, newQty) };
       }
       return item;
     })

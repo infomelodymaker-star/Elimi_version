@@ -47,11 +47,13 @@ export interface RentalItem {
   imageUrl: string;
   gallery: string[];
   sizes: string[];
+  colors?: { name: string; hex: string }[];
   fitScore?: RentalFitScore;
   clientPhotos?: string[];
   description: string;
   details?: string;
   available: boolean;
+  active?: boolean;
   stockQuantity?: number;
   createdAt?: string;
   updatedAt?: string;

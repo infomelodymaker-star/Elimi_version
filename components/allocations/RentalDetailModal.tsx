@@ -40,9 +40,23 @@ export default function RentalDetailModal({
 }: RentalDetailModalProps) {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string>('Standard');
+  const [selectedColor, setSelectedColor] = useState<{ name: string; hex: string } | null>(null);
   const [rentalDays, setRentalDays] = useState<number>(3);
   const [booked, setBooked] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'conditions' | 'avis'>('details');
+
+  React.useEffect(() => {
+    if (item) {
+      if (item.sizes && item.sizes.length > 0) {
+        setSelectedSize(item.sizes[0]);
+      }
+      if (item.colors && item.colors.length > 0) {
+        setSelectedColor(item.colors[0]);
+      } else {
+        setSelectedColor(null);
+      }
+    }
+  }, [item?.id]);
 
   if (!item) return null;
 
@@ -214,6 +228,51 @@ export default function RentalDetailModal({
                     </div>
                   )}
                 </div>
+
+                {/* Color Chooser Option (Rounded Buttons with only BG of the colors) */}
+                {item.colors && item.colors.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                        Couleur :
+                      </span>
+                      <span className="text-xs font-bold text-[#0D52FF]">
+                        {selectedColor ? selectedColor.name : 'Sélectionnez une couleur'}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      {item.colors.map((color, idx) => {
+                        const isSelected = selectedColor?.hex === color.hex;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setSelectedColor(color)}
+                            title={color.name}
+                            style={{ backgroundColor: color.hex }}
+                            className={`w-7 h-7 rounded-full transition-all duration-150 relative cursor-pointer ${
+                              isSelected
+                                ? 'ring-2 ring-[#0D52FF] ring-offset-2 scale-110 shadow-sm'
+                                : 'border border-black/20 hover:scale-105 opacity-90 hover:opacity-100'
+                            }`}
+                          >
+                            {isSelected && (
+                              <span className="absolute inset-0 flex items-center justify-center">
+                                <span
+                                  className={`w-2 h-2 rounded-full ${
+                                    color.hex.toLowerCase() === '#ffffff' || color.hex.toLowerCase() === '#fff'
+                                      ? 'bg-black'
+                                      : 'bg-white'
+                                  }`}
+                                />
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Size Chooser */}
                 {item.sizes && item.sizes.length > 0 && (

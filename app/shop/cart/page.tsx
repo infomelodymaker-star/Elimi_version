@@ -181,6 +181,9 @@ export default function CartPage() {
         if (item.selectedSize) {
           itemObj.selectedSize = item.selectedSize;
         }
+        if (item.selectedColor) {
+          itemObj.selectedColor = item.selectedColor;
+        }
         return itemObj;
       });
 
@@ -412,26 +415,51 @@ export default function CartPage() {
 
                           {/* Right Controls: Stepper Pill & Desktop Delete */}
                           <div className="flex items-center justify-between sm:justify-end gap-4 pt-2 sm:pt-0">
-                            {/* Stepper Pill: - qty + */}
-                            <div className="bg-[#F0F2F5] rounded-full px-3.5 py-1.5 flex items-center gap-3 text-xs sm:text-sm font-bold text-neutral-900 border border-slate-200/60">
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateQty(product.id, -1)}
-                                className="text-neutral-600 hover:text-neutral-900 transition cursor-pointer p-0.5"
-                                aria-label="Decrease quantity"
-                              >
-                                <Minus className="w-3.5 h-3.5" />
-                              </button>
-                              <span className="min-w-[16px] text-center">{quantity}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateQty(product.id, 1)}
-                                className="text-neutral-600 hover:text-neutral-900 transition cursor-pointer p-0.5"
-                                aria-label="Increase quantity"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                            {/* Stepper Pill with Stock Limit Bubble: - qty + */}
+                            {(() => {
+                              const maxStock = product.stockQuantity !== undefined ? Math.max(1, product.stockQuantity) : 99;
+                              const isAtLimit = quantity >= maxStock;
+
+                              return (
+                                <div className="bg-[#F0F2F5] rounded-full px-3.5 py-1.5 flex items-center gap-3 text-xs sm:text-sm font-bold text-neutral-900 border border-slate-200/60 relative">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateQty(product.id, -1)}
+                                    className="text-neutral-600 hover:text-neutral-900 transition cursor-pointer p-0.5"
+                                    aria-label="Decrease quantity"
+                                  >
+                                    <Minus className="w-3.5 h-3.5" />
+                                  </button>
+                                  <span className="min-w-[16px] text-center">{quantity}</span>
+
+                                  <div className="relative group/cartplus">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (!isAtLimit) handleUpdateQty(product.id, 1);
+                                      }}
+                                      disabled={isAtLimit}
+                                      className={`p-0.5 transition ${
+                                        isAtLimit
+                                          ? 'text-neutral-300 cursor-not-allowed opacity-50'
+                                          : 'text-neutral-600 hover:text-neutral-900 cursor-pointer'
+                                      }`}
+                                      aria-label="Increase quantity"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    {/* Bubble Tooltip on hover when at limit */}
+                                    {isAtLimit && (
+                                      <div className="absolute bottom-full right-0 mb-2.5 hidden group-hover/cartplus:block z-50 w-48 bg-[#0F172A] text-white text-[11px] font-medium py-1.5 px-2.5 rounded-lg shadow-xl text-center pointer-events-none">
+                                        <span>Cannot exceed numbers of items in stock</span>
+                                        <div className="absolute top-full right-2 border-4 border-transparent border-t-[#0F172A]" />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                             {/* Desktop Trash Button */}
                             <button

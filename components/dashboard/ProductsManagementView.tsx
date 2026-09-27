@@ -34,6 +34,21 @@ const PRESET_SIZES = {
   culturalBaskets: ['Small (18cm)', 'Medium (28cm)', 'Large (40cm)'],
 };
 
+const PRESET_COLORS: { name: string; hex: string }[] = [
+  { name: 'Pitch Black', hex: '#18181B' },
+  { name: 'Pure White', hex: '#FFFFFF' },
+  { name: 'Cobalt Blue', hex: '#0B57FF' },
+  { name: 'Navy Blue', hex: '#1E3A8A' },
+  { name: 'Burgundy Maroon', hex: '#651C2C' },
+  { name: 'Emerald Green', hex: '#059669' },
+  { name: 'Olive Green', hex: '#4D7C0F' },
+  { name: 'Charcoal Grey', hex: '#475569' },
+  { name: 'Heather Gray', hex: '#9CA3AF' },
+  { name: 'Beige / Sand', hex: '#D4C4A8' },
+  { name: 'Crimson Red', hex: '#DC2626' },
+  { name: 'Rose Gold / Blush', hex: '#FB7185' },
+];
+
 export default function ProductsManagementView() {
   const { products, loading, error, isLive } = useRealtimeProducts();
   const { categories, loading: loadingCategories, isLive: categoriesLive } = useRealtimeProductCategories();
@@ -99,8 +114,12 @@ export default function ProductsManagementView() {
     discountPercentage: number | undefined;
     stockQuantity: number;
     inStock: boolean;
+    active: boolean;
     sizes: string[];
     newSizeInput: string;
+    colors: { name: string; hex: string }[];
+    newColorHex: string;
+    newColorName: string;
     image: string;
     gallery: string[];
     newGalleryUrl: string;
@@ -124,8 +143,15 @@ export default function ProductsManagementView() {
     discountPercentage: 50,
     stockQuantity: 15,
     inStock: true,
+    active: true,
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     newSizeInput: '',
+    colors: [
+      { name: 'Pitch Black', hex: '#18181B' },
+      { name: 'Cobalt Blue', hex: '#0B57FF' },
+    ],
+    newColorHex: '#0B57FF',
+    newColorName: '',
     image: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=80',
@@ -208,8 +234,15 @@ export default function ProductsManagementView() {
       discountPercentage: 50,
       stockQuantity: 15,
       inStock: true,
+      active: true,
       sizes: ['S', 'M', 'L', 'XL', 'XXL'],
       newSizeInput: '',
+      colors: [
+        { name: 'Pitch Black', hex: '#18181B' },
+        { name: 'Cobalt Blue', hex: '#0B57FF' },
+      ],
+      newColorHex: '#0B57FF',
+      newColorName: '',
       image: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=80',
       gallery: [
         'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=80',
@@ -243,8 +276,12 @@ export default function ProductsManagementView() {
       discountPercentage: p.discountPercentage,
       stockQuantity: p.stockQuantity ?? 10,
       inStock: p.inStock,
+      active: p.active !== false && p.inStock !== false,
       sizes: p.sizes ? [...p.sizes] : p.category === 'Fashion' ? ['S', 'M', 'L', 'XL'] : [],
       newSizeInput: '',
+      colors: p.colors && p.colors.length > 0 ? [...p.colors] : [],
+      newColorHex: '#0B57FF',
+      newColorName: '',
       image: p.image,
       gallery: p.gallery && p.gallery.length > 0 ? [...p.gallery] : [p.image],
       newGalleryUrl: '',
@@ -274,16 +311,17 @@ export default function ProductsManagementView() {
     }
   };
 
-  // Quick Toggle In-Stock boolean
+  // Quick Toggle In-Stock / Active boolean
   const handleQuickToggleInStock = async (productId: string, currentStatus: boolean, currentQty: number) => {
     const nextStatus = !currentStatus;
     const nextQty = nextStatus && currentQty === 0 ? 1 : currentQty;
     try {
       await updateProductInFirestore(productId, {
         inStock: nextStatus,
+        active: nextStatus,
         stockQuantity: nextQty,
       });
-      showToast(nextStatus ? 'Product marked In Stock' : 'Product marked Out of Stock', 'info');
+      showToast(nextStatus ? 'Product marked Active & In Stock' : 'Product marked Inactive (Hidden from store)', 'info');
     } catch (err: any) {
       showToast(`Failed to update status: ${err.message}`, 'error');
     }
@@ -297,6 +335,40 @@ export default function ProductsManagementView() {
       setDeleteConfirmId(null);
     } catch (err: any) {
       showToast(`Delete failed: ${err.message}`, 'error');
+    }
+  };
+
+  // Add Color Option
+  const handleAddColor = () => {
+    const hex = formData.newColorHex.trim();
+    if (!hex) return;
+    const name = formData.newColorName.trim() || hex;
+    const exists = formData.colors.some((c) => c.hex.toLowerCase() === hex.toLowerCase());
+    if (!exists) {
+      setFormData((prev) => ({
+        ...prev,
+        colors: [...prev.colors, { name, hex }],
+        newColorName: '',
+      }));
+    }
+  };
+
+  // Remove Color Option
+  const handleRemoveColor = (indexToRemove: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      colors: prev.colors.filter((_, idx) => idx !== indexToRemove),
+    }));
+  };
+
+  // Quick add preset color
+  const handleAddPresetColor = (preset: { name: string; hex: string }) => {
+    const exists = formData.colors.some((c) => c.hex.toLowerCase() === preset.hex.toLowerCase());
+    if (!exists) {
+      setFormData((prev) => ({
+        ...prev,
+        colors: [...prev.colors, preset],
+      }));
     }
   };
 
@@ -447,8 +519,10 @@ export default function ProductsManagementView() {
         descriptionFit: formData.descriptionFit.trim() || undefined,
         seller: formData.seller.trim() || 'ELIMI Boutique Hub',
         inStock: Boolean(formData.inStock && Number(formData.stockQuantity) > 0),
+        active: Boolean(formData.active && formData.inStock),
         stockQuantity: Number(formData.stockQuantity) || 0,
         sizes: formData.sizes.length > 0 ? formData.sizes : undefined,
+        colors: formData.colors.length > 0 ? formData.colors : undefined,
         shipping: shippingInfo,
       };
 
@@ -869,7 +943,7 @@ export default function ProductsManagementView() {
                   <th className="p-3 w-14 text-center">Image</th>
                   <th className="p-3 min-w-[200px]">Product Name &amp; Category</th>
                   <th className="p-3 min-w-[130px]">Remaining Stock</th>
-                  <th className="p-3 min-w-[130px]">Fashion Sizes</th>
+                  <th className="p-3 min-w-[150px]">Sizes &amp; Colors</th>
                   <th className="p-3 min-w-[120px]">Price (USD / BIF)</th>
                   <th className="p-3 min-w-[140px]">Seller / Store</th>
                   <th className="p-3 w-28 text-right pr-4">Actions</th>
@@ -977,29 +1051,49 @@ export default function ProductsManagementView() {
                         </div>
                       </td>
 
-                      {/* Fashion Sizes */}
+                      {/* Sizes & Colors */}
                       <td className="p-3">
-                        {p.sizes && p.sizes.length > 0 ? (
-                          <div className="flex flex-wrap gap-1 max-w-[160px]">
-                            {p.sizes.slice(0, 4).map((s, idx) => (
-                              <span
-                                key={idx}
-                                className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200 font-medium"
-                              >
-                                {s}
-                              </span>
-                            ))}
-                            {p.sizes.length > 4 && (
-                              <span className="font-mono text-[10px] text-zinc-400">
-                                +{p.sizes.length - 4}
-                              </span>
-                            )}
-                          </div>
-                        ) : p.category === 'Fashion' ? (
-                          <span className="text-amber-600 text-xs italic font-medium">Add sizes</span>
-                        ) : (
-                          <span className="text-zinc-400 text-xs font-mono">Standard</span>
-                        )}
+                        <div className="flex flex-col gap-1.5 max-w-[170px]">
+                          {/* Sizes */}
+                          {p.sizes && p.sizes.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {p.sizes.slice(0, 3).map((s, idx) => (
+                                <span
+                                  key={idx}
+                                  className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-700 border border-zinc-200 font-medium"
+                                >
+                                  {s}
+                                </span>
+                              ))}
+                              {p.sizes.length > 3 && (
+                                <span className="font-mono text-[10px] text-zinc-400">
+                                  +{p.sizes.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-zinc-400 text-[11px] font-mono">No sizes</span>
+                          )}
+
+                          {/* Colors */}
+                          {p.colors && p.colors.length > 0 && (
+                            <div className="flex items-center gap-1">
+                              {p.colors.slice(0, 5).map((col, cIdx) => (
+                                <span
+                                  key={cIdx}
+                                  title={`${col.name} (${col.hex})`}
+                                  style={{ backgroundColor: col.hex }}
+                                  className="w-3.5 h-3.5 rounded-full border border-black/15 shadow-2xs shrink-0 inline-block"
+                                />
+                              ))}
+                              {p.colors.length > 5 && (
+                                <span className="font-mono text-[10px] text-zinc-400">
+                                  +{p.colors.length - 5}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </td>
 
                       {/* Pricing */}
@@ -1260,15 +1354,24 @@ export default function ProductsManagementView() {
                     className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-white font-mono text-xs text-zinc-900 focus:outline-none focus:border-blue-500 font-semibold text-blue-700"
                   />
                 </div>
-                <div className="flex flex-col justify-end">
+                <div className="flex flex-col justify-end gap-1.5">
                   <label className="flex items-center gap-2 h-9 px-3 bg-white rounded-lg border border-zinc-200 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.inStock}
-                      onChange={(e) => setFormData({ ...formData, inStock: e.target.checked })}
+                      onChange={(e) => setFormData({ ...formData, inStock: e.target.checked, active: e.target.checked ? formData.active : false })}
                       className="w-4 h-4 text-blue-600 rounded cursor-pointer"
                     />
-                    <span className="text-xs font-medium text-zinc-800">Item In Stock</span>
+                    <span className="text-xs font-medium text-zinc-800">In Stock</span>
+                  </label>
+                  <label className="flex items-center gap-2 h-9 px-3 bg-white rounded-lg border border-zinc-200 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.active}
+                      onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 rounded cursor-pointer"
+                    />
+                    <span className="text-xs font-medium text-zinc-800">Active on Storefront</span>
                   </label>
                 </div>
               </div>
@@ -1364,6 +1467,129 @@ export default function ProductsManagementView() {
                     className="h-8 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-900 text-white text-xs font-medium cursor-pointer"
                   >
                     Add Size
+                  </button>
+                </div>
+              </div>
+
+              {/* Row 4.5: Color Chooser & Palette (Crucial for Products with Colors) */}
+              <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[18px] text-blue-600">
+                      palette
+                    </span>
+                    <label className="text-xs font-semibold text-zinc-900">
+                      Color Chooser &amp; Options (Saved to Database &amp; Displayed on Store)
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, colors: [] })}
+                    className="px-2 py-0.5 rounded bg-white hover:bg-rose-50 border border-zinc-200 text-rose-600 text-[11px] font-medium cursor-pointer"
+                  >
+                    Clear Colors
+                  </button>
+                </div>
+
+                {/* Preset Color Palettes */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] font-mono text-zinc-500 mr-1">Quick Palette:</span>
+                  {PRESET_COLORS.map((preset, idx) => {
+                    const isAlreadyAdded = formData.colors.some(
+                      (c) => c.hex.toLowerCase() === preset.hex.toLowerCase()
+                    );
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleAddPresetColor(preset)}
+                        disabled={isAlreadyAdded}
+                        title={`Add ${preset.name} (${preset.hex})`}
+                        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] border transition-all cursor-pointer ${
+                          isAlreadyAdded
+                            ? 'bg-zinc-100 border-zinc-200 text-zinc-400 opacity-60 cursor-not-allowed'
+                            : 'bg-white hover:bg-zinc-100 border-zinc-200 text-zinc-700 shadow-2xs'
+                        }`}
+                      >
+                        <span
+                          style={{ backgroundColor: preset.hex }}
+                          className="w-3 h-3 rounded-full border border-black/20 shrink-0 inline-block"
+                        />
+                        <span>{preset.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Current Active Colors list */}
+                <div className="flex flex-wrap items-center gap-1.5 min-h-[36px] p-2 rounded-lg bg-white border border-zinc-200">
+                  {formData.colors.length === 0 ? (
+                    <span className="text-xs text-zinc-400 italic">
+                      No color options added yet. (Pick from quick palette above or pick a custom color below)
+                    </span>
+                  ) : (
+                    formData.colors.map((col, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium"
+                      >
+                        <span
+                          style={{ backgroundColor: col.hex }}
+                          className="w-3.5 h-3.5 rounded-full border border-black/25 shrink-0 inline-block shadow-2xs"
+                        />
+                        <span className="font-semibold">{col.name}</span>
+                        <span className="font-mono text-[10px] text-blue-700">({col.hex})</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveColor(idx)}
+                          className="hover:text-rose-600 text-zinc-500 font-bold ml-1 cursor-pointer"
+                          title="Remove color"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                {/* Custom Color Picker & Palette Input */}
+                <div className="flex items-center gap-2 pt-0.5">
+                  {/* Native Color Picker Swatch */}
+                  <div className="flex items-center gap-1.5 bg-white border border-zinc-200 rounded-lg px-2 h-8 shrink-0">
+                    <input
+                      type="color"
+                      value={formData.newColorHex}
+                      onChange={(e) => setFormData({ ...formData, newColorHex: e.target.value })}
+                      className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0"
+                      title="Open color palette"
+                    />
+                    <span className="font-mono text-xs text-zinc-700 font-semibold uppercase">
+                      {formData.newColorHex}
+                    </span>
+                  </div>
+
+                  {/* Color Name/Label input */}
+                  <input
+                    value={formData.newColorName}
+                    onChange={(e) => setFormData({ ...formData, newColorName: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddColor();
+                      }
+                    }}
+                    placeholder="Color label (e.g. Midnight Blue, Heather Gray, Sunset Orange)"
+                    className="flex-1 h-8 px-3 rounded-lg border border-zinc-200 bg-white text-xs text-zinc-900 focus:outline-none focus:border-blue-500"
+                    type="text"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleAddColor}
+                    className="h-8 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">add</span>
+                    <span>Save Color</span>
                   </button>
                 </div>
               </div>

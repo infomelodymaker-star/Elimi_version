@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import React, { useState } from 'react';
 import ElimiHeader from '@/components/ElimiHeader';
 import HeroSection from '@/components/printbe/HeroSection';

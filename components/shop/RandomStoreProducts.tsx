@@ -67,7 +67,8 @@ export default function RandomStoreProducts({
   useEffect(() => {
     queueMicrotask(() => {
       setIsMounted(true);
-      const source = realtimeProducts && realtimeProducts.length > 0 ? realtimeProducts : BOUTIQUE_PRODUCTS;
+      const source = (realtimeProducts && realtimeProducts.length > 0 ? realtimeProducts : BOUTIQUE_PRODUCTS)
+        .filter((p) => p.active !== false);
       setProducts([...source].sort(() => Math.random() - 0.5).slice(0, count));
     });
   }, [count, realtimeProducts]);
@@ -79,7 +80,8 @@ export default function RandomStoreProducts({
     }
     setIsShuffling(true);
     setTimeout(() => {
-      const source = realtimeProducts && realtimeProducts.length > 0 ? realtimeProducts : BOUTIQUE_PRODUCTS;
+      const source = (realtimeProducts && realtimeProducts.length > 0 ? realtimeProducts : BOUTIQUE_PRODUCTS)
+        .filter((p) => p.active !== false);
       setProducts([...source].sort(() => Math.random() - 0.5).slice(0, count));
       setIsShuffling(false);
     }, 250);

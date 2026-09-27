@@ -150,7 +150,7 @@ export default function ProductGrid({
         (stockLocation === 'Gitega' && product.seller.toLowerCase().includes('gitega')) ||
         (stockLocation === 'Diaspora Direct' && !product.seller.toLowerCase().includes('bujumbura') && !product.seller.toLowerCase().includes('gitega'));
 
-      return matchesCategory && matchesSubCategory && matchesSearch && matchesPrice && matchesLocation;
+      return (product.active !== false) && matchesCategory && matchesSubCategory && matchesSearch && matchesPrice && matchesLocation;
     }).sort((a, b) => {
       if (sortBy === 'price-low') return a.priceBIF - b.priceBIF;
       if (sortBy === 'price-high') return b.priceBIF - a.priceBIF;
@@ -415,22 +415,42 @@ export default function ProductGrid({
                       </div>
 
                       {/* Rating Stars & Count */}
-                      <div className="flex items-center gap-1 mb-2.5 sm:mb-3 text-[10px] sm:text-[11px] font-sans">
-                        <div className="flex items-center gap-0.5">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${
-                                star <= Math.floor(product.rating)
-                                  ? 'fill-amber-400 text-amber-400'
-                                  : 'text-slate-200 fill-slate-200'
+                      <div className="flex items-center justify-between gap-1 mb-2.5 sm:mb-3 text-[10px] sm:text-[11px] font-sans">
+                        <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${
+                                  star <= Math.floor(product.rating)
+                                    ? 'fill-amber-400 text-amber-400'
+                                    : 'text-slate-200 fill-slate-200'
                                 }`}
-                            />
-                          ))}
+                              />
+                            ))}
+                          </div>
+                          <span className="font-bold text-slate-500 text-[9px] sm:text-[10px] ml-0.5">
+                            ({product.rating})
+                          </span>
                         </div>
-                        <span className="font-bold text-slate-500 text-[9px] sm:text-[10px] ml-0.5">
-                          ({product.rating})
-                        </span>
+
+                        {product.colors && product.colors.length > 0 && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            {product.colors.slice(0, 3).map((col, idx) => (
+                              <span
+                                key={idx}
+                                title={col.name}
+                                style={{ backgroundColor: col.hex }}
+                                className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border border-black/20 shadow-2xs inline-block"
+                              />
+                            ))}
+                            {product.colors.length > 3 && (
+                              <span className="text-[9px] text-slate-400 font-mono">
+                                +{product.colors.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Bottom Action Row: See Details Button + Cart Icon Button */}

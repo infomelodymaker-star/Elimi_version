@@ -26,6 +26,21 @@ interface ToastInfo {
 const BADGE_PRESETS = ['Popular', 'Back in Stock!', 'New', 'Featured', 'Luxury', 'Event Pro', 'Populaire', 'Coup de cœur'];
 const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'S/M', 'M/L', 'L/XL', 'Unique', 'Standard'];
 
+const PRESET_COLORS: { name: string; hex: string }[] = [
+  { name: 'Pitch Black', hex: '#18181B' },
+  { name: 'Pure White', hex: '#FFFFFF' },
+  { name: 'Cobalt Blue', hex: '#0B57FF' },
+  { name: 'Navy Blue', hex: '#1E3A8A' },
+  { name: 'Burgundy Maroon', hex: '#651C2C' },
+  { name: 'Emerald Green', hex: '#059669' },
+  { name: 'Olive Green', hex: '#4D7C0F' },
+  { name: 'Charcoal Grey', hex: '#475569' },
+  { name: 'Heather Gray', hex: '#9CA3AF' },
+  { name: 'Beige / Sand', hex: '#D4C4A8' },
+  { name: 'Crimson Red', hex: '#DC2626' },
+  { name: 'Rose Gold / Blush', hex: '#FB7185' },
+];
+
 export default function AllocationsManagementView() {
   const { categories, loading: loadingCategories, isLive: categoriesLive } = useRealtimeRentalCategories();
   const { items, loading: loadingItems, isLive: itemsLive } = useRealtimeRentalItems();
@@ -68,6 +83,9 @@ export default function AllocationsManagementView() {
     imageUrl: string;
     gallery: string[];
     sizes: string[];
+    colors: { name: string; hex: string }[];
+    newColorHex: string;
+    newColorName: string;
     description: string;
     details: string;
     available: boolean;
@@ -82,6 +100,12 @@ export default function AllocationsManagementView() {
     imageUrl: '',
     gallery: [],
     sizes: ['S/M', 'M/L'],
+    colors: [
+      { name: 'Pitch Black', hex: '#18181B' },
+      { name: 'Cobalt Blue', hex: '#0B57FF' },
+    ],
+    newColorHex: '#0B57FF',
+    newColorName: '',
     description: '',
     details: '',
     available: true,
@@ -144,6 +168,12 @@ export default function AllocationsManagementView() {
         'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=900',
       ],
       sizes: ['S/M', 'M/L'],
+      colors: [
+        { name: 'Pitch Black', hex: '#18181B' },
+        { name: 'Cobalt Blue', hex: '#0B57FF' },
+      ],
+      newColorHex: '#0B57FF',
+      newColorName: '',
       description: 'Exclusive designer outfit available for VIP and ceremonial rentals.',
       details: 'Professional dry cleaning included. Free returns managed by our team.',
       available: true,
@@ -167,11 +197,46 @@ export default function AllocationsManagementView() {
       imageUrl: item.imageUrl,
       gallery: item.gallery && item.gallery.length > 0 ? item.gallery : [item.imageUrl],
       sizes: item.sizes || ['Unique'],
+      colors: item.colors && item.colors.length > 0 ? [...item.colors] : [],
+      newColorHex: '#0B57FF',
+      newColorName: '',
       description: item.description || '',
       details: item.details || '',
       available: item.available !== false,
     });
     setIsItemModalOpen(true);
+  };
+
+  // Color management helpers for Rental Items
+  const handleAddRentalColor = () => {
+    const hex = itemFormData.newColorHex.trim();
+    if (!hex) return;
+    const name = itemFormData.newColorName.trim() || hex;
+    const exists = itemFormData.colors.some((c) => c.hex.toLowerCase() === hex.toLowerCase());
+    if (!exists) {
+      setItemFormData((prev) => ({
+        ...prev,
+        colors: [...prev.colors, { name, hex }],
+        newColorName: '',
+      }));
+    }
+  };
+
+  const handleRemoveRentalColor = (indexToRemove: number) => {
+    setItemFormData((prev) => ({
+      ...prev,
+      colors: prev.colors.filter((_, idx) => idx !== indexToRemove),
+    }));
+  };
+
+  const handleAddPresetRentalColor = (preset: { name: string; hex: string }) => {
+    const exists = itemFormData.colors.some((c) => c.hex.toLowerCase() === preset.hex.toLowerCase());
+    if (!exists) {
+      setItemFormData((prev) => ({
+        ...prev,
+        colors: [...prev.colors, preset],
+      }));
+    }
   };
 
   // Save Item
@@ -188,6 +253,7 @@ export default function AllocationsManagementView() {
       const payload = {
         ...itemFormData,
         categoryName: selectedCat?.name || itemFormData.categoryName,
+        colors: itemFormData.colors.length > 0 ? itemFormData.colors : undefined,
         rating: 4.9,
         reviewsCount: 15,
         currency: '$',
@@ -691,7 +757,7 @@ export default function AllocationsManagementView() {
                     <th className="px-5 py-3.5">Item</th>
                     <th className="px-5 py-3.5">Category</th>
                     <th className="px-5 py-3.5">Rental Price</th>
-                    <th className="px-5 py-3.5">Sizes</th>
+                    <th className="px-5 py-3.5">Sizes &amp; Colors</th>
                     <th className="px-5 py-3.5">Badge</th>
                     <th className="px-5 py-3.5">Status</th>
                     <th className="px-5 py-3.5 text-right">Actions</th>
@@ -741,15 +807,37 @@ export default function AllocationsManagementView() {
                         </td>
 
                         <td className="px-5 py-3.5">
-                          <div className="flex flex-wrap gap-1 max-w-[150px]">
-                            {item.sizes?.map((sz) => (
-                              <span
-                                key={sz}
-                                className="px-2 py-0.5 rounded-full bg-[#F8F9FA] text-[#0F172A] text-[10px] font-mono border border-[#0F172A]/8"
-                              >
-                                {sz}
-                              </span>
-                            ))}
+                          <div className="flex flex-col gap-1.5 max-w-[160px]">
+                            {item.sizes && item.sizes.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {item.sizes.map((sz) => (
+                                  <span
+                                    key={sz}
+                                    className="px-2 py-0.5 rounded-full bg-[#F8F9FA] text-[#0F172A] text-[10px] font-mono border border-[#0F172A]/8"
+                                  >
+                                    {sz}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {item.colors && item.colors.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                {item.colors.slice(0, 5).map((col, cIdx) => (
+                                  <span
+                                    key={cIdx}
+                                    title={`${col.name} (${col.hex})`}
+                                    style={{ backgroundColor: col.hex }}
+                                    className="w-3.5 h-3.5 rounded-full border border-black/20 shadow-2xs shrink-0 inline-block"
+                                  />
+                                ))}
+                                {item.colors.length > 5 && (
+                                  <span className="font-mono text-[10px] text-zinc-400">
+                                    +{item.colors.length - 5}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </td>
 
@@ -1244,6 +1332,127 @@ export default function AllocationsManagementView() {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* Color Chooser & Palette */}
+              <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[18px] text-blue-600">
+                      palette
+                    </span>
+                    <label className="text-xs font-bold text-zinc-800">
+                      Color Chooser &amp; Options (Saved to Database &amp; Displayed on Allocations)
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setItemFormData({ ...itemFormData, colors: [] })}
+                    className="px-2 py-0.5 rounded bg-white hover:bg-rose-50 border border-zinc-200 text-rose-600 text-[11px] font-medium cursor-pointer"
+                  >
+                    Clear Colors
+                  </button>
+                </div>
+
+                {/* Preset Color Palettes */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] font-mono text-zinc-500 mr-1">Quick Palette:</span>
+                  {PRESET_COLORS.map((preset, idx) => {
+                    const isAlreadyAdded = itemFormData.colors.some(
+                      (c) => c.hex.toLowerCase() === preset.hex.toLowerCase()
+                    );
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleAddPresetRentalColor(preset)}
+                        disabled={isAlreadyAdded}
+                        title={`Add ${preset.name} (${preset.hex})`}
+                        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] border transition-all cursor-pointer ${
+                          isAlreadyAdded
+                            ? 'bg-zinc-100 border-zinc-200 text-zinc-400 opacity-60 cursor-not-allowed'
+                            : 'bg-white hover:bg-zinc-100 border-zinc-200 text-zinc-700 shadow-2xs'
+                        }`}
+                      >
+                        <span
+                          style={{ backgroundColor: preset.hex }}
+                          className="w-3 h-3 rounded-full border border-black/20 shrink-0 inline-block"
+                        />
+                        <span>{preset.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Current Active Colors list */}
+                <div className="flex flex-wrap items-center gap-1.5 min-h-[36px] p-2 rounded-lg bg-white border border-zinc-200">
+                  {itemFormData.colors.length === 0 ? (
+                    <span className="text-xs text-zinc-400 italic">
+                      No color options added yet. (Pick from quick palette above or pick a custom color below)
+                    </span>
+                  ) : (
+                    itemFormData.colors.map((col, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium"
+                      >
+                        <span
+                          style={{ backgroundColor: col.hex }}
+                          className="w-3.5 h-3.5 rounded-full border border-black/25 shrink-0 inline-block shadow-2xs"
+                        />
+                        <span className="font-semibold">{col.name}</span>
+                        <span className="font-mono text-[10px] text-blue-700">({col.hex})</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRentalColor(idx)}
+                          className="hover:text-rose-600 text-zinc-500 font-bold ml-1 cursor-pointer"
+                          title="Remove color"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                {/* Custom Color Picker & Palette Input */}
+                <div className="flex items-center gap-2 pt-0.5">
+                  <div className="flex items-center gap-1.5 bg-white border border-zinc-200 rounded-lg px-2 h-8 shrink-0">
+                    <input
+                      type="color"
+                      value={itemFormData.newColorHex}
+                      onChange={(e) => setItemFormData({ ...itemFormData, newColorHex: e.target.value })}
+                      className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0"
+                      title="Open color palette"
+                    />
+                    <span className="font-mono text-xs text-zinc-700 font-semibold uppercase">
+                      {itemFormData.newColorHex}
+                    </span>
+                  </div>
+
+                  <input
+                    value={itemFormData.newColorName}
+                    onChange={(e) => setItemFormData({ ...itemFormData, newColorName: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddRentalColor();
+                      }
+                    }}
+                    placeholder="Color label (e.g. Burgundy, Navy, Classic Emerald)"
+                    className="flex-1 h-8 px-3 rounded-lg border border-zinc-200 bg-white text-xs text-zinc-900 focus:outline-none focus:border-blue-500"
+                    type="text"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleAddRentalColor}
+                    className="h-8 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">add</span>
+                    <span>Save Color</span>
+                  </button>
                 </div>
               </div>
 

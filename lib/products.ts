@@ -39,6 +39,7 @@ export interface Product {
   descriptionFit?: string;
   seller: string;
   inStock: boolean;
+  active?: boolean;
   stockQuantity: number;
   sizes?: string[];
   colors?: { name: string; hex: string }[];

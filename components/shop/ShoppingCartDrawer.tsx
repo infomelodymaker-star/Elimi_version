@@ -13,6 +13,8 @@ import { createCheckoutOrder, generateClientWhatsAppGreetingUrl } from '@/lib/fi
 export interface CartItem {
   product: Product;
   quantity: number;
+  selectedSize?: string;
+  selectedColor?: string;
 }
 
 interface ShoppingCartDrawerProps {
@@ -118,75 +120,111 @@ export default function ShoppingCartDrawer({
                 </p>
               </div>
             ) : (
-              cartItems.map(({ product, quantity }) => (
-                <div
-                  key={product.id}
-                  className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex items-start gap-3.5"
-                >
-                  {/* Thumbnail */}
-                  <div className="relative w-20 h-20 rounded-xl bg-[#F0F2F5] border border-slate-200/60 p-1.5 shrink-0 overflow-hidden">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      unoptimized
-                      referrerPolicy="no-referrer"
-                      className="object-contain"
-                    />
-                  </div>
+              cartItems.map((item) => {
+                const { product, quantity, selectedSize, selectedColor } = item;
+                const maxStock = product.stockQuantity !== undefined ? Math.max(1, product.stockQuantity) : 99;
+                const isAtLimit = quantity >= maxStock;
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-1">
-                      <h5 className="font-bold text-xs sm:text-sm text-neutral-900 truncate">
-                        {product.name}
-                      </h5>
-                      {/* Red Trash button matching reference */}
-                      <button
-                        onClick={() => onRemoveItem(product.id)}
-                        className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 rounded-full transition cursor-pointer -mt-1 -mr-1"
-                        aria-label="Remove item"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                return (
+                  <div
+                    key={`${product.id}-${selectedSize || 'def'}-${selectedColor || 'def'}`}
+                    className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex items-start gap-3.5"
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative w-20 h-20 rounded-xl bg-[#F0F2F5] border border-slate-200/60 p-1.5 shrink-0 overflow-hidden">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        unoptimized
+                        referrerPolicy="no-referrer"
+                        className="object-contain"
+                      />
                     </div>
 
-                    <div className="text-[11px] text-neutral-500 mt-0.5">
-                      {product.category || 'Boutique'}
-                    </div>
-
-                    <div className="flex items-center justify-between mt-2 pt-1">
-                      <div>
-                        <div className="text-xs sm:text-sm font-extrabold text-neutral-900">
-                          ${(product.priceUSD * quantity).toFixed(2)}
-                        </div>
-                        <div className="text-[10px] text-neutral-400 font-mono">
-                          {(product.priceBIF * quantity).toLocaleString()} BIF
-                        </div>
-                      </div>
-
-                      {/* Quantity Stepper Pill */}
-                      <div className="bg-[#F0F2F5] rounded-full px-2.5 py-1 flex items-center gap-2.5 text-xs font-bold text-neutral-900 border border-slate-200/60">
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-1">
+                        <h5 className="font-bold text-xs sm:text-sm text-neutral-900 truncate">
+                          {product.name}
+                        </h5>
+                        {/* Red Trash button matching reference */}
                         <button
-                          onClick={() => onUpdateQuantity(product.id, -1)}
-                          className="text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
-                          aria-label="Decrease quantity"
+                          onClick={() => onRemoveItem(product.id)}
+                          className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 rounded-full transition cursor-pointer -mt-1 -mr-1"
+                          aria-label="Remove item"
                         >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="min-w-[14px] text-center">{quantity}</span>
-                        <button
-                          onClick={() => onUpdateQuantity(product.id, 1)}
-                          className="text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                        <span className="text-[11px] text-neutral-500">
+                          {product.category || 'Boutique'}
+                        </span>
+                        {selectedSize && (
+                          <span className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded">
+                            Size: {selectedSize}
+                          </span>
+                        )}
+                        {selectedColor && (
+                          <span className="text-[10px] font-semibold bg-blue-50 text-[#0D52FF] px-1.5 py-0.2 rounded border border-blue-200/60">
+                            Color: {selectedColor}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2 pt-1">
+                        <div>
+                          <div className="text-xs sm:text-sm font-extrabold text-neutral-900">
+                            ${(product.priceUSD * quantity).toFixed(2)}
+                          </div>
+                          <div className="text-[10px] text-neutral-400 font-mono">
+                            {(product.priceBIF * quantity).toLocaleString()} BIF
+                          </div>
+                        </div>
+
+                        {/* Quantity Stepper Pill with stock limit bubble */}
+                        <div className="bg-[#F0F2F5] rounded-full px-2.5 py-1 flex items-center gap-2.5 text-xs font-bold text-neutral-900 border border-slate-200/60 relative group/stepper">
+                          <button
+                            onClick={() => onUpdateQuantity(product.id, -1)}
+                            className="text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="min-w-[14px] text-center">{quantity}</span>
+                          
+                          <div className="relative group/plus">
+                            <button
+                              onClick={() => {
+                                if (!isAtLimit) onUpdateQuantity(product.id, 1);
+                              }}
+                              disabled={isAtLimit}
+                              className={`transition p-0.5 ${
+                                isAtLimit
+                                  ? 'text-neutral-300 cursor-not-allowed opacity-50'
+                                  : 'text-neutral-600 hover:text-neutral-900 cursor-pointer'
+                              }`}
+                              aria-label="Increase quantity"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+
+                            {/* Bubble Tooltip on hover when at limit */}
+                            {isAtLimit && (
+                              <div className="absolute bottom-full right-0 mb-2 hidden group-hover/plus:block z-50 w-44 bg-[#0F172A] text-white text-[10px] font-medium py-1 px-2 rounded shadow-lg text-center pointer-events-none">
+                                Cannot exceed numbers of items in stock
+                                <div className="absolute top-full right-2 border-4 border-transparent border-t-[#0F172A]" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 

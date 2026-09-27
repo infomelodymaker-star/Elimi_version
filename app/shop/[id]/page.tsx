@@ -108,9 +108,30 @@ export default function ProductDetailPage({ params }: PageProps) {
     : [product.image, product.image, product.image];
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  // Size Selector
+  // Size & Color Selector
   const availableSizes = product.sizes || ['S', 'M', 'L', 'XL', 'XXL'];
   const [selectedSize, setSelectedSize] = useState(availableSizes[0] || 'M');
+  const availableColors = product.colors || [];
+  const [selectedColor, setSelectedColor] = useState<{ name: string; hex: string } | null>(
+    availableColors.length > 0 ? availableColors[0] : null
+  );
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+
+  // Sync size/color on product change
+  useEffect(() => {
+    if (product.sizes && product.sizes.length > 0) {
+      setSelectedSize(product.sizes[0]);
+    }
+    if (product.colors && product.colors.length > 0) {
+      setSelectedColor(product.colors[0]);
+    } else {
+      setSelectedColor(null);
+    }
+  }, [product.id]);
+
+  const maxStock = product.stockQuantity !== undefined ? Math.max(1, product.stockQuantity) : 99;
+  const isAtStockLimit = selectedQuantity >= maxStock;
+  const [showStockBubble, setShowStockBubble] = useState(false);
 
   // Accordion Toggles
   const [isDescOpen, setIsDescOpen] = useState(true);
@@ -255,9 +276,6 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   const formatTwoDigits = (num: number) => String(num).padStart(2, '0');
 
-  // Quantity selector for this product detail page
-  const [selectedQuantity, setSelectedQuantity] = useState(1);
-
   // Delivery option toggle: add delivery cost or pick up at bureau
   const { costUSD: shippingCostUSD, costBIF: shippingCostBIF } = getEffectiveShippingCost(product);
   const [addDeliveryCost, setAddDeliveryCost] = useState(true);
@@ -272,7 +290,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // Handle Add to Cart using central cart service
   const handleAddToCart = () => {
-    addToCartHelper(product, selectedQuantity, selectedSize);
+    addToCartHelper(product, selectedQuantity, selectedSize, selectedColor?.name);
 
     setAddedAnimation(true);
     setTimeout(() => {
@@ -503,63 +521,146 @@ export default function ProductDetailPage({ params }: PageProps) {
               </span>
             </div>
 
-            {/* Select Size & Quantity Selector Row matching screenshot style */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
-                  Choose Size
-                </span>
-                <span className="text-[11px] text-neutral-500">
-                  Selected: <strong className="text-neutral-800">{selectedSize}</strong>
-                </span>
-              </div>
+            {/* Select Color Option (Rounded buttons with only the BG of the colors) */}
+            {product.colors && product.colors.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                    Choose Color
+                  </span>
+                  <span className="text-[11px] text-neutral-500">
+                    Selected: <strong className="text-neutral-800">{selectedColor ? selectedColor.name : 'None'}</strong>
+                  </span>
+                </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                {availableSizes.map((size) => {
-                  const isSelected = selectedSize === size;
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setSelectedSize(size)}
-                      className={`min-w-[48px] h-10 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
-                        isSelected
-                          ? 'bg-neutral-900 text-white shadow-xs'
-                          : 'bg-[#F0F2F5] hover:bg-slate-200 text-neutral-700'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  );
-                })}
+                <div className="flex flex-wrap items-center gap-3">
+                  {product.colors.map((color, idx) => {
+                    const isSelected = selectedColor?.hex === color.hex;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedColor(color)}
+                        title={color.name}
+                        style={{ backgroundColor: color.hex }}
+                        className={`w-9 h-9 rounded-full transition-all duration-150 relative cursor-pointer ${
+                          isSelected
+                            ? 'ring-2 ring-[#0D52FF] ring-offset-2 scale-110 shadow-sm'
+                            : 'border border-black/20 hover:scale-105 opacity-90 hover:opacity-100'
+                        }`}
+                      >
+                        {isSelected && (
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <span
+                              className={`w-2.5 h-2.5 rounded-full ${
+                                color.hex.toLowerCase() === '#ffffff' || color.hex.toLowerCase() === '#fff'
+                                  ? 'bg-black'
+                                  : 'bg-white'
+                              }`}
+                            />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Select Size & Quantity Selector Row matching screenshot style */}
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                    Choose Size
+                  </span>
+                  <span className="text-[11px] text-neutral-500">
+                    Selected: <strong className="text-neutral-800">{selectedSize}</strong>
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {availableSizes.map((size) => {
+                    const isSelected = selectedSize === size;
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => setSelectedSize(size)}
+                        className={`min-w-[48px] h-10 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                          isSelected
+                            ? 'bg-neutral-900 text-white shadow-xs'
+                            : 'bg-[#F0F2F5] hover:bg-slate-200 text-neutral-700'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Quantity Selector & Add to Cart Controls */}
             <div className="space-y-2 pt-1">
-              <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider block">
-                Quantity
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider block">
+                  Quantity
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  {product.stockQuantity !== undefined ? `${product.stockQuantity} items in stock` : 'In stock'}
+                </span>
+              </div>
               <div className="flex items-center gap-3">
                 {/* Stepper Pill matching screenshot: - qty + */}
                 <div className="bg-[#F0F2F5] rounded-full px-4 py-2.5 flex items-center gap-4 text-sm font-bold text-neutral-900 border border-slate-200/60">
                   <button
                     type="button"
                     onClick={() => setSelectedQuantity((prev) => Math.max(1, prev - 1))}
-                    className="text-neutral-600 hover:text-neutral-900 transition cursor-pointer p-0.5"
+                    disabled={selectedQuantity <= 1}
+                    className="text-neutral-600 hover:text-neutral-900 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer p-0.5"
                     aria-label="Decrease quantity"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
                   <span className="min-w-[20px] text-center">{selectedQuantity}</span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedQuantity((prev) => prev + 1)}
-                    className="text-neutral-600 hover:text-neutral-900 transition cursor-pointer p-0.5"
-                    aria-label="Increase quantity"
+
+                  <div
+                    className="relative"
+                    onMouseEnter={() => {
+                      if (isAtStockLimit) setShowStockBubble(true);
+                    }}
+                    onMouseLeave={() => setShowStockBubble(false)}
                   >
-                    <Plus className="w-4 h-4" />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedQuantity < maxStock) {
+                          setSelectedQuantity((prev) => prev + 1);
+                        } else {
+                          setShowStockBubble(true);
+                          setTimeout(() => setShowStockBubble(false), 2500);
+                        }
+                      }}
+                      disabled={isAtStockLimit}
+                      className={`p-0.5 transition ${
+                        isAtStockLimit
+                          ? 'text-neutral-300 cursor-not-allowed'
+                          : 'text-neutral-600 hover:text-neutral-900 cursor-pointer'
+                      }`}
+                      aria-label="Increase quantity"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+
+                    {/* Stock limit tooltip bubble */}
+                    {showStockBubble && isAtStockLimit && (
+                      <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 z-30 w-48 bg-[#0F172A] text-white text-[11px] font-medium py-1.5 px-2.5 rounded-lg shadow-xl text-center pointer-events-none animate-in fade-in zoom-in-95 duration-150">
+                        <span>Cannot exceed numbers of items in stock</span>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#0F172A]" />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Add to Cart Pill Button */}
