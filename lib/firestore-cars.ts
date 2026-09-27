@@ -18,6 +18,7 @@ export interface AvailableCarUnit {
   unitId: string;
   availableDate: string;
   price: number;
+  priceBIF?: number;
   isRent: boolean;
 }
 
@@ -25,8 +26,10 @@ export interface Car {
   id: string;
   title: string;
   description: string;
-  price: number; // for sale price
-  rentPrice?: number; // for rent price (e.g. per day or per month)
+  price: number; // for sale price (USD)
+  priceBIF?: number; // for sale price (BIF)
+  rentPrice?: number; // for rent price (USD)
+  rentPriceBIF?: number; // for rent price (BIF)
   sales: boolean;
   rent: boolean;
   location: { lat: number; lng: number };
@@ -69,7 +72,9 @@ export const SAMPLE_CARS: Car[] = [
     title: 'Mercedes-Benz V-Class VIP Edition',
     description: 'Ultra-luxurious 7-seater executive van with recliner massage seats, ambient lighting, and high-speed onboard Wi-Fi.',
     price: 115000,
+    priceBIF: 345000000,
     rentPrice: 350,
+    rentPriceBIF: 1050000,
     sales: true,
     rent: true,
     location: { lat: -3.3845, lng: 29.3635 },
@@ -82,8 +87,8 @@ export const SAMPLE_CARS: Car[] = [
     mileage: '12,500 km',
     modelTrim: 'V300d Extra Long Luxury',
     availableUnits: [
-      { unitId: 'VC-01', availableDate: 'Available Today', price: 350, isRent: true },
-      { unitId: 'VC-02', availableDate: 'Available Now', price: 115000, isRent: false }
+      { unitId: 'VC-01', availableDate: 'Available Today', price: 350, priceBIF: 1050000, isRent: true },
+      { unitId: 'VC-02', availableDate: 'Available Now', price: 115000, priceBIF: 345000000, isRent: false }
     ],
     amenities: DEFAULT_CAR_FEATURES,
     photos: [
@@ -98,7 +103,9 @@ export const SAMPLE_CARS: Car[] = [
     title: 'Toyota Land Cruiser Prado TX-L',
     description: 'Iconic heavy-duty luxury SUV built for commanding road presence, diplomatic protocol, and rough terrains.',
     price: 85000,
+    priceBIF: 255000000,
     rentPrice: 200,
+    rentPriceBIF: 600000,
     sales: true,
     rent: true,
     location: { lat: -3.3768, lng: 29.3812 },
@@ -111,8 +118,8 @@ export const SAMPLE_CARS: Car[] = [
     mileage: '8,200 km',
     modelTrim: 'TX-L Premium Package',
     availableUnits: [
-      { unitId: 'PR-10', availableDate: 'Available Now', price: 200, isRent: true },
-      { unitId: 'PR-11', availableDate: 'Available Now', price: 85000, isRent: false }
+      { unitId: 'PR-10', availableDate: 'Available Now', price: 200, priceBIF: 600000, isRent: true },
+      { unitId: 'PR-11', availableDate: 'Available Now', price: 85000, priceBIF: 255000000, isRent: false }
     ],
     amenities: [
       'Full-Time 4WD with Multi-Terrain Select',
@@ -134,7 +141,9 @@ export const SAMPLE_CARS: Car[] = [
     title: 'Range Rover Autobiography LWB',
     description: 'The pinnacle of refined British engineering, offering unmatched comfort, serene ride quality, and executive presence.',
     price: 185000,
+    priceBIF: 555000000,
     rentPrice: 650,
+    rentPriceBIF: 1950000,
     sales: true,
     rent: true,
     location: { lat: -3.3985, lng: 29.3540 },
@@ -147,8 +156,8 @@ export const SAMPLE_CARS: Car[] = [
     mileage: '5,100 km',
     modelTrim: 'Autobiography Long Wheelbase',
     availableUnits: [
-      { unitId: 'RR-01', availableDate: 'Available Now', price: 650, isRent: true },
-      { unitId: 'RR-02', availableDate: 'Ready for delivery', price: 185000, isRent: false }
+      { unitId: 'RR-01', availableDate: 'Available Now', price: 650, priceBIF: 1950000, isRent: true },
+      { unitId: 'RR-02', availableDate: 'Ready for delivery', price: 185000, priceBIF: 555000000, isRent: false }
     ],
     amenities: DEFAULT_CAR_FEATURES,
     photos: DEFAULT_CAR_PHOTOS,
@@ -159,7 +168,9 @@ export const SAMPLE_CARS: Car[] = [
     title: 'Porsche 911 Carrera GTS',
     description: 'Iconic sports car delivering adrenaline-fueled handling, timeless design, and precision performance.',
     price: 160000,
+    priceBIF: 480000000,
     rentPrice: 500,
+    rentPriceBIF: 1500000,
     sales: true,
     rent: false,
     location: { lat: -3.3812, lng: 29.3668 },
@@ -172,7 +183,7 @@ export const SAMPLE_CARS: Car[] = [
     mileage: '3,400 km',
     modelTrim: 'Carrera GTS Coupe',
     availableUnits: [
-      { unitId: '911-01', availableDate: 'Available Now', price: 160000, isRent: false }
+      { unitId: '911-01', availableDate: 'Available Now', price: 160000, priceBIF: 480000000, isRent: false }
     ],
     amenities: DEFAULT_CAR_FEATURES,
     photos: DEFAULT_CAR_PHOTOS,
@@ -183,7 +194,9 @@ export const SAMPLE_CARS: Car[] = [
     title: 'Toyota Land Cruiser 300 GR Sport',
     description: 'The master of all terrains, featuring twin-turbo diesel power and Gazoo Racing suspension tuning for VIP protocol.',
     price: 135000,
+    priceBIF: 405000000,
     rentPrice: 300,
+    rentPriceBIF: 900000,
     sales: true,
     rent: true,
     location: { lat: -3.3615, lng: 29.3885 },
@@ -196,8 +209,8 @@ export const SAMPLE_CARS: Car[] = [
     mileage: '6,800 km',
     modelTrim: 'LC300 GR-Sport VIP Armor Ready',
     availableUnits: [
-      { unitId: 'LC-301', availableDate: 'Available Now', price: 300, isRent: true },
-      { unitId: 'LC-302', availableDate: 'Ready for delivery', price: 135000, isRent: false }
+      { unitId: 'LC-301', availableDate: 'Available Now', price: 300, priceBIF: 900000, isRent: true },
+      { unitId: 'LC-302', availableDate: 'Ready for delivery', price: 135000, priceBIF: 405000000, isRent: false }
     ],
     amenities: DEFAULT_CAR_FEATURES,
     photos: DEFAULT_CAR_PHOTOS,
@@ -208,7 +221,9 @@ export const SAMPLE_CARS: Car[] = [
     title: 'Mercedes-Maybach S 580 4MATIC',
     description: 'Presidential comfort with extended legroom, reclining first-class airline style seats, and noise-cancelling cabin.',
     price: 230000,
+    priceBIF: 690000000,
     rentPrice: 800,
+    rentPriceBIF: 2400000,
     sales: true,
     rent: true,
     location: { lat: -3.3830, lng: 29.3590 },
@@ -221,8 +236,8 @@ export const SAMPLE_CARS: Car[] = [
     mileage: '2,900 km',
     modelTrim: 'Maybach S 580 Executive',
     availableUnits: [
-      { unitId: 'MB-580', availableDate: 'Available Today', price: 800, isRent: true },
-      { unitId: 'MB-581', availableDate: 'Available Now', price: 230000, isRent: false }
+      { unitId: 'MB-580', availableDate: 'Available Today', price: 800, priceBIF: 2400000, isRent: true },
+      { unitId: 'MB-581', availableDate: 'Available Now', price: 230000, priceBIF: 690000000, isRent: false }
     ],
     amenities: DEFAULT_CAR_FEATURES,
     photos: DEFAULT_CAR_PHOTOS,

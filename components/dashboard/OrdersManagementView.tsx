@@ -60,7 +60,9 @@ export default function OrdersManagementView() {
         const matchId = order.id.toLowerCase().includes(q);
         const matchNumber = (order.orderNumber || '').toLowerCase().includes(q);
         const matchItems = order.items.some((item) =>
-          item.name.toLowerCase().includes(q) || (item.selectedSize || '').toLowerCase().includes(q)
+          item.name.toLowerCase().includes(q) ||
+          (item.selectedSize || '').toLowerCase().includes(q) ||
+          (item.selectedColor || '').toLowerCase().includes(q)
         );
         const matchBureau = (order.pickupBureau || '').toLowerCase().includes(q);
         if (!matchId && !matchNumber && !matchItems && !matchBureau) {
@@ -388,7 +390,12 @@ export default function OrdersManagementView() {
                                   </span>
                                   {item.selectedSize && (
                                     <span className="px-2 py-0.5 rounded-full bg-[#E0EBFF] text-[#0B57FF] font-mono text-[10px] font-semibold border border-[#0B57FF]/20">
-                                      {item.selectedSize}
+                                      Taille: {item.selectedSize}
+                                    </span>
+                                  )}
+                                  {item.selectedColor && (
+                                    <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[#0D52FF] font-mono text-[10px] font-semibold border border-blue-200">
+                                      Couleur: {item.selectedColor}
                                     </span>
                                   )}
                                   <span className="font-mono">

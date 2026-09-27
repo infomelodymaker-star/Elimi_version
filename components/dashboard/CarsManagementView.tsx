@@ -84,7 +84,9 @@ export default function CarsManagementView() {
     title: string;
     description: string;
     price: number;
+    priceBIF: number;
     rentPrice: number;
+    rentPriceBIF: number;
     sales: boolean;
     rent: boolean;
     address: string;
@@ -108,7 +110,9 @@ export default function CarsManagementView() {
     title: '',
     description: '',
     price: 95000,
+    priceBIF: 285000000,
     rentPrice: 350,
+    rentPriceBIF: 1050000,
     sales: true,
     rent: true,
     address: 'Beverly Hills Motors, CA',
@@ -139,6 +143,7 @@ export default function CarsManagementView() {
         unitId: 'FLEET-01',
         availableDate: 'Available Now',
         price: 95000,
+        priceBIF: 285000000,
         isRent: false,
       },
     ],
@@ -211,7 +216,9 @@ export default function CarsManagementView() {
       title: '',
       description: 'Meticulously inspected executive luxury vehicle equipped with premier comfort and safety suites.',
       price: 110000,
+      priceBIF: 330000000,
       rentPrice: 400,
+      rentPriceBIF: 1200000,
       sales: true,
       rent: true,
       address: 'ELIMI VIP Mobility Hub, Bujumbura',
@@ -242,6 +249,7 @@ export default function CarsManagementView() {
           unitId: `CAR-${Math.floor(100 + Math.random() * 900)}`,
           availableDate: 'Available Now',
           price: 110000,
+          priceBIF: 330000000,
           isRent: false,
         },
       ],
@@ -252,12 +260,16 @@ export default function CarsManagementView() {
   // Open Edit Form
   const handleOpenEdit = (car: Car) => {
     setEditingCarId(car.id);
+    const calculatedPriceBIF = car.priceBIF ?? (car.price ? car.price * 3000 : 0);
+    const calculatedRentBIF = car.rentPriceBIF ?? (car.rentPrice ? car.rentPrice * 3000 : 0);
     setFormData({
       id: car.id,
       title: car.title,
       description: car.description || '',
       price: car.price || 0,
+      priceBIF: calculatedPriceBIF,
       rentPrice: car.rentPrice || 0,
+      rentPriceBIF: calculatedRentBIF,
       sales: Boolean(car.sales),
       rent: Boolean(car.rent),
       address: car.address || '',
@@ -277,12 +289,13 @@ export default function CarsManagementView() {
       newAmenityInput: '',
       availableUnits:
         car.availableUnits && car.availableUnits.length > 0
-          ? car.availableUnits.map((u) => ({ ...u }))
+          ? car.availableUnits.map((u) => ({ ...u, priceBIF: u.priceBIF ?? (u.price ? u.price * 3000 : undefined) }))
           : [
               {
                 unitId: `${car.id.toUpperCase()}-01`,
                 availableDate: 'Available Now',
                 price: car.price || 0,
+                priceBIF: calculatedPriceBIF,
                 isRent: Boolean(car.rent),
               },
             ],
@@ -498,7 +511,9 @@ export default function CarsManagementView() {
         title: formData.title.trim(),
         description: formData.description.trim(),
         price: Number(formData.price) || 0,
+        priceBIF: Number(formData.priceBIF) || (Number(formData.price) ? Number(formData.price) * 3000 : 0),
         rentPrice: formData.rent ? Number(formData.rentPrice) || 0 : undefined,
+        rentPriceBIF: formData.rent ? Number(formData.rentPriceBIF) || (Number(formData.rentPrice) ? Number(formData.rentPrice) * 3000 : undefined) : undefined,
         sales: Boolean(formData.sales),
         rent: Boolean(formData.rent),
         address: formData.address.trim() || 'Bujumbura Mobility Hub',
@@ -957,16 +972,26 @@ export default function CarsManagementView() {
                       <td className="p-4">
                         <div className="flex flex-col">
                           {car.sales ? (
-                            <span className="font-semibold text-[#0F172A] font-mono text-[13px]">
-                              ${car.price ? car.price.toLocaleString() : '0'}
-                            </span>
+                            <div>
+                              <span className="font-semibold text-[#0F172A] font-mono text-[13px]">
+                                ${car.price ? car.price.toLocaleString() : '0'}
+                              </span>
+                              <div className="text-[10px] text-[#0B57FF] font-medium">
+                                {(car.priceBIF ?? (car.price ? car.price * 3000 : 0)).toLocaleString()} BIF
+                              </div>
+                            </div>
                           ) : (
                             <span className="text-[#64748B] font-mono text-xs">Not for sale</span>
                           )}
                           {car.rent && (
-                            <span className="font-mono text-[11px] text-[#0B57FF] font-semibold">
-                              ${car.rentPrice || '—'} / day
-                            </span>
+                            <div className="mt-0.5">
+                              <span className="font-mono text-[11px] text-[#0B57FF] font-semibold">
+                                ${car.rentPrice || '—'} / day
+                              </span>
+                              <span className="text-[10px] text-zinc-500 block">
+                                {car.rentPriceBIF ? `${car.rentPriceBIF.toLocaleString()} BIF/day` : car.rentPrice ? `${(car.rentPrice * 3000).toLocaleString()} BIF/day` : ''}
+                              </span>
+                            </div>
                           )}
                         </div>
                       </td>
@@ -1192,15 +1217,34 @@ export default function CarsManagementView() {
                       <span className="font-semibold text-zinc-800">Available for Sale</span>
                     </label>
                     {formData.sales && (
-                      <div>
-                        <label className="block text-zinc-600 text-[11px] mb-0.5">Sale Price (USD)</label>
-                        <input
-                          type="number"
-                          value={formData.price}
-                          onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                          placeholder="e.g. 185000"
-                          className="w-full h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-blue-500"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-zinc-600 text-[11px] mb-0.5">Sale Price (USD)</label>
+                          <input
+                            type="number"
+                            value={formData.price}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setFormData({
+                                ...formData,
+                                price: val,
+                                priceBIF: val * 3000,
+                              });
+                            }}
+                            placeholder="e.g. 185000"
+                            className="w-full h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-blue-700 font-semibold text-[11px] mb-0.5">Sale Equivalent (BIF)</label>
+                          <input
+                            type="number"
+                            value={formData.priceBIF}
+                            onChange={(e) => setFormData({ ...formData, priceBIF: Number(e.target.value) })}
+                            placeholder="e.g. 555000000"
+                            className="w-full h-8 px-2.5 rounded-lg border border-blue-200 bg-blue-50/30 text-zinc-900 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1217,15 +1261,34 @@ export default function CarsManagementView() {
                       <span className="font-semibold text-zinc-800">Available for Rent</span>
                     </label>
                     {formData.rent && (
-                      <div>
-                        <label className="block text-zinc-600 text-[11px] mb-0.5">Daily Rental Price (USD/day)</label>
-                        <input
-                          type="number"
-                          value={formData.rentPrice}
-                          onChange={(e) => setFormData({ ...formData, rentPrice: Number(e.target.value) })}
-                          placeholder="e.g. 450"
-                          className="w-full h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-blue-500"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-zinc-600 text-[11px] mb-0.5">Daily Rent (USD/day)</label>
+                          <input
+                            type="number"
+                            value={formData.rentPrice}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setFormData({
+                                ...formData,
+                                rentPrice: val,
+                                rentPriceBIF: val * 3000,
+                              });
+                            }}
+                            placeholder="e.g. 450"
+                            className="w-full h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-blue-700 font-semibold text-[11px] mb-0.5">Daily Rent (BIF/day)</label>
+                          <input
+                            type="number"
+                            value={formData.rentPriceBIF}
+                            onChange={(e) => setFormData({ ...formData, rentPriceBIF: Number(e.target.value) })}
+                            placeholder="e.g. 1350000"
+                            className="w-full h-8 px-2.5 rounded-lg border border-blue-200 bg-blue-50/30 text-zinc-900 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>

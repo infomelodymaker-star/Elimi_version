@@ -352,7 +352,7 @@ export default function ProductDetailModal({
                         };
                         const result = await createCheckoutOrder(orderPayload);
                         const url = result.success && result.orderId
-                          ? generateClientWhatsAppGreetingUrl(result.orderId)
+                          ? generateClientWhatsAppGreetingUrl(result.orderId, undefined, result.order)
                           : `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
                         if (typeof window !== 'undefined') {
                           window.open(url, '_blank', 'noopener,noreferrer');

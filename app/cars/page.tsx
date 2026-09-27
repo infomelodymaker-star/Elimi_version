@@ -28,7 +28,7 @@ function CarsContent() {
   const { data: cmsCarsPage } = useCmsPage('cars');
 
   const heroContent = cmsCarsPage?.sections?.find(s => s.id === 'hero' || s.type === 'hero')?.content;
-  const mapContent = cmsCarsPage?.sections?.find(s => s.id === 'map' || s.id === 'map-section' || s.type === 'map' || s.type === 'map-section')?.content;
+  const mapContent = cmsCarsPage?.sections?.find(s => s.id === 'map' || s.id === 'map-section')?.content;
 
   const [activeRegion, setActiveRegion] = useState<string>('bujumbura');
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(() => {

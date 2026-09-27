@@ -433,24 +433,6 @@ export default function ProductGrid({
                             ({product.rating})
                           </span>
                         </div>
-
-                        {product.colors && product.colors.length > 0 && (
-                          <div className="flex items-center gap-1 shrink-0">
-                            {product.colors.slice(0, 3).map((col, idx) => (
-                              <span
-                                key={idx}
-                                title={col.name}
-                                style={{ backgroundColor: col.hex }}
-                                className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border border-black/20 shadow-2xs inline-block"
-                              />
-                            ))}
-                            {product.colors.length > 3 && (
-                              <span className="text-[9px] text-slate-400 font-mono">
-                                +{product.colors.length - 3}
-                              </span>
-                            )}
-                          </div>
-                        )}
                       </div>
 
                       {/* Bottom Action Row: See Details Button + Cart Icon Button */}

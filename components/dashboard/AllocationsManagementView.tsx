@@ -78,7 +78,9 @@ export default function AllocationsManagementView() {
     categoryId: string;
     categoryName: string;
     pricePerDay: number;
+    priceBIF: number;
     originalPrice: number;
+    originalPriceBIF: number;
     badge: string;
     imageUrl: string;
     gallery: string[];
@@ -95,7 +97,9 @@ export default function AllocationsManagementView() {
     categoryId: '',
     categoryName: '',
     pricePerDay: 50,
+    priceBIF: 150000,
     originalPrice: 200,
+    originalPriceBIF: 600000,
     badge: '',
     imageUrl: '',
     gallery: [],
@@ -161,7 +165,9 @@ export default function AllocationsManagementView() {
       categoryId: defaultCat?.id || '',
       categoryName: defaultCat?.name || '',
       pricePerDay: 55,
+      priceBIF: 165000,
       originalPrice: 220,
+      originalPriceBIF: 660000,
       badge: '',
       imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=900',
       gallery: [
@@ -192,7 +198,9 @@ export default function AllocationsManagementView() {
       categoryId: item.categoryId,
       categoryName: item.categoryName,
       pricePerDay: item.pricePerDay,
+      priceBIF: item.priceBIF || Math.round(item.pricePerDay * 3000),
       originalPrice: item.originalPrice || item.pricePerDay * 4,
+      originalPriceBIF: item.originalPriceBIF || (item.originalPrice ? Math.round(item.originalPrice * 3000) : Math.round(item.pricePerDay * 4 * 3000)),
       badge: item.badge || '',
       imageUrl: item.imageUrl,
       gallery: item.gallery && item.gallery.length > 0 ? item.gallery : [item.imageUrl],
@@ -799,9 +807,12 @@ export default function AllocationsManagementView() {
                           <div className="font-semibold text-[#0B57FF] text-[13px]">
                             ${item.pricePerDay}.00 <span className="text-[#64748B] text-[11px] font-normal">/day</span>
                           </div>
+                          <div className="text-emerald-700 font-medium text-[11px]">
+                            {(item.priceBIF || Math.round(item.pricePerDay * 3000)).toLocaleString()} BIF
+                          </div>
                           {item.originalPrice && (
                             <div className="text-[#64748B] text-[10px]">
-                              Retail: ${item.originalPrice}
+                              Retail: ${item.originalPrice} ({((item.originalPriceBIF || Math.round(item.originalPrice * 3000))).toLocaleString()} BIF)
                             </div>
                           )}
                         </td>
@@ -1084,9 +1095,9 @@ export default function AllocationsManagementView() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-3.5 bg-blue-50/50 rounded-xl border border-blue-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
-                  <label className="block font-bold text-zinc-700 mb-1">
+                  <label className="block font-bold text-zinc-800 mb-1">
                     Rental Price ($ / day) *
                   </label>
                   <input
@@ -1094,25 +1105,68 @@ export default function AllocationsManagementView() {
                     required
                     min={1}
                     value={itemFormData.pricePerDay}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setItemFormData({
+                        ...itemFormData,
+                        pricePerDay: val,
+                        priceBIF: Math.round(val * 3000),
+                      });
+                    }}
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none bg-white font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-800 mb-1">
+                    Rental Price BIF (FBu / jour) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    value={itemFormData.priceBIF}
                     onChange={(e) =>
-                      setItemFormData({ ...itemFormData, pricePerDay: Number(e.target.value) })
+                      setItemFormData({ ...itemFormData, priceBIF: Number(e.target.value) })
                     }
-                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none"
+                    placeholder="e.g. 150000"
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none bg-white font-mono text-blue-700 font-semibold"
                   />
                 </div>
 
                 <div>
                   <label className="block font-bold text-zinc-700 mb-1">
-                    Estimated Retail Value ($)
+                    Retail Value ($)
                   </label>
                   <input
                     type="number"
                     min={0}
                     value={itemFormData.originalPrice}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setItemFormData({
+                        ...itemFormData,
+                        originalPrice: val,
+                        originalPriceBIF: Math.round(val * 3000),
+                      });
+                    }}
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none bg-white font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-700 mb-1">
+                    Retail Value BIF (FBu)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={itemFormData.originalPriceBIF}
                     onChange={(e) =>
-                      setItemFormData({ ...itemFormData, originalPrice: Number(e.target.value) })
+                      setItemFormData({ ...itemFormData, originalPriceBIF: Number(e.target.value) })
                     }
-                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none"
+                    placeholder="e.g. 600000"
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:border-blue-600 outline-none bg-white font-mono"
                   />
                 </div>
               </div>

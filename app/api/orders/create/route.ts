@@ -44,27 +44,33 @@ export async function POST(req: NextRequest) {
     for (const rawItem of body.items) {
       if (!rawItem || typeof rawItem !== 'object') continue;
 
-      const id = sanitizeString(rawItem.id, 60) || `item-${Math.random().toString(36).slice(2, 8)}`;
-      const title = sanitizeString(rawItem.title, 150) || 'Article de boutique';
+      const productId = sanitizeString(rawItem.productId || rawItem.id, 60) || `item-${Math.random().toString(36).slice(2, 8)}`;
+      const name = sanitizeString(rawItem.name || rawItem.title, 150) || 'Article de boutique';
       const category = sanitizeString(rawItem.category, 50);
       const image = typeof rawItem.image === 'string' ? rawItem.image.trim().slice(0, 500) : '';
       const quantity = Math.max(1, Math.min(100, Math.floor(sanitizeNumber(rawItem.quantity, 1, 100, 1))));
       const priceUSD = sanitizeNumber(rawItem.priceUSD, 0, 50000, 0);
       const priceBIF = sanitizeNumber(rawItem.priceBIF, 0, 200000000, 0);
+      const shippingCostUSD = sanitizeNumber(rawItem.shippingCostUSD, 0, 5000, 0);
+      const shippingCostBIF = sanitizeNumber(rawItem.shippingCostBIF, 0, 10000000, 0);
       const selectedSize = rawItem.selectedSize ? sanitizeString(rawItem.selectedSize, 30) : undefined;
       const selectedColor = rawItem.selectedColor ? sanitizeString(rawItem.selectedColor, 30) : undefined;
 
       sanitizedItems.push({
-        id,
-        title,
+        id: productId,
+        productId,
+        name,
+        title: name,
         category,
         image,
         priceUSD,
         priceBIF,
         quantity,
+        shippingCostUSD,
+        shippingCostBIF,
         selectedSize,
         selectedColor,
-      });
+      } as any);
 
       calculatedSubtotalUSD += priceUSD * quantity;
       calculatedSubtotalBIF += priceBIF * quantity;

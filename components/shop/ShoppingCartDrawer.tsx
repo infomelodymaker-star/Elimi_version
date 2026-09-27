@@ -9,6 +9,11 @@ import { X, Trash2, Plus, Minus, ShoppingBag, ShieldCheck, ArrowRight } from 'lu
 import { Product } from './ProductGrid';
 import { WHATSAPP_NUMBER } from '@/lib/utils';
 import { createCheckoutOrder, generateClientWhatsAppGreetingUrl } from '@/lib/firestore-orders';
+import {
+  updateCartItemAttributes,
+  updateCartItemQuantityByIndex,
+  removeCartItemByIndex,
+} from '@/lib/cart';
 
 export interface CartItem {
   product: Product;
@@ -45,15 +50,34 @@ export default function ShoppingCartDrawer({
     0
   );
 
+  const handleItemRemove = (index: number, productId: string) => {
+    removeCartItemByIndex(index);
+    onRemoveItem(productId);
+  };
+
+  const handleItemQty = (index: number, productId: string, delta: number) => {
+    updateCartItemQuantityByIndex(index, delta);
+    onUpdateQuantity(productId, delta);
+  };
+
+  const handleUpdateItemSize = (index: number, newSize: string) => {
+    updateCartItemAttributes(index, newSize, undefined);
+  };
+
+  const handleUpdateItemColor = (index: number, newColor: string) => {
+    updateCartItemAttributes(index, undefined, newColor);
+  };
+
   const formatCartSummaryForWhatsApp = () => {
     if (cartItems.length === 0) return '';
     const itemLines = cartItems
-      .map(
-        (item) =>
-          `• ${item.product.name} (x${item.quantity}) - ${(
-            item.product.priceBIF * item.quantity
-          ).toLocaleString()} BIF`
-      )
+      .map((item) => {
+        const sizeStr = item.selectedSize ? ` [Taille: ${item.selectedSize}]` : '';
+        const colorStr = item.selectedColor ? ` [Couleur: ${item.selectedColor}]` : '';
+        return `• ${item.product.name}${sizeStr}${colorStr} (x${item.quantity}) - ${(
+          item.product.priceBIF * item.quantity
+        ).toLocaleString()} BIF`;
+      })
       .join('\n');
 
     return `Hello ELIMI Boutique team! I would like to place an order for:\n\n${itemLines}\n\nTotal: ${totalBIF.toLocaleString()} BIF (~$${totalUSD} USD).\n\nPlease confirm availability and delivery location.`;
@@ -120,14 +144,17 @@ export default function ShoppingCartDrawer({
                 </p>
               </div>
             ) : (
-              cartItems.map((item) => {
+              cartItems.map((item, index) => {
                 const { product, quantity, selectedSize, selectedColor } = item;
                 const maxStock = product.stockQuantity !== undefined ? Math.max(1, product.stockQuantity) : 99;
                 const isAtLimit = quantity >= maxStock;
 
+                const availableSizes = product.sizes && product.sizes.length > 0 ? product.sizes : ['Standard', 'S', 'M', 'L', 'XL', 'XXL'];
+                const availableColors = product.colors && product.colors.length > 0 ? product.colors : [];
+
                 return (
                   <div
-                    key={`${product.id}-${selectedSize || 'def'}-${selectedColor || 'def'}`}
+                    key={`${product.id}-${selectedSize || 'def'}-${selectedColor || 'def'}-${index}`}
                     className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex items-start gap-3.5"
                   >
                     {/* Thumbnail */}
@@ -148,9 +175,9 @@ export default function ShoppingCartDrawer({
                         <h5 className="font-bold text-xs sm:text-sm text-neutral-900 truncate">
                           {product.name}
                         </h5>
-                        {/* Red Trash button matching reference */}
+                        {/* Red Trash button */}
                         <button
-                          onClick={() => onRemoveItem(product.id)}
+                          onClick={() => handleItemRemove(index, product.id)}
                           className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 rounded-full transition cursor-pointer -mt-1 -mr-1"
                           aria-label="Remove item"
                         >
@@ -158,20 +185,47 @@ export default function ShoppingCartDrawer({
                         </button>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                        <span className="text-[11px] text-neutral-500">
-                          {product.category || 'Boutique'}
-                        </span>
-                        {selectedSize && (
-                          <span className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded">
-                            Size: {selectedSize}
+                      {/* Interactive Size & Color Modifiers in Drawer */}
+                      <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                        {/* Size Dropdown */}
+                        <div className="flex items-center gap-1 bg-slate-100/90 hover:bg-slate-200/80 rounded-lg px-2 py-0.5 transition-colors border border-slate-200/60">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Taille:</span>
+                          <select
+                            value={selectedSize || availableSizes[0] || 'Standard'}
+                            onChange={(e) => handleUpdateItemSize(index, e.target.value)}
+                            aria-label={`Select size for ${product.name}`}
+                            className="bg-transparent text-[11px] font-bold text-neutral-800 outline-none cursor-pointer pr-1"
+                          >
+                            {availableSizes.map((sz) => (
+                              <option key={sz} value={sz}>
+                                {sz}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Color Dropdown (if product has color options or default) */}
+                        {availableColors.length > 0 ? (
+                          <div className="flex items-center gap-1 bg-blue-50/90 hover:bg-blue-100/80 rounded-lg px-2 py-0.5 transition-colors border border-blue-200/60">
+                            <span className="text-[10px] font-bold text-[#0D52FF] uppercase tracking-wider">Couleur:</span>
+                            <select
+                              value={selectedColor || availableColors[0]?.name || ''}
+                              onChange={(e) => handleUpdateItemColor(index, e.target.value)}
+                              aria-label={`Select color for ${product.name}`}
+                              className="bg-transparent text-[11px] font-bold text-[#0D52FF] outline-none cursor-pointer pr-1"
+                            >
+                              {availableColors.map((col) => (
+                                <option key={col.name} value={col.name}>
+                                  {col.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : selectedColor ? (
+                          <span className="text-[10px] font-semibold bg-blue-50 text-[#0D52FF] px-2 py-0.5 rounded-lg border border-blue-200/60">
+                            {selectedColor}
                           </span>
-                        )}
-                        {selectedColor && (
-                          <span className="text-[10px] font-semibold bg-blue-50 text-[#0D52FF] px-1.5 py-0.2 rounded border border-blue-200/60">
-                            Color: {selectedColor}
-                          </span>
-                        )}
+                        ) : null}
                       </div>
 
                       <div className="flex items-center justify-between mt-2 pt-1">
@@ -187,7 +241,7 @@ export default function ShoppingCartDrawer({
                         {/* Quantity Stepper Pill with stock limit bubble */}
                         <div className="bg-[#F0F2F5] rounded-full px-2.5 py-1 flex items-center gap-2.5 text-xs font-bold text-neutral-900 border border-slate-200/60 relative group/stepper">
                           <button
-                            onClick={() => onUpdateQuantity(product.id, -1)}
+                            onClick={() => handleItemQty(index, product.id, -1)}
                             className="text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
                             aria-label="Decrease quantity"
                           >
@@ -198,7 +252,7 @@ export default function ShoppingCartDrawer({
                           <div className="relative group/plus">
                             <button
                               onClick={() => {
-                                if (!isAtLimit) onUpdateQuantity(product.id, 1);
+                                if (!isAtLimit) handleItemQty(index, product.id, 1);
                               }}
                               disabled={isAtLimit}
                               className={`transition p-0.5 ${
@@ -277,6 +331,8 @@ export default function ShoppingCartDrawer({
                         priceUSD: item.product.priceUSD,
                         priceBIF: item.product.priceBIF,
                         quantity: item.quantity,
+                        selectedSize: item.selectedSize || (item.product.sizes?.[0] || 'Standard'),
+                        selectedColor: item.selectedColor || (item.product.colors?.[0]?.name || undefined),
                         shippingCostUSD: 0,
                         shippingCostBIF: 0,
                       }));
@@ -297,7 +353,7 @@ export default function ShoppingCartDrawer({
 
                       const result = await createCheckoutOrder(orderPayload);
                       const url = result.success && result.orderId
-                        ? generateClientWhatsAppGreetingUrl(result.orderId)
+                        ? generateClientWhatsAppGreetingUrl(result.orderId, undefined, result.order)
                         : whatsappCheckoutUrl;
                       
                       onClearCart();

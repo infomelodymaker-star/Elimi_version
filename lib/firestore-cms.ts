@@ -699,42 +699,35 @@ export const INITIAL_CMS_PAGES: CmsPage[] = [
       },
     ],
   },
-  {
-    id: 'home',
-    title: 'Home Page',
-    slug: '/',
-    lastUpdated: new Date().toISOString(),
-    sections: [
-      {
-        id: 'hero',
-        type: 'hero',
-        content: {
-          headline: 'Excellence Beyond Expectations.',
-          subheadline: 'PROFESSIONALISM. PRECISION. PRESENCE.',
-          backgroundImage: '/assets/protocol/PROTOCOL_SECTION.webp',
-        },
-      },
-    ],
-  },
 ];
+
+function deduplicatePages(pages: CmsPage[]): CmsPage[] {
+  const seen = new Set<string>();
+  return pages.filter((page) => {
+    if (!page || !page.id) return false;
+    if (seen.has(page.id)) return false;
+    seen.add(page.id);
+    return true;
+  });
+}
 
 export const CMS_STORAGE_KEY = 'elimi_cms_pages_storage';
 export const CMS_SYNC_EVENT = 'elimi_sync_cms_pages';
 
 export function useAllCmsPages() {
-  const [pages, setPages] = useState<CmsPage[]>(INITIAL_CMS_PAGES);
+  const [pages, setPages] = useState<CmsPage[]>(() => deduplicatePages(INITIAL_CMS_PAGES));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // 1. Initial stored items loaded on mount to prevent SSR hydration mismatch
     queueMicrotask(() => {
-      const initialStored = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
+      const initialStored = deduplicatePages(getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES));
       setPages(initialStored);
     });
 
     // 2. Storage sync listener
     const handleSync = () => {
-      const updated = getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES);
+      const updated = deduplicatePages(getStoredItems<CmsPage>(CMS_STORAGE_KEY, INITIAL_CMS_PAGES));
       setPages(updated);
     };
 
@@ -765,8 +758,9 @@ export function useAllCmsPages() {
               }
             });
 
-            setPages(merged);
-            saveStoredItems(CMS_STORAGE_KEY, merged);
+            const uniqueMerged = deduplicatePages(merged);
+            setPages(uniqueMerged);
+            saveStoredItems(CMS_STORAGE_KEY, uniqueMerged);
           }
           setLoading(false);
         },

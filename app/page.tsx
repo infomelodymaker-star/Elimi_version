@@ -616,6 +616,7 @@ export default function Home() {
                               alt="Client"
                               fill
                               className="object-cover"
+                              referrerPolicy="no-referrer"
                             />
                           </div>
                           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white overflow-hidden relative bg-slate-200">
@@ -624,6 +625,7 @@ export default function Home() {
                               alt="Client"
                               fill
                               className="object-cover"
+                              referrerPolicy="no-referrer"
                             />
                           </div>
                           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white overflow-hidden relative bg-slate-200">
@@ -632,6 +634,7 @@ export default function Home() {
                               alt="Client"
                               fill
                               className="object-cover"
+                              referrerPolicy="no-referrer"
                             />
                           </div>
                         </div>

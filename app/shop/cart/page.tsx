@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   Sparkles,
   Loader2,
+  Copy,
 } from 'lucide-react';
 import ElimiHeader from '@/components/ElimiHeader';
 import { useCurrency, useSettings } from '@/components/SettingsProvider';
@@ -25,7 +26,10 @@ import {
   CartItem,
   getSavedCart,
   updateCartItemQuantity,
+  updateCartItemQuantityByIndex,
+  updateCartItemAttributes,
   removeCartItem,
+  removeCartItemByIndex,
   clearCart,
   calculateCartDeliveryFee,
 } from '@/lib/cart';
@@ -36,6 +40,7 @@ import {
   OrderItem,
   createCheckoutOrder,
   generateClientWhatsAppGreetingUrl,
+  generateWhatsAppOrderConfirmationText,
 } from '@/lib/firestore-orders';
 
 const emptySubscribe = () => () => {};
@@ -77,6 +82,16 @@ export default function CartPage() {
 
   // Checkout submission state (triggers loading skeleton)
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [copiedDetails, setCopiedDetails] = useState(false);
+
+  const handleCopyOrderDetails = (order: BoutiqueOrder) => {
+    const text = generateWhatsAppOrderConfirmationText(order);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedDetails(true);
+      setTimeout(() => setCopiedDetails(false), 2500);
+    }
+  };
 
   useEffect(() => {
     const handleCartUpdate = (e: Event) => {
@@ -91,6 +106,21 @@ export default function CartPage() {
     window.addEventListener('elimi-cart-updated', handleCartUpdate);
     return () => window.removeEventListener('elimi-cart-updated', handleCartUpdate);
   }, []);
+
+  const handleUpdateItemAttributes = (index: number, newSize?: string, newColor?: string) => {
+    const updated = updateCartItemAttributes(index, newSize, newColor);
+    setCartItems(updated);
+  };
+
+  const handleUpdateQtyByIndex = (index: number, delta: number) => {
+    const updated = updateCartItemQuantityByIndex(index, delta);
+    setCartItems(updated);
+  };
+
+  const handleRemoveByIndex = (index: number) => {
+    const updated = removeCartItemByIndex(index);
+    setCartItems(updated);
+  };
 
   const handleUpdateQty = (productId: string, delta: number) => {
     const updated = updateCartItemQuantity(productId, delta);
@@ -168,6 +198,9 @@ export default function CartPage() {
     try {
       const orderItems = cartItems.map((item) => {
         const ship = getEffectiveShippingCost(item.product);
+        const effectiveSize = item.selectedSize || (item.product.sizes && item.product.sizes.length > 0 ? item.product.sizes[0] : 'Standard');
+        const effectiveColor = item.selectedColor || (item.product.colors && item.product.colors.length > 0 ? item.product.colors[0].name : undefined);
+
         const itemObj: Record<string, unknown> = {
           productId: item.product.id,
           name: item.product.name,
@@ -177,12 +210,10 @@ export default function CartPage() {
           quantity: item.quantity,
           shippingCostUSD: ship.costUSD,
           shippingCostBIF: ship.costBIF,
+          selectedSize: effectiveSize,
         };
-        if (item.selectedSize) {
-          itemObj.selectedSize = item.selectedSize;
-        }
-        if (item.selectedColor) {
-          itemObj.selectedColor = item.selectedColor;
+        if (effectiveColor) {
+          itemObj.selectedColor = effectiveColor;
         }
         return itemObj;
       });
@@ -221,7 +252,7 @@ export default function CartPage() {
         setShowSuccessModal(true);
 
         // 4. Open WhatsApp cleanly in a new window/tab
-        const whatsappUrl = generateClientWhatsAppGreetingUrl(result.orderId, whatsappNumber);
+        const whatsappUrl = generateClientWhatsAppGreetingUrl(result.orderId, whatsappNumber, result.order);
         if (typeof window !== 'undefined') {
           try {
             window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
@@ -327,14 +358,17 @@ export default function CartPage() {
               ) : (
                 /* Item Rows */
                 <div className="divide-y divide-slate-100">
-                  {cartItems.map((item) => {
+                  {cartItems.map((item, index) => {
                     const { product, quantity, selectedSize, selectedColor } = item;
                     const itemTotalUSD = (product.priceUSD * quantity).toFixed(2);
                     const itemTotalBIF = (toBIF(product.priceUSD) * quantity).toLocaleString();
 
+                    const availableSizes = product.sizes && product.sizes.length > 0 ? product.sizes : ['Standard', 'S', 'M', 'L', 'XL', 'XXL'];
+                    const availableColors = product.colors && product.colors.length > 0 ? product.colors : [];
+
                     return (
                       <div
-                        key={`${product.id}-${selectedSize || 'default'}`}
+                        key={`${product.id}-${selectedSize || 'default'}-${selectedColor || 'default'}-${index}`}
                         className="py-5 first:pt-0 last:pb-0 flex items-start sm:items-center gap-4 sm:gap-5 group"
                       >
                         {/* Thumbnail */}
@@ -352,7 +386,7 @@ export default function CartPage() {
                         {/* Middle & Right Content */}
                         <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           {/* Info */}
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             <div className="flex items-start justify-between sm:hidden">
                               <Link
                                 href={`/shop/${product.id}`}
@@ -362,7 +396,7 @@ export default function CartPage() {
                               </Link>
                               {/* Mobile Delete Button */}
                               <button
-                                onClick={() => handleRemove(product.id)}
+                                onClick={() => handleRemoveByIndex(index)}
                                 className="text-rose-500 hover:text-rose-700 p-1 -mt-1 -mr-1 transition cursor-pointer"
                                 aria-label="Remove item"
                               >
@@ -377,20 +411,47 @@ export default function CartPage() {
                               {product.name}
                             </Link>
 
-                            <div className="flex items-center gap-3 text-xs text-neutral-500">
-                              <span>
-                                Size:{' '}
-                                <strong className="text-neutral-700 font-semibold">
-                                  {selectedSize || 'Standard'}
-                                </strong>
-                              </span>
-                              <span>•</span>
-                              <span>
-                                Color:{' '}
-                                <strong className="text-neutral-700 font-semibold">
-                                  {selectedColor || 'Default'}
-                                </strong>
-                              </span>
+                            {/* Interactive Size & Color Modifiers Directly in Cart */}
+                            <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
+                              {/* Size Selector */}
+                              <div className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-lg border border-slate-200/70 transition-colors">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Taille:</span>
+                                <select
+                                  value={selectedSize || availableSizes[0] || 'Standard'}
+                                  onChange={(e) => handleUpdateItemAttributes(index, e.target.value, undefined)}
+                                  aria-label={`Select size for ${product.name}`}
+                                  className="bg-transparent text-xs font-bold text-neutral-900 outline-none cursor-pointer pr-1"
+                                >
+                                  {availableSizes.map((sz) => (
+                                    <option key={sz} value={sz}>
+                                      {sz}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Color Selector */}
+                              {availableColors.length > 0 ? (
+                                <div className="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100/80 px-2.5 py-1 rounded-lg border border-blue-200/70 transition-colors">
+                                  <span className="text-[11px] font-bold text-[#0D52FF] uppercase tracking-wider">Couleur:</span>
+                                  <select
+                                    value={selectedColor || availableColors[0]?.name || ''}
+                                    onChange={(e) => handleUpdateItemAttributes(index, undefined, e.target.value)}
+                                    aria-label={`Select color for ${product.name}`}
+                                    className="bg-transparent text-xs font-bold text-[#0D52FF] outline-none cursor-pointer pr-1"
+                                  >
+                                    {availableColors.map((col) => (
+                                      <option key={col.name} value={col.name}>
+                                        {col.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              ) : selectedColor ? (
+                                <div className="inline-flex items-center gap-1 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/70 text-xs font-bold text-[#0D52FF]">
+                                  <span>Couleur: {selectedColor}</span>
+                                </div>
+                              ) : null}
                             </div>
 
                             {/* Product Delivery Fee */}
@@ -424,7 +485,7 @@ export default function CartPage() {
                                 <div className="bg-[#F0F2F5] rounded-full px-3.5 py-1.5 flex items-center gap-3 text-xs sm:text-sm font-bold text-neutral-900 border border-slate-200/60 relative">
                                   <button
                                     type="button"
-                                    onClick={() => handleUpdateQty(product.id, -1)}
+                                    onClick={() => handleUpdateQtyByIndex(index, -1)}
                                     className="text-neutral-600 hover:text-neutral-900 transition cursor-pointer p-0.5"
                                     aria-label="Decrease quantity"
                                   >
@@ -436,7 +497,7 @@ export default function CartPage() {
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        if (!isAtLimit) handleUpdateQty(product.id, 1);
+                                        if (!isAtLimit) handleUpdateQtyByIndex(index, 1);
                                       }}
                                       disabled={isAtLimit}
                                       className={`p-0.5 transition ${
@@ -464,7 +525,7 @@ export default function CartPage() {
                             {/* Desktop Trash Button */}
                             <button
                               type="button"
-                              onClick={() => handleRemove(product.id)}
+                              onClick={() => handleRemoveByIndex(index)}
                               className="hidden sm:flex w-9 h-9 rounded-full items-center justify-center text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer"
                               aria-label="Remove item"
                             >
@@ -754,7 +815,28 @@ export default function CartPage() {
               </p>
             </div>
 
-            <div className="bg-slate-50 rounded-2xl p-4 text-left border border-slate-200/80 space-y-2 text-xs">
+            <div className="bg-slate-50 rounded-2xl p-4 text-left border border-slate-200/80 space-y-2.5 text-xs">
+              {placedOrder.items && placedOrder.items.length > 0 && (
+                <div className="pb-2 border-b border-slate-200/80 space-y-1.5 max-h-36 overflow-y-auto">
+                  {placedOrder.items.map((item, idx) => (
+                    <div key={idx} className="flex flex-col text-neutral-800 text-[11px]">
+                      <span className="font-semibold">{idx + 1}. {item.name} (x{item.quantity})</span>
+                      <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                        {item.selectedSize && (
+                          <span className="px-1.5 py-0.2 rounded bg-blue-50 text-[#0D52FF] font-medium border border-blue-200">
+                            Taille: {item.selectedSize}
+                          </span>
+                        )}
+                        {item.selectedColor && (
+                          <span className="px-1.5 py-0.2 rounded bg-slate-200/80 text-neutral-800 font-medium border border-slate-300">
+                            Couleur: {item.selectedColor}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex justify-between text-neutral-500 font-medium">
                 <span>Items:</span>
                 <span className="font-bold text-neutral-900">{placedOrder.items.length} product(s)</span>
@@ -771,7 +853,7 @@ export default function CartPage() {
 
             <div className="space-y-2.5 pt-2">
               <a
-                href={generateClientWhatsAppGreetingUrl(placedOrder.id, whatsappNumber)}
+                href={generateClientWhatsAppGreetingUrl(placedOrder.id, whatsappNumber, placedOrder)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold rounded-full py-3.5 px-6 transition flex items-center justify-center gap-2 text-sm shadow-md cursor-pointer"
@@ -787,6 +869,24 @@ export default function CartPage() {
                 />
                 <span>Open WhatsApp to Confirm</span>
               </a>
+
+              <button
+                type="button"
+                onClick={() => handleCopyOrderDetails(placedOrder)}
+                className="w-full bg-blue-50 hover:bg-blue-100 text-[#0D52FF] font-bold rounded-full py-3 px-6 transition flex items-center justify-center gap-2 text-xs border border-blue-200/80 cursor-pointer"
+              >
+                {copiedDetails ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <span className="text-emerald-700">WhatsApp Details Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Copy WhatsApp Details</span>
+                  </>
+                )}
+              </button>
 
               <button
                 type="button"

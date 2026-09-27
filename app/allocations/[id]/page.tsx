@@ -15,6 +15,9 @@ import {
 import {
   createCheckoutOrder,
   generateClientWhatsAppGreetingUrl,
+  generateWhatsAppOrderConfirmationText,
+  BoutiqueOrder,
+  OrderItem,
 } from '@/lib/firestore-orders';
 import {
   Heart,
@@ -24,11 +27,10 @@ import {
   X,
   ShoppingCart,
   Check,
-  Facebook,
-  Instagram,
   Smartphone,
   Sparkles,
   ArrowRight,
+  Copy,
 } from 'lucide-react';
 
 // Fallback curated mock items for "Vous aimerez aussi" matching image.png exactly
@@ -148,21 +150,6 @@ export default function AllocationItemDetailPage() {
     ];
   }, [item]);
 
-  // UI States
-  const [selectedSize, setSelectedSize] = useState<string>('');
-  const [isFavorite, setIsFavorite] = useState<boolean>(false);
-  const [lightboxOpen, setLightboxOpen] = useState<boolean>(false);
-  const [lightboxIndex, setLightboxIndex] = useState<number>(0);
-  const [showSizeGuide, setShowSizeGuide] = useState<boolean>(false);
-  const [isExpandedDetails, setIsExpandedDetails] = useState<boolean>(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-
-  // WhatsApp Checkout States
-  const [isCheckingOut, setIsCheckingOut] = useState<boolean>(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [placedOrder, setPlacedOrder] = useState<any | null>(null);
-  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
-
   // Available sizes
   const sizesList = useMemo(() => {
     if (item?.sizes && item.sizes.length > 0) {
@@ -170,6 +157,57 @@ export default function AllocationItemDetailPage() {
     }
     return ['S/M', 'M/L', 'L/XL'];
   }, [item]);
+
+  // Available colors
+  const colorsList = useMemo(() => {
+    if (item?.colors && item.colors.length > 0) {
+      return item.colors;
+    }
+    return [
+      { name: 'Bleu Ciel / Blanc', hex: '#7EB6FF' },
+      { name: 'Blanc Pur', hex: '#FFFFFF' },
+      { name: 'Noir Ébène', hex: '#1E293B' },
+    ];
+  }, [item]);
+
+  // UI States - Default Preselection
+  const [selectedSize, setSelectedSize] = useState<string>(sizesList[0] || 'Standard');
+  const [selectedColor, setSelectedColor] = useState<{ name: string; hex: string } | null>(
+    colorsList[0] || null
+  );
+  const [isFavorite, setIsFavorite] = useState<boolean>(false);
+  const [lightboxOpen, setLightboxOpen] = useState<boolean>(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number>(0);
+  const [showSizeGuide, setShowSizeGuide] = useState<boolean>(false);
+  const [isExpandedDetails, setIsExpandedDetails] = useState<boolean>(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+
+  // Sync preselected defaults when item changes
+  useEffect(() => {
+    if (sizesList.length > 0) {
+      setSelectedSize(sizesList[0]);
+    }
+    if (colorsList.length > 0) {
+      setSelectedColor(colorsList[0]);
+    }
+  }, [sizesList, colorsList]);
+
+  // WhatsApp Checkout States
+  const [isCheckingOut, setIsCheckingOut] = useState<boolean>(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [placedOrder, setPlacedOrder] = useState<BoutiqueOrder | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+  const [copiedDetails, setCopiedDetails] = useState<boolean>(false);
+
+  // Copy order details helper
+  const handleCopyOrderDetails = (order: BoutiqueOrder) => {
+    const text = generateWhatsAppOrderConfirmationText(order);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedDetails(true);
+      setTimeout(() => setCopiedDetails(false), 2500);
+    }
+  };
 
   // Open Lightbox
   const handleOpenLightbox = (index: number) => {
@@ -179,38 +217,37 @@ export default function AllocationItemDetailPage() {
 
   /**
    * WHATSAPP CHECKOUT HANDLER
-   * Reuses the backend API (/api/orders/create) as in /shop_checkout
-   * Generates orderID, saves to Firestore `orders` collection,
-   * and opens WhatsApp with ONLY a greeting message containing that OrderId.
+   * Saves size and color to Firestore and opens WhatsApp with detailed item info.
    */
   const handleWhatsAppCheckout = async () => {
     if (!item) return;
-    if (!selectedSize) {
-      return;
-    }
+
+    const effectiveSize = selectedSize || sizesList[0] || 'Standard';
+    const effectiveColor = selectedColor?.name || (colorsList.length > 0 ? colorsList[0].name : undefined);
 
     setIsCheckingOut(true);
     setCheckoutError(null);
 
     try {
       const priceUSD = item.pricePerDay || 69;
-      const priceBIF = priceUSD * 3000;
+      const priceBIF = item.priceBIF ?? (priceUSD * 3000);
+
+      const singleItem: OrderItem = {
+        productId: item.id,
+        name: item.name,
+        image: item.imageUrl || photos[0] || '',
+        priceUSD: priceUSD,
+        priceBIF: priceBIF,
+        quantity: 1,
+        selectedSize: effectiveSize,
+        selectedColor: effectiveColor,
+        shippingCostUSD: 0,
+        shippingCostBIF: 0,
+      };
 
       const orderPayload = {
-        items: [
-          {
-            productId: item.id,
-            name: item.name,
-            image: item.imageUrl || photos[0] || '',
-            priceUSD: priceUSD,
-            priceBIF: priceBIF,
-            quantity: 1,
-            selectedSize: selectedSize,
-            shippingCostUSD: 0,
-            shippingCostBIF: 0,
-          },
-        ],
-        deliveryMethod: 'home_delivery',
+        items: [singleItem],
+        deliveryMethod: 'home_delivery' as const,
         deliveryCostUSD: 0,
         deliveryCostBIF: 0,
         subtotalUSD: priceUSD,
@@ -219,19 +256,19 @@ export default function AllocationItemDetailPage() {
         discountBIF: 0,
         totalUSD: priceUSD,
         totalBIF: priceBIF,
-        customerNotes: `Réservation Closet: ${item.name} (Taille: ${selectedSize})`,
+        customerNotes: `Réservation Closet: ${item.name} | Taille: ${effectiveSize}${effectiveColor ? ` | Couleur: ${effectiveColor}` : ''}`,
       };
 
       // 1. Create and store order in Firestore directly
-      const result = await createCheckoutOrder(orderPayload as any);
+      const result = await createCheckoutOrder(orderPayload);
 
       if (result.success && result.orderId) {
         // 2. Set placed order and open success modal
         setPlacedOrder(result.order);
         setShowSuccessModal(true);
 
-        // 3. Open WhatsApp in new tab
-        const waUrl = generateClientWhatsAppGreetingUrl(result.orderId, whatsappNumber);
+        // 3. Open WhatsApp in new tab mentioning item, size, color and total
+        const waUrl = generateClientWhatsAppGreetingUrl(result.orderId, whatsappNumber, result.order);
         if (typeof window !== 'undefined') {
           try {
             window.open(waUrl, '_blank', 'noopener,noreferrer');
@@ -261,12 +298,17 @@ export default function AllocationItemDetailPage() {
   }
 
   // Fallback Item if database is empty
-  const currentItem = item || {
+  const currentItem: RentalItem = item || {
     id: 'item-dianne',
     name: 'Chemise Dianne',
     brand: 'Musy Muse',
+    categoryId: 'cat-bureau',
+    categoryName: 'Tenues de bureau',
     pricePerDay: 69,
-    originalPrice: 69,
+    priceBIF: 207000,
+    originalPrice: 280,
+    originalPriceBIF: 840000,
+    badge: 'Populaire',
     reviewsCount: 72,
     rating: 5,
     sizes: ['S/M', 'M/L', 'L/XL'],
@@ -433,20 +475,71 @@ export default function AllocationItemDetailPage() {
                 Marque / Créateur : <span className="text-neutral-800 font-semibold">{currentItem.brand || 'Musy Muse'}</span>
               </p>
 
-              <div className="flex items-baseline gap-3 pt-2">
+              <div className="flex flex-wrap items-baseline gap-3 pt-2">
                 <span className="text-2xl font-bold text-neutral-900">
                   {currentItem.pricePerDay || 69},00 $
+                </span>
+                <span className="text-sm font-semibold text-[#0B57FF] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                  ≈ {(currentItem.priceBIF ?? ((currentItem.pricePerDay || 69) * 3000)).toLocaleString()} BIF
                 </span>
                 <span className="text-xs text-neutral-400 font-medium">
                   / jour de location
                 </span>
                 {currentItem.originalPrice && (
                   <span className="text-xs text-neutral-400 line-through">
-                    Valeur boutique: {currentItem.originalPrice},00 $
+                    Valeur boutique: {currentItem.originalPrice},00 $ {currentItem.originalPriceBIF ? `(${(currentItem.originalPriceBIF).toLocaleString()} BIF)` : ''}
                   </span>
                 )}
               </div>
             </div>
+
+            {/* Color Chooser Option */}
+            {colorsList.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-neutral-100">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-neutral-900 uppercase tracking-wide flex items-center gap-2">
+                    <span>Couleur disponible</span>
+                    {selectedColor && (
+                      <span className="text-[11px] font-semibold text-[#0D52FF] normal-case bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200/60">
+                        {selectedColor.name}
+                      </span>
+                    )}
+                  </label>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  {colorsList.map((col) => {
+                    const isSelected = selectedColor?.name === col.name;
+                    const isWhite = col.hex.toLowerCase() === '#ffffff' || col.hex.toLowerCase() === '#fff';
+                    return (
+                      <button
+                        key={col.name}
+                        type="button"
+                        onClick={() => setSelectedColor(col)}
+                        title={col.name}
+                        aria-label={`Couleur: ${col.name}`}
+                        style={{ backgroundColor: col.hex }}
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full transition-all relative cursor-pointer ${
+                          isSelected
+                            ? 'ring-2 ring-[#0D52FF] ring-offset-2 scale-110 shadow-sm'
+                            : 'border border-black/15 hover:scale-105 opacity-90 hover:opacity-100'
+                        } ${isWhite ? 'border-neutral-300 shadow-2xs' : ''}`}
+                      >
+                        {isSelected && (
+                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span
+                              className={`w-2.5 h-2.5 rounded-full ${
+                                isWhite ? 'bg-neutral-900' : 'bg-white'
+                              }`}
+                            />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Streamlined Size Selection */}
             <div className="space-y-2 pt-2 border-t border-neutral-100">
@@ -746,14 +839,26 @@ export default function AllocationItemDetailPage() {
             <div className="space-y-3">
               <h4 className="font-bold text-neutral-900 text-sm mb-3">Nous suivre</h4>
               <div className="flex items-center gap-4 text-neutral-800">
-                <a href="#" className="hover:text-black" aria-label="Facebook">
-                  <Facebook className="w-4 h-4" />
+                <a href="https://facebook.com/elimiburundi" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" aria-label="Facebook">
+                  <Image
+                    src="/assets/icons/social/facebook-150x150.png"
+                    alt="Facebook"
+                    width={18}
+                    height={18}
+                    className="w-4 h-4 object-contain rounded-full"
+                  />
                 </a>
-                <a href="#" className="hover:text-black font-serif font-bold text-sm" aria-label="Pinterest">
+                <a href="#" className="hover:text-black font-serif font-bold text-sm w-4 h-4 flex items-center justify-center" aria-label="Pinterest">
                   P
                 </a>
-                <a href="#" className="hover:text-black" aria-label="Instagram">
-                  <Instagram className="w-4 h-4" />
+                <a href="https://instagram.com/elimi_burundi" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" aria-label="Instagram">
+                  <Image
+                    src="/assets/icons/social/instagram-150x150.png"
+                    alt="Instagram"
+                    width={18}
+                    height={18}
+                    className="w-4 h-4 object-contain rounded-full"
+                  />
                 </a>
               </div>
 
@@ -878,7 +983,24 @@ export default function AllocationItemDetailPage() {
               </p>
             </div>
 
-            <div className="bg-slate-50 rounded-2xl p-4 text-left border border-slate-200/80 space-y-2 text-xs">
+            <div className="bg-slate-50 rounded-2xl p-4 text-left border border-slate-200/80 space-y-2.5 text-xs">
+              {placedOrder.items?.[0] && (
+                <div className="pb-2 border-b border-slate-200/80 space-y-1">
+                  <div className="font-semibold text-neutral-900">{placedOrder.items[0].name}</div>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    {placedOrder.items[0].selectedSize && (
+                      <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[#0D52FF] font-semibold text-[11px] border border-blue-200/80">
+                        Taille : {placedOrder.items[0].selectedSize}
+                      </span>
+                    )}
+                    {placedOrder.items[0].selectedColor && (
+                      <span className="px-2 py-0.5 rounded-full bg-slate-200/80 text-neutral-800 font-semibold text-[11px] border border-slate-300/80">
+                        Couleur : {placedOrder.items[0].selectedColor}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="flex justify-between text-neutral-500 font-medium">
                 <span>Total:</span>
                 <span className="text-[#0D52FF] font-bold">${placedOrder.totalUSD?.toFixed(2) || '0.00'} USD ({placedOrder.totalBIF?.toLocaleString() || '0'} BIF)</span>
@@ -891,7 +1013,7 @@ export default function AllocationItemDetailPage() {
 
             <div className="space-y-2.5 pt-2">
               <a
-                href={generateClientWhatsAppGreetingUrl(placedOrder.id, whatsappNumber)}
+                href={generateClientWhatsAppGreetingUrl(placedOrder.id, whatsappNumber, placedOrder)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold rounded-full py-3.5 px-6 transition flex items-center justify-center gap-2 text-sm shadow-md cursor-pointer"
@@ -907,6 +1029,24 @@ export default function AllocationItemDetailPage() {
                 />
                 <span>Ouvrir WhatsApp pour confirmer</span>
               </a>
+
+              <button
+                type="button"
+                onClick={() => handleCopyOrderDetails(placedOrder)}
+                className="w-full bg-blue-50 hover:bg-blue-100 text-[#0D52FF] font-bold rounded-full py-3 px-6 transition flex items-center justify-center gap-2 text-xs border border-blue-200/80 cursor-pointer"
+              >
+                {copiedDetails ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <span className="text-emerald-700">Détails WhatsApp copiés !</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Copier les détails WhatsApp</span>
+                  </>
+                )}
+              </button>
 
               <button
                 type="button"

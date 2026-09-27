@@ -65,7 +65,9 @@ export default function HousesManagementView() {
     title: string;
     description: string;
     price: number;
+    priceBIF: number;
     rentPrice: number;
+    rentPriceBIF: number;
     sales: boolean;
     rent: boolean;
     address: string;
@@ -87,7 +89,9 @@ export default function HousesManagementView() {
     title: '',
     description: '',
     price: 850000,
+    priceBIF: 2550000000,
     rentPrice: 3500,
+    rentPriceBIF: 10500000,
     sales: true,
     rent: true,
     address: 'Beverly Hills, CA',
@@ -116,6 +120,7 @@ export default function HousesManagementView() {
         unitId: 'ESTATE-01',
         availableDate: 'Available Now',
         price: 850000,
+        priceBIF: 2550000000,
         isRent: false,
       },
     ],
@@ -175,7 +180,9 @@ export default function HousesManagementView() {
       title: '',
       description: 'Exclusive luxury estate boasting refined architecture, contemporary floor plan, and serene landscape views.',
       price: 1200000,
+      priceBIF: 3600000000,
       rentPrice: 4500,
+      rentPriceBIF: 13500000,
       sales: true,
       rent: true,
       address: 'Kiriri Diplomatic Quarter, Bujumbura',
@@ -204,6 +211,7 @@ export default function HousesManagementView() {
           unitId: `VILLA-${Math.floor(100 + Math.random() * 900)}`,
           availableDate: 'Available Now',
           price: 1200000,
+          priceBIF: 3600000000,
           isRent: false,
         },
       ],
@@ -214,12 +222,16 @@ export default function HousesManagementView() {
   // Open Edit Form
   const handleOpenEdit = (house: House) => {
     setEditingHouseId(house.id);
+    const calculatedPriceBIF = house.priceBIF ?? (house.price ? house.price * 3000 : 0);
+    const calculatedRentBIF = house.rentPriceBIF ?? (house.rentPrice ? house.rentPrice * 3000 : 0);
     setFormData({
       id: house.id,
       title: house.title,
       description: house.description || '',
       price: house.price || 0,
+      priceBIF: calculatedPriceBIF,
       rentPrice: house.rentPrice || 0,
+      rentPriceBIF: calculatedRentBIF,
       sales: Boolean(house.sales),
       rent: Boolean(house.rent),
       address: house.address || '',
@@ -237,12 +249,13 @@ export default function HousesManagementView() {
       newAmenityInput: '',
       availableUnits:
         house.availableUnits && house.availableUnits.length > 0
-          ? house.availableUnits.map((u) => ({ ...u }))
+          ? house.availableUnits.map((u) => ({ ...u, priceBIF: u.priceBIF ?? (u.price ? u.price * 3000 : undefined) }))
           : [
               {
                 unitId: `${house.id.toUpperCase()}-01`,
                 availableDate: 'Available Now',
                 price: house.price || 0,
+                priceBIF: calculatedPriceBIF,
                 isRent: Boolean(house.rent),
               },
             ],
@@ -458,7 +471,9 @@ export default function HousesManagementView() {
         title: formData.title.trim(),
         description: formData.description.trim(),
         price: Number(formData.price) || 0,
+        priceBIF: Number(formData.priceBIF) || (Number(formData.price) ? Number(formData.price) * 3000 : 0),
         rentPrice: formData.rent ? Number(formData.rentPrice) || 0 : undefined,
+        rentPriceBIF: formData.rent ? Number(formData.rentPriceBIF) || (Number(formData.rentPrice) ? Number(formData.rentPrice) * 3000 : undefined) : undefined,
         sales: Boolean(formData.sales),
         rent: Boolean(formData.rent),
         address: formData.address.trim() || 'Burundi Real Estate Hub',
@@ -891,16 +906,26 @@ export default function HousesManagementView() {
                       <td className="p-4">
                         <div className="flex flex-col">
                           {house.sales ? (
-                            <span className="font-semibold text-[#0F172A] font-mono text-[13px]">
-                              ${house.price ? house.price.toLocaleString() : '0'}
-                            </span>
+                            <div>
+                              <span className="font-semibold text-[#0F172A] font-mono text-[13px]">
+                                ${house.price ? house.price.toLocaleString() : '0'}
+                              </span>
+                              <div className="text-[10px] text-[#0B57FF] font-medium">
+                                {(house.priceBIF ?? (house.price ? house.price * 3000 : 0)).toLocaleString()} BIF
+                              </div>
+                            </div>
                           ) : (
                             <span className="text-[#64748B] font-mono text-xs">Not for sale</span>
                           )}
                           {house.rent && (
-                            <span className="font-mono text-[11px] text-[#0B57FF] font-semibold">
-                              ${house.rentPrice ? house.rentPrice.toLocaleString() : '—'} / mo
-                            </span>
+                            <div className="mt-0.5">
+                              <span className="font-mono text-[11px] text-[#0B57FF] font-semibold">
+                                ${house.rentPrice ? house.rentPrice.toLocaleString() : '—'} / mo
+                              </span>
+                              <span className="text-[10px] text-zinc-500 block">
+                                {house.rentPriceBIF ? `${house.rentPriceBIF.toLocaleString()} BIF/mo` : house.rentPrice ? `${(house.rentPrice * 3000).toLocaleString()} BIF/mo` : ''}
+                              </span>
+                            </div>
                           )}
                         </div>
                       </td>
@@ -1100,15 +1125,34 @@ export default function HousesManagementView() {
                       <span className="font-semibold text-zinc-800">Available for Sale</span>
                     </label>
                     {formData.sales && (
-                      <div>
-                        <label className="block text-zinc-600 text-[11px] mb-0.5">Sale Price (USD)</label>
-                        <input
-                          type="number"
-                          value={formData.price}
-                          onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                          placeholder="e.g. 1500000"
-                          className="w-full h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-blue-500"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-zinc-600 text-[11px] mb-0.5">Sale Price (USD)</label>
+                          <input
+                            type="number"
+                            value={formData.price}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setFormData({
+                                ...formData,
+                                price: val,
+                                priceBIF: val * 3000,
+                              });
+                            }}
+                            placeholder="e.g. 1500000"
+                            className="w-full h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-blue-700 font-semibold text-[11px] mb-0.5">Sale Equivalent (BIF)</label>
+                          <input
+                            type="number"
+                            value={formData.priceBIF}
+                            onChange={(e) => setFormData({ ...formData, priceBIF: Number(e.target.value) })}
+                            placeholder="e.g. 4500000000"
+                            className="w-full h-8 px-2.5 rounded-lg border border-blue-200 bg-blue-50/30 text-zinc-900 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1125,15 +1169,34 @@ export default function HousesManagementView() {
                       <span className="font-semibold text-zinc-800">Available for Rent</span>
                     </label>
                     {formData.rent && (
-                      <div>
-                        <label className="block text-zinc-600 text-[11px] mb-0.5">Monthly Rent Price (USD/mo)</label>
-                        <input
-                          type="number"
-                          value={formData.rentPrice}
-                          onChange={(e) => setFormData({ ...formData, rentPrice: Number(e.target.value) })}
-                          placeholder="e.g. 5000"
-                          className="w-full h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-blue-500"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-zinc-600 text-[11px] mb-0.5">Monthly Rent (USD/mo)</label>
+                          <input
+                            type="number"
+                            value={formData.rentPrice}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setFormData({
+                                ...formData,
+                                rentPrice: val,
+                                rentPriceBIF: val * 3000,
+                              });
+                            }}
+                            placeholder="e.g. 5000"
+                            className="w-full h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-blue-700 font-semibold text-[11px] mb-0.5">Monthly Rent (BIF/mo)</label>
+                          <input
+                            type="number"
+                            value={formData.rentPriceBIF}
+                            onChange={(e) => setFormData({ ...formData, rentPriceBIF: Number(e.target.value) })}
+                            placeholder="e.g. 15000000"
+                            className="w-full h-8 px-2.5 rounded-lg border border-blue-200 bg-blue-50/30 text-zinc-900 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>

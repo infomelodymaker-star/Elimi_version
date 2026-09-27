@@ -21,7 +21,7 @@ interface RentalDetailModalProps {
   item: RentalItem | null;
   onClose: () => void;
   onOpenZoom: (photos: string[], initialIndex: number) => void;
-  onRentSuccess?: (item: RentalItem, days: number, size: string) => void;
+  onRentSuccess?: (item: RentalItem, days: number, size: string, color?: string) => void;
   isFavorite?: boolean;
   onToggleFavorite?: (itemId: string) => void;
   allRentalItems?: RentalItem[];
@@ -67,7 +67,7 @@ export default function RentalDetailModal({
   const handleBook = () => {
     setBooked(true);
     if (onRentSuccess) {
-      onRentSuccess(item, rentalDays, selectedSize);
+      onRentSuccess(item, rentalDays, selectedSize, selectedColor?.name);
     }
     setTimeout(() => {
       setBooked(false);
@@ -210,13 +210,16 @@ export default function RentalDetailModal({
                 </h1>
 
                 {/* Pricing Banner */}
-                <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-100/80 flex items-center justify-between">
+                <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-100/80 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <div className="text-[11px] font-semibold uppercase text-[#0D52FF]">
                       Prix de location
                     </div>
-                    <div className="text-2xl font-black text-[#0D52FF] leading-tight">
+                    <div className="text-2xl font-black text-[#0D52FF] leading-tight flex items-baseline gap-2">
                       {item.pricePerDay},00 $ <span className="text-sm font-semibold text-slate-500">/ jour</span>
+                    </div>
+                    <div className="text-xs font-semibold text-[#0B57FF] mt-0.5">
+                      ≈ {(item.priceBIF ?? (item.pricePerDay * 3000)).toLocaleString()} BIF / jour
                     </div>
                   </div>
                   {item.originalPrice && (
@@ -225,6 +228,11 @@ export default function RentalDetailModal({
                       <div className="text-sm font-semibold text-slate-500 line-through">
                         {item.originalPrice},00 $
                       </div>
+                      {item.originalPriceBIF && (
+                        <div className="text-[10px] text-slate-400">
+                          {item.originalPriceBIF.toLocaleString()} BIF
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

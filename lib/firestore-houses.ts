@@ -18,6 +18,7 @@ export interface AvailableUnit {
   unitId: string;
   availableDate: string;
   price: number;
+  priceBIF?: number;
   isRent: boolean;
 }
 
@@ -25,8 +26,10 @@ export interface House {
   id: string;
   title: string;
   description: string;
-  price: number; // for sale price
-  rentPrice?: number; // for rent price
+  price: number; // for sale price (USD)
+  priceBIF?: number; // for sale price (BIF)
+  rentPrice?: number; // for rent price (USD)
+  rentPriceBIF?: number; // for rent price (BIF)
   sales: boolean;
   rent: boolean;
   location: { lat: number; lng: number };
@@ -66,7 +69,9 @@ export const SAMPLE_HOUSES: House[] = [
     title: 'Luxury Villa in Kiriri Hills',
     description: 'Exclusive modern hillside estate with panoramic views of Lake Tanganyika, private infinity pool, lush tropical gardens, and diplomatic security quarters.',
     price: 650000,
+    priceBIF: 1950000000,
     rentPrice: 3500,
+    rentPriceBIF: 10500000,
     sales: true,
     rent: true,
     location: { lat: -3.3760, lng: 29.3825 },
@@ -77,8 +82,8 @@ export const SAMPLE_HOUSES: House[] = [
     sqft: 5200,
     floorPlanName: 'The Belvédère Luxury Palace',
     availableUnits: [
-      { unitId: 'KV-01', availableDate: 'Available Now', price: 3500, isRent: true },
-      { unitId: 'KV-02', availableDate: 'Available for Purchase', price: 650000, isRent: false }
+      { unitId: 'KV-01', availableDate: 'Available Now', price: 3500, priceBIF: 10500000, isRent: true },
+      { unitId: 'KV-02', availableDate: 'Available for Purchase', price: 650000, priceBIF: 1950000000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -89,7 +94,9 @@ export const SAMPLE_HOUSES: House[] = [
     title: 'Executive Penthouse Rohero I',
     description: 'Sophisticated contemporary penthouse in the heart of Rohero diplomatic district with floor-to-ceiling glass, backup solar power, and 24/7 security concierge.',
     price: 380000,
+    priceBIF: 1140000000,
     rentPrice: 2200,
+    rentPriceBIF: 6600000,
     sales: true,
     rent: true,
     location: { lat: -3.3855, lng: 29.3640 },
@@ -100,8 +107,8 @@ export const SAMPLE_HOUSES: House[] = [
     sqft: 2800,
     floorPlanName: 'Diplomatic Skyline Penthouse',
     availableUnits: [
-      { unitId: 'RH-3A', availableDate: 'Available Today', price: 2200, isRent: true },
-      { unitId: 'RH-3B', availableDate: 'Available Now', price: 380000, isRent: false }
+      { unitId: 'RH-3A', availableDate: 'Available Today', price: 2200, priceBIF: 6600000, isRent: true },
+      { unitId: 'RH-3B', availableDate: 'Available Now', price: 380000, priceBIF: 1140000000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -112,7 +119,9 @@ export const SAMPLE_HOUSES: House[] = [
     title: 'Lake Tanganyika Beachfront Residence',
     description: 'Private waterfront villa directly overlooking Lake Tanganyika with private pier, terrace bar, sunset deck, and tranquil lake breezes.',
     price: 490000,
+    priceBIF: 1470000000,
     rentPrice: 2800,
+    rentPriceBIF: 8400000,
     sales: true,
     rent: true,
     location: { lat: -3.4050, lng: 29.3480 },
@@ -123,8 +132,8 @@ export const SAMPLE_HOUSES: House[] = [
     sqft: 3600,
     floorPlanName: 'Tanganyika Azure Villa',
     availableUnits: [
-      { unitId: 'KP-01', availableDate: 'Available Now', price: 2800, isRent: true },
-      { unitId: 'KP-02', availableDate: 'Available for Purchase', price: 490000, isRent: false }
+      { unitId: 'KP-01', availableDate: 'Available Now', price: 2800, priceBIF: 8400000, isRent: true },
+      { unitId: 'KP-02', availableDate: 'Available for Purchase', price: 490000, priceBIF: 1470000000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -135,7 +144,9 @@ export const SAMPLE_HOUSES: House[] = [
     title: 'Modern Family Compound in Gihosha',
     description: 'Spacious 4-bedroom gated residence with manicured lawns, generator backup, water reservoir, and detached staff quarters.',
     price: 295000,
+    priceBIF: 885000000,
     rentPrice: 1600,
+    rentPriceBIF: 4800000,
     sales: true,
     rent: true,
     location: { lat: -3.3620, lng: 29.3890 },
@@ -146,8 +157,8 @@ export const SAMPLE_HOUSES: House[] = [
     sqft: 3100,
     floorPlanName: 'Gihosha Family Compound',
     availableUnits: [
-      { unitId: 'GH-10', availableDate: 'Available Now', price: 1600, isRent: true },
-      { unitId: 'GH-11', availableDate: 'Ready for Deed Transfer', price: 295000, isRent: false }
+      { unitId: 'GH-10', availableDate: 'Available Now', price: 1600, priceBIF: 4800000, isRent: true },
+      { unitId: 'GH-11', availableDate: 'Ready for Deed Transfer', price: 295000, priceBIF: 885000000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -158,7 +169,9 @@ export const SAMPLE_HOUSES: House[] = [
     title: 'Mutanga Nord Diplomatic Residence',
     description: 'Turnkey fully furnished 4-bedroom residence designed for international NGO leaders and foreign embassy dignitaries.',
     price: 420000,
+    priceBIF: 1260000000,
     rentPrice: 2400,
+    rentPriceBIF: 7200000,
     sales: true,
     rent: true,
     location: { lat: -3.3810, lng: 29.3780 },
@@ -169,8 +182,8 @@ export const SAMPLE_HOUSES: House[] = [
     sqft: 3400,
     floorPlanName: 'Mutanga Executive Villa',
     availableUnits: [
-      { unitId: 'MN-01', availableDate: 'Available Now', price: 2400, isRent: true },
-      { unitId: 'MN-02', availableDate: 'Available Now', price: 420000, isRent: false }
+      { unitId: 'MN-01', availableDate: 'Available Now', price: 2400, priceBIF: 7200000, isRent: true },
+      { unitId: 'MN-02', availableDate: 'Available Now', price: 420000, priceBIF: 1260000000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -181,7 +194,9 @@ export const SAMPLE_HOUSES: House[] = [
     title: 'Gitega Capital Modern Estate',
     description: 'Spacious ministerial style estate located in Burundi\'s political capital Gitega, featuring grand reception hall and security perimeter.',
     price: 310000,
+    priceBIF: 930000000,
     rentPrice: 1500,
+    rentPriceBIF: 4500000,
     sales: true,
     rent: true,
     location: { lat: -3.4275, lng: 29.9248 },
@@ -192,8 +207,8 @@ export const SAMPLE_HOUSES: House[] = [
     sqft: 4100,
     floorPlanName: 'Gitega Capital Manor',
     availableUnits: [
-      { unitId: 'GT-01', availableDate: 'Available Now', price: 1500, isRent: true },
-      { unitId: 'GT-02', availableDate: 'Ready for Purchase', price: 310000, isRent: false }
+      { unitId: 'GT-01', availableDate: 'Available Now', price: 1500, priceBIF: 4500000, isRent: true },
+      { unitId: 'GT-02', availableDate: 'Ready for Purchase', price: 310000, priceBIF: 930000000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,
@@ -204,7 +219,9 @@ export const SAMPLE_HOUSES: House[] = [
     title: 'Rohero II Diplomatic Residence',
     description: 'Premier executive residence near embassies in Rohero II, with expansive gardens, diplomatic security features, and servant quarters.',
     price: 520000,
+    priceBIF: 1560000000,
     rentPrice: 2800,
+    rentPriceBIF: 8400000,
     sales: true,
     rent: true,
     location: { lat: -3.3885, lng: 29.3695 },
@@ -215,8 +232,8 @@ export const SAMPLE_HOUSES: House[] = [
     sqft: 5200,
     floorPlanName: 'Rohero Grand Estate',
     availableUnits: [
-      { unitId: 'RH-01', availableDate: 'Available Now', price: 2800, isRent: true },
-      { unitId: 'RH-02', availableDate: 'Ready for Purchase', price: 520000, isRent: false }
+      { unitId: 'RH-01', availableDate: 'Available Now', price: 2800, priceBIF: 8400000, isRent: true },
+      { unitId: 'RH-02', availableDate: 'Ready for Purchase', price: 520000, priceBIF: 1560000000, isRent: false }
     ],
     amenities: DEFAULT_AMENITIES,
     photos: DEFAULT_PHOTOS,

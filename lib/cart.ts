@@ -162,11 +162,15 @@ export function addToCart(
 ): CartItem[] {
   const current = getSavedCart();
   const maxStock = product.stockQuantity !== undefined ? Math.max(1, product.stockQuantity) : 99;
+  
+  const effectiveSize = selectedSize || (product.sizes && product.sizes.length > 0 ? product.sizes[0] : 'Standard');
+  const effectiveColor = selectedColor || (product.colors && product.colors.length > 0 ? product.colors[0].name : undefined);
+
   const existingIndex = current.findIndex(
     (item) =>
       item.product.id === product.id &&
-      (selectedSize ? item.selectedSize === selectedSize : true) &&
-      (selectedColor ? item.selectedColor === selectedColor : true)
+      (item.selectedSize || 'Standard') === effectiveSize &&
+      (item.selectedColor || '') === (effectiveColor || '')
   );
 
   let updated: CartItem[];
@@ -184,11 +188,90 @@ export function addToCart(
       {
         product,
         quantity: Math.min(maxStock, quantity),
-        selectedSize: selectedSize || (product.sizes && product.sizes[0] ? product.sizes[0] : 'Standard'),
-        selectedColor: selectedColor || (product.colors && product.colors[0] ? product.colors[0].name : undefined),
+        selectedSize: effectiveSize,
+        selectedColor: effectiveColor,
       },
     ];
   }
+  saveCart(updated);
+  return updated;
+}
+
+export function updateCartItemAttributes(
+  itemIndex: number,
+  newSize?: string,
+  newColor?: string
+): CartItem[] {
+  const current = getSavedCart();
+  if (itemIndex < 0 || itemIndex >= current.length) return current;
+
+  const target = current[itemIndex];
+  const updatedSize = newSize !== undefined ? newSize : target.selectedSize;
+  const updatedColor = newColor !== undefined ? newColor : target.selectedColor;
+
+  // Check if another item in cart already has the exact same product ID, size, and color
+  const duplicateIndex = current.findIndex(
+    (item, idx) =>
+      idx !== itemIndex &&
+      item.product.id === target.product.id &&
+      (item.selectedSize || 'Standard') === (updatedSize || 'Standard') &&
+      (item.selectedColor || '') === (updatedColor || '')
+  );
+
+  let updated: CartItem[];
+  if (duplicateIndex > -1) {
+    // Merge quantity into existing matching item and remove the current duplicate entry
+    const maxStock = target.product.stockQuantity !== undefined ? Math.max(1, target.product.stockQuantity) : 99;
+    updated = current
+      .map((item, idx) => {
+        if (idx === duplicateIndex) {
+          return {
+            ...item,
+            quantity: Math.min(maxStock, item.quantity + target.quantity),
+          };
+        }
+        return item;
+      })
+      .filter((_, idx) => idx !== itemIndex);
+  } else {
+    updated = current.map((item, idx) => {
+      if (idx === itemIndex) {
+        return {
+          ...item,
+          selectedSize: updatedSize,
+          selectedColor: updatedColor,
+        };
+      }
+      return item;
+    });
+  }
+
+  saveCart(updated);
+  return updated;
+}
+
+export function updateCartItemQuantityByIndex(index: number, delta: number): CartItem[] {
+  const current = getSavedCart();
+  if (index < 0 || index >= current.length) return current;
+
+  const updated = current
+    .map((item, idx) => {
+      if (idx === index) {
+        const maxStock = item.product.stockQuantity !== undefined ? Math.max(1, item.product.stockQuantity) : 99;
+        const newQty = item.quantity + delta;
+        if (newQty <= 0) return null;
+        return { ...item, quantity: Math.min(maxStock, newQty) };
+      }
+      return item;
+    })
+    .filter(Boolean) as CartItem[];
+  saveCart(updated);
+  return updated;
+}
+
+export function removeCartItemByIndex(index: number): CartItem[] {
+  const current = getSavedCart();
+  const updated = current.filter((_, idx) => idx !== index);
   saveCart(updated);
   return updated;
 }

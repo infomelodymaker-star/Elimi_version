@@ -641,9 +641,14 @@ export default function AllocationsPage() {
                         <h3 className="font-bold text-slate-900 text-sm sm:text-base truncate group-hover:text-[#0D52FF] transition-colors">
                           {item.name}
                         </h3>
-                        <span className="font-black text-[#0D52FF] text-sm sm:text-base shrink-0 whitespace-nowrap">
-                          {formatUSD(item.pricePerDay)}/j
-                        </span>
+                        <div className="text-right shrink-0 whitespace-nowrap">
+                          <span className="font-black text-[#0D52FF] text-sm sm:text-base">
+                            {formatUSD(item.pricePerDay)}/j
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-medium block">
+                            ≈ {(item.priceBIF ?? (item.pricePerDay * 3000)).toLocaleString()} BIF
+                          </span>
+                        </div>
                       </div>
 
                       {/* Brand / Designer Subtitle */}

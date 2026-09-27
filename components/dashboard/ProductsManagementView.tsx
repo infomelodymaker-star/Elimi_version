@@ -34,6 +34,53 @@ const PRESET_SIZES = {
   culturalBaskets: ['Small (18cm)', 'Medium (28cm)', 'Large (40cm)'],
 };
 
+export const SUBCATEGORIES_MAP: Record<string, string[]> = {
+  Fashion: [
+    "Men's Clothing",
+    "Women's Clothing",
+    'Kids & Baby',
+    'Footwear & Shoes',
+    'Bags & Accessories',
+    'Jewelry & Watches',
+    'Sportswear',
+  ],
+  Electronics: [
+    'Audio & Speakers',
+    'Mobile & Accessories',
+    'Drones & Cameras',
+    'Laptops & Computing',
+    'Smart Home & Wearables',
+  ],
+  Cultural: [
+    'Traditional Crafts',
+    'Baskets & Weaving',
+    'Jewelry & Beads',
+    'Ceremonial Wear',
+    'Art & Sculptures',
+  ],
+  'Cultural Articles': [
+    'Traditional Crafts',
+    'Baskets & Weaving',
+    'Jewelry & Beads',
+    'Ceremonial Wear',
+    'Art & Sculptures',
+  ],
+  'Nails & Beauty': [
+    'Press-On Nails',
+    'Polish & Gel',
+    'Tools & Equipment',
+    'Cosmetics & Skincare',
+    'Hair & Extensions',
+  ],
+  Beauty: [
+    'Press-On Nails',
+    'Polish & Gel',
+    'Tools & Equipment',
+    'Cosmetics & Skincare',
+    'Hair & Extensions',
+  ],
+};
+
 const PRESET_COLORS: { name: string; hex: string }[] = [
   { name: 'Pitch Black', hex: '#18181B' },
   { name: 'Pure White', hex: '#FFFFFF' },
@@ -1238,17 +1285,21 @@ export default function ProductsManagementView() {
                   </label>
                   <select
                     value={formData.category}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      const availableSubs = SUBCATEGORIES_MAP[newCat] || [];
+                      const defaultSub = availableSubs[0] || 'General';
                       setFormData({
                         ...formData,
-                        category: e.target.value,
+                        category: newCat,
+                        subCategory: defaultSub,
                         // If switching to Fashion, suggest fashion sizes if empty
                         sizes:
-                          e.target.value === 'Fashion' && formData.sizes.length === 0
+                          newCat === 'Fashion' && formData.sizes.length === 0
                             ? ['S', 'M', 'L', 'XL']
                             : formData.sizes,
-                      })
-                    }
+                      });
+                    }}
                     className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-white text-xs text-zinc-900 focus:outline-none focus:border-blue-500 shadow-xs"
                   >
                     {categories.map((cat) => (
@@ -1256,6 +1307,14 @@ export default function ProductsManagementView() {
                         {cat.name}
                       </option>
                     ))}
+                    {/* Fallback to known system categories if not in categories collection */}
+                    {Object.keys(SUBCATEGORIES_MAP)
+                      .filter((c) => !categories.some((cat) => cat.name === c) && c !== 'Beauty' && c !== 'Cultural Articles')
+                      .map((catName) => (
+                        <option key={catName} value={catName}>
+                          {catName}
+                        </option>
+                      ))}
                   </select>
                 </div>
               </div>
@@ -1264,15 +1323,24 @@ export default function ProductsManagementView() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-zinc-700 mb-1">
-                    Sub-Category
+                    Sub-Category *
                   </label>
-                  <input
+                  <select
                     value={formData.subCategory}
                     onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
-                    placeholder="e.g. Men's Clothing, Audio"
-                    className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-white text-xs text-zinc-900 focus:outline-none focus:border-blue-500 shadow-xs"
-                    type="text"
-                  />
+                    className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-white text-xs text-zinc-900 focus:outline-none focus:border-blue-500 shadow-xs font-medium text-blue-900"
+                  >
+                    {(SUBCATEGORIES_MAP[formData.category] || ['General']).map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                    {/* Preserve existing custom subcategory if not in standard list */}
+                    {formData.subCategory &&
+                      !(SUBCATEGORIES_MAP[formData.category] || []).includes(formData.subCategory) && (
+                        <option value={formData.subCategory}>{formData.subCategory} (Custom)</option>
+                      )}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-zinc-700 mb-1">

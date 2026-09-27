@@ -266,7 +266,7 @@ export default function CategorySidebar({
 
                           return (
                             <button
-                              key={sub.id}
+                              key={`${cat.id}-${sub.id}`}
                               type="button"
                               onClick={(e) => handleSubCategoryClick(e, cat.id, sub.id)}
                               className={`w-full flex items-center justify-between text-[11px] py-1.5 px-2.5 rounded-lg transition-all cursor-pointer text-left ${

@@ -139,8 +139,13 @@ export default function CarDetailPage() {
                   </div>
                 </div>
                 <div className="pt-4 md:pt-0 border-t md:border-t-0 border-gray-200 md:text-right flex flex-col justify-center shrink-0">
-                  <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+                  <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-0.5">
                     {car.rentPrice ? `$${Number(car.rentPrice || 0).toLocaleString()}/day` : `$${Number(car.price || 0).toLocaleString()}`}
+                  </div>
+                  <div className="text-sm font-semibold text-[#0B57FF] mb-1">
+                    {car.rentPrice
+                      ? `≈ ${(car.rentPriceBIF ?? (car.rentPrice * 3000)).toLocaleString()} BIF/day`
+                      : `≈ ${(car.priceBIF ?? (car.price * 3000)).toLocaleString()} BIF`}
                   </div>
                   <div className="text-xs uppercase tracking-wider text-gray-500 mb-4 font-semibold">
                     {car.rent ? 'Daily Rental Rate' : 'Outright Sale Price'}
@@ -173,8 +178,13 @@ export default function CarDetailPage() {
                       <Calendar className="w-4 h-4 text-[#0D52FF]" />
                       <span>{unit.availableDate}</span>
                     </div>
-                    <div className="font-bold text-gray-900 text-sm sm:text-base w-full sm:w-1/4">
-                      ${Number(unit.price || 0).toLocaleString()}{unit.isRent ? '/day' : ''}
+                    <div className="w-full sm:w-1/4">
+                      <div className="font-bold text-gray-900 text-sm sm:text-base">
+                        ${Number(unit.price || 0).toLocaleString()}{unit.isRent ? '/day' : ''}
+                      </div>
+                      <div className="text-[11px] font-semibold text-[#0B57FF]">
+                        ≈ {(unit.priceBIF ?? (Number(unit.price || 0) * 3000)).toLocaleString()} BIF{unit.isRent ? '/day' : ''}
+                      </div>
                     </div>
                     <div className="w-full sm:w-1/4 sm:text-right">
                       <a

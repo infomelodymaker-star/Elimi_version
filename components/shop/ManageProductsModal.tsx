@@ -24,6 +24,39 @@ import {
   seedInitialProductsIfEmpty,
 } from '@/lib/firestore-products';
 
+const SUBCATEGORIES_MAP: Record<string, string[]> = {
+  Fashion: [
+    "Men's Clothing",
+    "Women's Clothing",
+    'Kids & Baby',
+    'Footwear & Shoes',
+    'Bags & Accessories',
+    'Jewelry & Watches',
+    'Sportswear',
+  ],
+  Electronics: [
+    'Audio & Speakers',
+    'Mobile & Accessories',
+    'Drones & Cameras',
+    'Laptops & Computing',
+    'Smart Home & Wearables',
+  ],
+  Cultural: [
+    'Traditional Crafts',
+    'Baskets & Weaving',
+    'Jewelry & Beads',
+    'Ceremonial Wear',
+    'Art & Sculptures',
+  ],
+  'Nails & Beauty': [
+    'Press-On Nails',
+    'Polish & Gel',
+    'Tools & Equipment',
+    'Cosmetics & Skincare',
+    'Hair & Extensions',
+  ],
+};
+
 interface ManageProductsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -439,7 +472,15 @@ export default function ManageProductsModal({
                     <select
                       name="category"
                       value={formData.category}
-                      onChange={handleFormChange}
+                      onChange={(e) => {
+                        const newCat = e.target.value as Product['category'];
+                        const subs = SUBCATEGORIES_MAP[newCat] || [];
+                        setFormData((prev) => ({
+                          ...prev,
+                          category: newCat,
+                          subCategory: subs[0] || 'General',
+                        }));
+                      }}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#0D52FF]"
                     >
                       <option value="Fashion">Fashion</option>
@@ -451,15 +492,19 @@ export default function ManageProductsModal({
 
                   {/* SubCategory */}
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-[#181B25]">Sub Category</label>
-                    <input
-                      type="text"
+                    <label className="text-xs font-bold text-[#181B25]">Sub Category *</label>
+                    <select
                       name="subCategory"
                       value={formData.subCategory}
                       onChange={handleFormChange}
-                      placeholder="e.g. Traditional Crafts"
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#0D52FF]"
-                    />
+                    >
+                      {(SUBCATEGORIES_MAP[formData.category] || ['General']).map((sub) => (
+                        <option key={sub} value={sub}>
+                          {sub}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Price BIF */}

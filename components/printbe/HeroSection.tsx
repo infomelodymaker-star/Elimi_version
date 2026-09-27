@@ -18,6 +18,8 @@ interface HeroSectionProps {
     savingsText?: string;
     avatars?: string[];
     showcaseImage?: string;
+    backgroundImage?: string;
+    image?: string;
   };
 }
 

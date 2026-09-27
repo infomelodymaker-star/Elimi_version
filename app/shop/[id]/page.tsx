@@ -33,6 +33,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Loader2,
+  Copy,
 } from 'lucide-react';
 import {
   getProductById,
@@ -63,6 +64,7 @@ import {
 import {
   createCheckoutOrder,
   generateClientWhatsAppGreetingUrl,
+  generateWhatsAppOrderConfirmationText,
   BoutiqueOrder,
   OrderItem,
 } from '@/lib/firestore-orders';
@@ -190,6 +192,17 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // Direct checkout state (triggers loading skeleton)
   const [isDirectCheckingOut, setIsDirectCheckingOut] = useState(false);
+  const [copiedDetails, setCopiedDetails] = useState(false);
+
+  // Copy order details helper
+  const handleCopyOrderDetails = (order: BoutiqueOrder) => {
+    const text = generateWhatsAppOrderConfirmationText(order);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedDetails(true);
+      setTimeout(() => setCopiedDetails(false), 2500);
+    }
+  };
 
   // Direct single-product checkout handler via Backend API
   const handleDirectProductCheckout = async () => {
@@ -198,7 +211,10 @@ export default function ProductDetailPage({ params }: PageProps) {
 
     try {
       const ship = getEffectiveShippingCost(product);
-      const singleItem: Record<string, unknown> = {
+      const effectiveSize = selectedSize || (availableSizes.length > 0 ? availableSizes[0] : 'Standard');
+      const effectiveColor = selectedColor ? selectedColor.name : (availableColors.length > 0 ? availableColors[0].name : undefined);
+
+      const singleItem: OrderItem = {
         productId: product.id,
         name: product.name,
         image: product.image || '/assets/shop/african-suit.jpg',
@@ -207,14 +223,13 @@ export default function ProductDetailPage({ params }: PageProps) {
         quantity: selectedQuantity,
         shippingCostUSD: ship.costUSD,
         shippingCostBIF: ship.costBIF,
+        selectedSize: effectiveSize,
+        selectedColor: effectiveColor,
       };
-      if (selectedSize) {
-        singleItem.selectedSize = selectedSize;
-      }
 
-      const orderPayload: Record<string, unknown> = {
+      const orderPayload = {
         items: [singleItem],
-        deliveryMethod: addDeliveryCost ? 'home_delivery' : 'pickup',
+        deliveryMethod: (addDeliveryCost ? 'home_delivery' : 'pickup') as 'home_delivery' | 'pickup',
         deliveryCostUSD: addDeliveryCost ? shippingCostUSD : 0,
         deliveryCostBIF: addDeliveryCost ? shippingCostBIF : 0,
         subtotalUSD: itemSubtotalUSD,
@@ -223,15 +238,15 @@ export default function ProductDetailPage({ params }: PageProps) {
         discountBIF: 0,
         totalUSD: totalCostUSD,
         totalBIF: totalCostBIF,
-        customerNotes: `Direct checkout for ${product.name}`,
+        customerNotes: `Direct checkout for ${product.name} (Taille: ${effectiveSize}${effectiveColor ? `, Couleur: ${effectiveColor}` : ''})`,
       };
 
       if (!addDeliveryCost) {
-        orderPayload.pickupBureau = DEFAULT_BUREAU_ADDRESS;
+        (orderPayload as any).pickupBureau = DEFAULT_BUREAU_ADDRESS;
       }
 
       // 1. Create and store order in Firestore directly
-      const result = await createCheckoutOrder(orderPayload as any);
+      const result = await createCheckoutOrder(orderPayload);
 
       if (result.success && result.orderId) {
         // 2. Set order state and open modal
@@ -239,7 +254,7 @@ export default function ProductDetailPage({ params }: PageProps) {
         setShowSuccessModal(true);
 
         // 3. Open WhatsApp cleanly in a new window/tab
-        const whatsappUrl = generateClientWhatsAppGreetingUrl(result.orderId, whatsappNumber);
+        const whatsappUrl = generateClientWhatsAppGreetingUrl(result.orderId, whatsappNumber, result.order);
         if (typeof window !== 'undefined') {
           try {
             window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
@@ -347,9 +362,10 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   const ratingBars = dynamicRatingBars;
 
+  const colorPart = selectedColor ? `, Color: ${selectedColor.name}` : '';
   const whatsappMessage = addDeliveryCost
-    ? `Hello ELIMI Boutique, I am interested in purchasing "${product.name}" (Qty: ${selectedQuantity}, Size: ${selectedSize}).\n• Delivery: Home Delivery (+${shippingCostUSD.toFixed(2)} USD / ${shippingCostBIF.toLocaleString()} BIF)\n• Total to pay: $${totalCostUSD.toFixed(2)} USD (${totalCostBIF.toLocaleString()} BIF).\nPlease confirm availability and delivery location!`
-    : `Hello ELIMI Boutique, I am interested in purchasing "${product.name}" (Qty: ${selectedQuantity}, Size: ${selectedSize}).\n• Delivery: Personal Pick Up at Bureau (Free / 0 BIF)\n• Total to pay: $${itemSubtotalUSD.toFixed(2)} USD (${itemSubtotalBIF.toLocaleString()} BIF).\nPlease prepare my order for pick up at Rohero I Central Bureau!`;
+    ? `Hello ELIMI Boutique, I am interested in purchasing "${product.name}" (Qty: ${selectedQuantity}, Size: ${selectedSize}${colorPart}).\n• Delivery: Home Delivery (+${shippingCostUSD.toFixed(2)} USD / ${shippingCostBIF.toLocaleString()} BIF)\n• Total to pay: $${totalCostUSD.toFixed(2)} USD (${totalCostBIF.toLocaleString()} BIF).\nPlease confirm availability and delivery location!`
+    : `Hello ELIMI Boutique, I am interested in purchasing "${product.name}" (Qty: ${selectedQuantity}, Size: ${selectedSize}${colorPart}).\n• Delivery: Personal Pick Up at Bureau (Free / 0 BIF)\n• Total to pay: $${itemSubtotalUSD.toFixed(2)} USD (${itemSubtotalBIF.toLocaleString()} BIF).\nPlease prepare my order for pick up at Rohero I Central Bureau!`;
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] text-[#191919] font-sans antialiased selection:bg-[#0D52FF] selection:text-white">
@@ -1263,7 +1279,27 @@ export default function ProductDetailPage({ params }: PageProps) {
               </p>
             </div>
 
-            <div className="bg-slate-50 rounded-2xl p-4 text-left border border-slate-200/80 space-y-2 text-xs">
+            <div className="bg-slate-50 rounded-2xl p-4 text-left border border-slate-200/80 space-y-2.5 text-xs">
+              {placedOrder.items?.[0] && (
+                <div className="pb-2 border-b border-slate-200/80 space-y-1">
+                  <div className="font-semibold text-neutral-900">{placedOrder.items[0].name}</div>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    {placedOrder.items[0].selectedSize && (
+                      <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[#0D52FF] font-semibold text-[11px] border border-blue-200/80">
+                        Size: {placedOrder.items[0].selectedSize}
+                      </span>
+                    )}
+                    {placedOrder.items[0].selectedColor && (
+                      <span className="px-2 py-0.5 rounded-full bg-slate-200/80 text-neutral-800 font-semibold text-[11px] border border-slate-300/80">
+                        Color: {placedOrder.items[0].selectedColor}
+                      </span>
+                    )}
+                    <span className="text-neutral-500 font-medium text-[11px]">
+                      (Qty: {placedOrder.items[0].quantity})
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="flex justify-between text-neutral-500 font-medium">
                 <span>Items:</span>
                 <span className="font-bold text-neutral-900">{placedOrder.items.length} product(s)</span>
@@ -1280,7 +1316,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
             <div className="space-y-2.5 pt-2">
               <a
-                href={generateClientWhatsAppGreetingUrl(placedOrder.id, whatsappNumber)}
+                href={generateClientWhatsAppGreetingUrl(placedOrder.id, whatsappNumber, placedOrder)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold rounded-full py-3.5 px-6 transition flex items-center justify-center gap-2 text-sm shadow-md cursor-pointer"
@@ -1296,6 +1332,24 @@ export default function ProductDetailPage({ params }: PageProps) {
                 />
                 <span>Open WhatsApp to Confirm</span>
               </a>
+
+              <button
+                type="button"
+                onClick={() => handleCopyOrderDetails(placedOrder)}
+                className="w-full bg-blue-50 hover:bg-blue-100 text-[#0D52FF] font-bold rounded-full py-3 px-6 transition flex items-center justify-center gap-2 text-xs border border-blue-200/80 cursor-pointer"
+              >
+                {copiedDetails ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <span className="text-emerald-700">WhatsApp Details Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Copy WhatsApp Details</span>
+                  </>
+                )}
+              </button>
 
               <button
                 type="button"

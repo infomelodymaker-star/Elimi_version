@@ -44,7 +44,6 @@ import {
   RefreshCw,
   Loader2,
   MessageCircle,
-  Youtube,
 } from "lucide-react";
 
 // Product Interface linked to Media items
@@ -1715,7 +1714,13 @@ export default function MediaPage() {
 
                     {/* Top YouTube Watermark */}
                     <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/70 text-white px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-xs border border-white/10">
-                      <Youtube className="w-4 h-4 text-red-600" />
+                      <Image
+                        src="/assets/icons/social/Youtube.png"
+                        alt="YouTube"
+                        width={16}
+                        height={16}
+                        className="w-4 h-4 object-contain"
+                      />
                       <span>ELIMI YouTube Official Channel</span>
                     </div>
 
