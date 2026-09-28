@@ -18,7 +18,7 @@ const CATEGORY_SHOWCASES = [
     id: 'Fashion',
     title: 'Fashion & Luxury',
     subtitle: 'Designer Suits, Handbags & Shoes',
-    image: '/assets/shop/cat_fashion.jpg',
+    image: '/assets/shop/cat_fashion.png',
     badgeBg: 'bg-[#0D52FF]',
     textColor: 'text-[#0D52FF]',
   },
@@ -26,7 +26,7 @@ const CATEGORY_SHOWCASES = [
     id: 'Electronics',
     title: 'Tech & Devices',
     subtitle: '4K Drones, Smartphones & Audio',
-    image: '/assets/shop/cat_tech.jpg',
+    image: '/assets/shop/cat_tech.png',
     badgeBg: 'bg-[#0A2351]',
     textColor: 'text-[#0A2351]',
   },
@@ -34,7 +34,7 @@ const CATEGORY_SHOWCASES = [
     id: 'Cultural',
     title: 'Cultural Heritage',
     subtitle: 'Handwoven Agaseke & Royal Drums',
-    image: '/assets/shop/cat_cultural.jpg',
+    image: '/assets/shop/cat_cultural.png',
     badgeBg: 'bg-amber-600',
     textColor: 'text-amber-600',
   },
@@ -42,7 +42,7 @@ const CATEGORY_SHOWCASES = [
     id: 'Nails & Beauty',
     title: 'Nails & Beauty',
     subtitle: 'Salon Gel Kits & Organic Skincare',
-    image: '/assets/shop/cat_beauty.jpg',
+    image: '/assets/shop/cat_beauty.png',
     badgeBg: 'bg-rose-600',
     textColor: 'text-rose-600',
   },
@@ -83,9 +83,9 @@ export default function ShopHero({
         className="relative w-full rounded-2xl border border-[#0F172A]/8 overflow-hidden shadow-[0px_4px_24px_0px_rgba(15,23,42,0.04)] p-8 md:p-10 min-h-[380px] lg:min-h-[420px] flex flex-col justify-center bg-white"
       >
         {/* Banner Background Image with soft gradient overlay */}
-        <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 z-0 pointer-events-none">
           <Image
-            src="/assets/shop/hero-gradient-bg.jpg"
+            src="/assets/shop/hero_gradient_bg.jpg"
             alt="Elimi Boutique Banner Gradient Background"
             fill
             priority
@@ -93,7 +93,7 @@ export default function ShopHero({
             referrerPolicy="no-referrer"
             className="object-cover object-center opacity-90"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/60 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/70 to-transparent pointer-events-none" />
         </div>
 
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
