@@ -241,6 +241,19 @@
         "updatedAt": { "type": "string", "description": "Last updated timestamp" }
       },
       "required": ["id", "title", "unitPrice", "enabled"]
+    },
+    "GlobalSettings": {
+      "title": "GlobalSettings",
+      "description": "Platform-wide global settings including exchange rate, contact email, and dynamic WhatsApp concierge number.",
+      "type": "object",
+      "properties": {
+        "usdToBifRate": { "type": "number", "description": "USD to BIF conversion rate" },
+        "contactEmail": { "type": "string", "description": "Official support/contact email" },
+        "contactPhone": { "type": "string", "description": "Official support telephone" },
+        "phoneNumber": { "type": "string", "description": "Customer service telephone number" },
+        "whatsappNumber": { "type": "string", "description": "Active WhatsApp business/concierge phone number used for reservations and purchase requests" }
+      },
+      "required": ["usdToBifRate", "whatsappNumber"]
     }
   },
   "firestore": {
@@ -287,6 +300,10 @@
     "/event_services/{serviceId}": {
       "schema": "EventServiceItem",
       "description": "Collection of interactive event services and package calculator items."
+    },
+    "/settings/{settingId}": {
+      "schema": "GlobalSettings",
+      "description": "Platform global configuration documents including currency exchange and dynamic WhatsApp concierge."
     },
     "/system_metadata/{docId}": {
       "schema": { "$ref": "object" },

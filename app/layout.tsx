@@ -1,25 +1,10 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Syne } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css"; // Global styles
 import TopProgressBar from "@/components/TopProgressBar";
 import Footer from "@/components/Footer";
 import { SettingsProvider } from "@/components/SettingsProvider";
 import AIChatAssistantWrapper from "@/components/AIChatAssistantWrapper";
-
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-  weight: ["400", "500", "600", "700", "800"],
-});
-
-const syne = Syne({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-  weight: ["500", "600", "700", "800"],
-});
 
 export const metadata: Metadata = {
   title: "ELIMI Platform | Luxury Services & Ecosystem",
@@ -34,11 +19,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${plusJakarta.variable} ${syne.variable}`}>
+    <html lang="en">
       <head>
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@500;600;700;800&display=swap"
+          rel="stylesheet"
         />
       </head>
       <body
@@ -57,3 +48,4 @@ export default function RootLayout({
     </html>
   );
 }
+

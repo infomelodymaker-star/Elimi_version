@@ -24,26 +24,166 @@ export interface YouTubeFeedItem {
   isShort?: boolean;
 }
 
+// Explicit video ID map to guarantee exact intended categorization for channel videos
+const VIDEO_CATEGORY_MAP: Record<string, string> = {
+  // Comedy & Drama
+  'Hbsmm_9qbOM': 'Comedy & Drama',
+  'Ux0bcECgaUo': 'Comedy & Drama',
+  'fA_z8gWrLxE': 'Comedy & Drama',
+  '1QkP3_vmD1A': 'Comedy & Drama',
+  'xBz3RUNqIeA': 'Comedy & Drama',
+  'eYlIeZ-KJZ8': 'Comedy & Drama',
+  'Q836N7hDKt4': 'Comedy & Drama',
+  'vid_muvuto_police': 'Comedy & Drama',
+  'vid_cadeau_lavelle': 'Comedy & Drama',
+
+  // Fashion & Style
+  'k_48FojR9TQ': 'Fashion & Style',
+  '79ufDexfo4U': 'Fashion & Style',
+  'uPwmffqrXZk': 'Fashion & Style',
+  'ynO6053wlKY': 'Fashion & Style',
+  'vid_hero': 'Fashion & Style',
+
+  // Tech & Gear
+  'iwnMv0v7-iI': 'Tech & Gear',
+  'erjOGhwAr28': 'Tech & Gear',
+  'ty5CYOk_L5w': 'Tech & Gear',
+  'mlOMAO5fFw4': 'Tech & Gear',
+  'vid_drone': 'Tech & Gear',
+
+  // Cultural Heritage
+  'Fghrq6SgrWo': 'Cultural Heritage',
+  'mSfHP2-ciQI': 'Cultural Heritage',
+  'Zrh_6-jERzM': 'Cultural Heritage',
+  'eSk8cNc6--A': 'Cultural Heritage',
+  'RWjb0OE_6Yg': 'Cultural Heritage',
+  'DC1fHgeLiX4': 'Cultural Heritage',
+  'ljZ0lLovPwE': 'Cultural Heritage',
+  'pIEtHDbbeao': 'Cultural Heritage',
+  'utVYgBj-QRw': 'Cultural Heritage',
+  'vid_mama_mugira': 'Cultural Heritage',
+
+  // Event Masterclass
+  'emWdX1YxWdY': 'Event Masterclass',
+  'y1pTvMrD_zg': 'Event Masterclass',
+  'drYpBXq0B_k': 'Event Masterclass',
+  'nrkBvcil7cM': 'Event Masterclass',
+  'ooOlyt_Jc0g': 'Event Masterclass',
+  'vid_umusore_gitega': 'Event Masterclass',
+
+  // VIP Lifestyle
+  'cVSTKKrqKI8': 'VIP Lifestyle',
+  'hYvIpTnuH_8': 'VIP Lifestyle',
+  '1qnrXL1-I9I': 'VIP Lifestyle',
+  '8vTdHAZyYx0': 'VIP Lifestyle',
+  'toXA5_xaDAI': 'VIP Lifestyle',
+  'vid_sebarundi': 'VIP Lifestyle',
+  'vid_talkshow_police': 'VIP Lifestyle',
+  'vid_vip': 'VIP Lifestyle'
+};
+
 // Function to classify category based on video title & description
-function classifyCategory(title: string, desc: string): string {
+function classifyCategory(title: string, desc: string, videoId?: string): string {
+  if (videoId && VIDEO_CATEGORY_MAP[videoId]) {
+    return VIDEO_CATEGORY_MAP[videoId];
+  }
   const text = `${title} ${desc}`.toLowerCase();
-  if (text.includes('police') || text.includes('skit') || text.includes('comedy') || text.includes('muvuto') || text.includes('film') || text.includes('ikinamico')) {
+  if (
+    text.includes('police') ||
+    text.includes('skit') ||
+    text.includes('comedy') ||
+    text.includes('komedi') ||
+    text.includes('muvuto') ||
+    text.includes('film') ||
+    text.includes('ikinamico') ||
+    text.includes('cheval') ||
+    text.includes('kigingi') ||
+    text.includes('marezo') ||
+    text.includes('cadeau') ||
+    text.includes('mimi')
+  ) {
     return 'Comedy & Drama';
   }
-  if (text.includes('sebarundi') || text.includes('vip') || text.includes('ceremony') || text.includes('protocole') || text.includes('talk show') || text.includes('inkerebutsi')) {
-    return 'VIP Lifestyle';
-  }
-  if (text.includes('gitega') || text.includes('urubyiruko') || text.includes('urwaruka') || text.includes('umuco') || text.includes('mama mugira') || text.includes('heritage') || text.includes('baskets') || text.includes('agaseke')) {
-    return 'Cultural Heritage';
-  }
-  if (text.includes('fashion') || text.includes('gala') || text.includes('runway') || text.includes('style') || text.includes('wedding')) {
-    return 'Fashion & Style';
-  }
-  if (text.includes('drone') || text.includes('tech') || text.includes('4k') || text.includes('camera') || text.includes('reco')) {
+  if (
+    text.includes('drone') ||
+    text.includes('tech') ||
+    text.includes('4k') ||
+    text.includes('camera') ||
+    text.includes('reco') ||
+    text.includes('isuku') ||
+    text.includes('gear') ||
+    text.includes('digital') ||
+    text.includes('amasaha') ||
+    text.includes('swiss')
+  ) {
     return 'Tech & Gear';
   }
-  if (text.includes('masterclass') || text.includes('conference') || text.includes('entrepreneur') || text.includes('business') || text.includes('parcelle') || text.includes('cheval')) {
+  if (
+    text.includes('fashion') ||
+    text.includes('style') ||
+    text.includes('queen') ||
+    text.includes('mwiza') ||
+    text.includes('imideri') ||
+    text.includes('imyambaro') ||
+    text.includes('akanzu') ||
+    text.includes('suit') ||
+    text.includes('runway') ||
+    text.includes('couture') ||
+    text.includes('inkweto') ||
+    text.includes('kitenge')
+  ) {
+    return 'Fashion & Style';
+  }
+  if (
+    text.includes('gitega') ||
+    text.includes('urubyiruko') ||
+    text.includes('urwaruka') ||
+    text.includes('umuco') ||
+    text.includes('mama mugira') ||
+    text.includes('heritage') ||
+    text.includes('baskets') ||
+    text.includes('agaseke') ||
+    text.includes('gospel') ||
+    text.includes('ingoma') ||
+    text.includes('mukaza') ||
+    text.includes('ntahonikora') ||
+    text.includes('sat-b') ||
+    text.includes('chris easy') ||
+    text.includes('ikawa')
+  ) {
+    return 'Cultural Heritage';
+  }
+  if (
+    text.includes('masterclass') ||
+    text.includes('conference') ||
+    text.includes('entrepreneur') ||
+    text.includes('business') ||
+    text.includes('parcelle') ||
+    text.includes('ubutaka') ||
+    text.includes('inama') ||
+    text.includes('icapisha') ||
+    text.includes('printbe') ||
+    text.includes('inzu') ||
+    text.includes('ubucuruzi') ||
+    text.includes('imiriyoni')
+  ) {
     return 'Event Masterclass';
+  }
+  if (
+    text.includes('sebarundi') ||
+    text.includes('vip') ||
+    text.includes('ceremony') ||
+    text.includes('protocole') ||
+    text.includes('talk show') ||
+    text.includes('inkerebutsi') ||
+    text.includes('v-class') ||
+    text.includes('chauffeur') ||
+    text.includes('imodoka') ||
+    text.includes('ndagahende') ||
+    text.includes('tanganyika') ||
+    text.includes('nkunda')
+  ) {
+    return 'VIP Lifestyle';
   }
   return 'VIP Lifestyle';
 }
@@ -260,8 +400,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: '79ufDexfo4U',
-    title: "ELIMI Fashion Night & High-End Runway Exhibition",
-    description: "Exclusive coverage of the prestigious fashion show and traditional craft couture.",
+    title: "FASHION & STYLE: Imideri mishya y'abanyarwandakazi n'abarundikazi mu birori bya ELIMI",
+    description: "Ibyamamare mu myambarire n'imideri ya kinyarwanda n'ikirundi mu gitaramo gikomeye i Bujumbura.",
     duration: '18:45',
     views: '3.4K views',
     uploadedAt: '1 month ago',
@@ -269,8 +409,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: '8vTdHAZyYx0',
-    title: "VIP Protocol & Diplomatic Convoy Showcase Bujumbura",
-    description: "Behind the scenes with luxury VIP mobility, Mercedes V-Class motorcade and executive security.",
+    title: "RABA UKO PROTOCOLE YA ELIMI YAKIRIYE ABADIPOROMATE MURI MERCEDES V-CLASS",
+    description: "Umutekano n'urugendo rwo kwakira abanyacyubahiro mu modoka za VIP chauffeur i Bujumbura.",
     duration: '15:20',
     views: '4.1K views',
     uploadedAt: '1 month ago',
@@ -278,8 +418,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'DC1fHgeLiX4',
-    title: "Traditional Artisans of Gitega: Handcrafted Agaseke Baskets",
-    description: "Documentary exploring the heritage and master weavers of Gitega cultural centers.",
+    title: "GITEGA: UBURYO BAKORA AGASEKE N'UBUKORIKORI BWA KERA MU BURUNDI",
+    description: "Inzira yo kuboha uduseke no gusigasira umuco gakondo n'ubukorikori bwo mu ntara ya Gitega.",
     duration: '22:10',
     views: '1.5K views',
     uploadedAt: '2 months ago',
@@ -287,8 +427,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'drYpBXq0B_k',
-    title: "Young Entrepreneurs Summit 2026: Building Africa's Future",
-    description: "Keynote speeches, venture showcases and business networking at the national convention.",
+    title: "INAMA NKURU Y'URWARUKA N'ABACURUZI BATO: KWITEZA IMBERE MURI 2026",
+    description: "Ikiganiro ku iterambere ry'ubucuruzi, imari n'imishinga y'urubyiruko mu gihugu c'Uburundi.",
     duration: '31:40',
     views: '5.2K views',
     uploadedAt: '2 months ago',
@@ -296,8 +436,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'erjOGhwAr28',
-    title: "Cinematography Masterclass: 4K Drone Aerials & Filmmaking",
-    description: "Pro equipment tutorial featuring DJI 4K drone cinematography and live studio lighting.",
+    title: "UKO BAFATA AMASHUSHO YA DRONE 4K N'AMACAMERA MU BITERAMO N'UBUKWE",
+    description: "ELIMI MEDIA: Urugendo rwo gutunganya amashusho meza no gufata amasanamu yo mu kirere.",
     duration: '27:15',
     views: '2.8K views',
     uploadedAt: '2 months ago',
@@ -305,8 +445,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'eYlIeZ-KJZ8',
-    title: "POLICE ELIMI Special Episode: Investigation and Public Safety",
-    description: "Crime prevention documentary series produced by ELIMI Media studios.",
+    title: "POLICE ELIMI: Igice cy'umwihariko ku gukumira ibyaha n'umutekano mu mihanda",
+    description: "Filime yerekana ubutwari bwa polisi n'ubufatanye n'abaturage mu kubungabunga ituze.",
     duration: '34:50',
     views: '6.7K views',
     uploadedAt: '2 months ago',
@@ -314,8 +454,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'ljZ0lLovPwE',
-    title: "Burundi Traditional Drum Performance & Royal Heritage",
-    description: "Captivating rhythmic performance celebrating national cultural identity and folklore.",
+    title: "UMUCO W'INGOMA Z'UBURUNDI: ABATIMBO BO MU GISAKA BARATURITSE BARAVUZA",
+    description: "Umuco n'injyana y'ingoma z'Uburundi zizwi kw'isi yose mu muhango ukomeye.",
     duration: '14:35',
     views: '8.3K views',
     uploadedAt: '3 months ago',
@@ -323,8 +463,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'mlOMAO5fFw4',
-    title: "Luxury Watchmaking & Haute Horlogerie in East Africa",
-    description: "Spotlight on fine Swiss craftsmanship and executive lifestyle accessories.",
+    title: "AMASAHA Y'AGACIRO YA SWISS MADE: UKO WATORANYA ISAHARA IBANEYE MURI ELIMI",
+    description: "Ikiganiro cyihariye ku masaha y'abanyacyubahiro n'ibikoresho byo kwirinda impimbano.",
     duration: '12:50',
     views: '1.9K views',
     uploadedAt: '3 months ago',
@@ -332,8 +472,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'nrkBvcil7cM',
-    title: "ELIMI Exclusive: Modern Architecture & Real Estate Investments",
-    description: "Tour of contemporary architectural villas and urban planning developments.",
+    title: "INZU Z'IBURUNDI ZIGEZWEHO N'IBIBANZA KU NKENGERO Z'IKIYAGA CYA TANGANYIKA",
+    description: "Kugura no kugurisha amazu y'agaciro n'ubutaka i Bujumbura hamwe n'inzobere za ELIMI.",
     duration: '20:10',
     views: '3.1K views',
     uploadedAt: '3 months ago',
@@ -341,8 +481,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'ooOlyt_Jc0g',
-    title: "Music Producer Roundtable: The Sound of Modern East Africa",
-    description: "Studio session and sound design insights from award-winning music producers.",
+    title: "ABATUNYANYI BA MUZIKA MU BURUNDI: URUGENDO RWO GUKORA INDIRIMBO ZIKOMEYE",
+    description: "Amajwi n'injyana nshya mu muziki nyarwanda n'urundi mu mazu atunganya umuziki.",
     duration: '29:30',
     views: '2.5K views',
     uploadedAt: '3 months ago',
@@ -350,8 +490,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'pIEtHDbbeao',
-    title: "Agritech & Sustainable Farming Innovations in Burundi",
-    description: "Spotlight on organic agricultural projects and modern irrigation technologies.",
+    title: "UBUHINZI N'UBWOROZI BW'URUBYIRUKO: UMUSARURO W'IKAWA N'IBIRIBWA MU BURUNDI",
+    description: "Guteza imbere ubuhinzi bugezweho n'ubucuruzi bw'ikawa yoherezwa hanze y'igihugu.",
     duration: '17:45',
     views: '1.4K views',
     uploadedAt: '4 months ago',
@@ -359,8 +499,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'Q836N7hDKt4',
-    title: "ELIMI Comedy Special: Live Stage Standup Highlights",
-    description: "Laugh out loud moments and hilarious theatrical sketches recorded live.",
+    title: "KOMEDI YA ELIMI: IBISHEKEJE BYABAYE MU GITARAMO CY'URWENYA I BUJUMBURA",
+    description: "Ikinamico nsekeje cyane hamwe n'abakinnyi bakomeye b'urwenya mu Burundi.",
     duration: '23:15',
     views: '4.8K views',
     uploadedAt: '4 months ago',
@@ -368,8 +508,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'toXA5_xaDAI',
-    title: "Lake Tanganyika Sunset Cruise & VIP Tourism Guide",
-    description: "Breathtaking landscapes, luxury yachting and travel guide across Lake Tanganyika.",
+    title: "IKIYAGA CYA TANGANYIKA: URUGENDO MURI BATO N'UBWATO BWA VIP KU MUSI MUKURU",
+    description: "Kuryoherwa n'ubwiza bw'ikiyaga cya Tanganyika no gutembera mu bwato bwiza bwa ELIMI.",
     duration: '16:20',
     views: '3.7K views',
     uploadedAt: '4 months ago',
@@ -377,8 +517,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'ty5CYOk_L5w',
-    title: "Youth Tech Lab: Coding, Robotics and Digital Skills",
-    description: "Empowering next-gen innovators with high-impact software and electronics workshops.",
+    title: "URWARUKA RURAKORA IBIKOMEYE MU IKORANABUHANGA N'UBUHANZI BWA DIGITAL",
+    description: "Amahugurwa ku gukora porogaramu za mudasobwa no guhanga udushya mu rubyiruko.",
     duration: '19:00',
     views: '2.2K views',
     uploadedAt: '5 months ago',
@@ -386,8 +526,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'uPwmffqrXZk',
-    title: "Handmade Leather Goods: Master Shoemakers in Action",
-    description: "Artisanal process of crafting Goodyear welted dress shoes and leather bags.",
+    title: "INKWETO Z'URUGIBA N'IMPU NYAZO: UKO BAZIKORA N'AGACIRO KAZO MU ISOKO",
+    description: "Ubukorikori bwo gukora inkweto z'impu nziza zikomeye mu mazu y'ubudozi i Bujumbura.",
     duration: '15:40',
     views: '2.6K views',
     uploadedAt: '5 months ago',
@@ -395,8 +535,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'utVYgBj-QRw',
-    title: "Burundi Coffee Cupping & Export Quality Standards",
-    description: "From farm to cup: Discovering single-origin specialty Arabica coffees of Burundi.",
+    title: "IKAWA Y'UBURUNDI: INZIRA IVA KU MUTURAGE KUGEZA KU ISOKO MPUZAMAHANGA",
+    description: "Ubuziranenge n'uburyoherere bw'ikawa y'Uburundi ikunzwe mu mahanga hose.",
     duration: '18:10',
     views: '3.9K views',
     uploadedAt: '5 months ago',
@@ -404,8 +544,8 @@ const FALLBACK_ALL_VIDEOS: Partial<YouTubeFeedItem>[] = [
   },
   {
     youtubeId: 'ynO6053wlKY',
-    title: "ELIMI Grand Gala & Community Impact Awards 2025",
-    description: "Red carpet arrivals, honorary speeches and awards celebrating visionary leaders.",
+    title: "IBIHE BY'AGACIRO MU BIRORI BYA GALA ELIMI: GUHEMBA ABATANZE UMUSANZU MU MUCO",
+    description: "Ibyamamare, abayobozi n'abafatanyabikorwa mu birori byo gushimira abitwaye neza.",
     duration: '35:00',
     views: '7.5K views',
     uploadedAt: '6 months ago',
@@ -480,7 +620,7 @@ export async function GET(req: NextRequest) {
           }
 
           if (videoId && title) {
-            const category = classifyCategory(title, '');
+            const category = classifyCategory(title, '', videoId);
             const isShort = duration.includes('0:') && parseInt(duration.split(':')[1] || '0', 10) <= 60;
             videoMap.set(videoId, {
               id: `yt_${videoId}`,
@@ -543,7 +683,7 @@ export async function GET(req: NextRequest) {
           let viewsFormatted = viewsCount >= 1000 ? `${(viewsCount / 1000).toFixed(1)}K views` : `${viewsCount} views`;
           if (viewsCount === 0) viewsFormatted = '1.1K views';
 
-          const category = classifyCategory(title, description);
+          const category = classifyCategory(title, description, videoId);
           const existing = videoMap.get(videoId);
 
           videoMap.set(videoId, {
@@ -575,7 +715,7 @@ export async function GET(req: NextRequest) {
   // 3. Complement with all catalogued channel broadcasts to guarantee a comprehensive list
   for (const fallback of FALLBACK_ALL_VIDEOS) {
     if (fallback.youtubeId && !videoMap.has(fallback.youtubeId)) {
-      const category = classifyCategory(fallback.title || '', fallback.description || '');
+      const category = classifyCategory(fallback.title || '', fallback.description || '', fallback.youtubeId);
       videoMap.set(fallback.youtubeId, {
         id: `yt_${fallback.youtubeId}`,
         youtubeId: fallback.youtubeId,

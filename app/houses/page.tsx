@@ -6,6 +6,7 @@ import { useRealtimeHouses, House } from '@/lib/firestore-houses';
 import { MapPin, Bed, Bath, Maximize2, Building2, ShieldCheck, Sparkles, ArrowRight, Phone, Navigation, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useCurrency, useSettings } from "@/components/SettingsProvider";
+import { formatWhatsAppUrl } from '@/lib/firestore-settings';
 import ElimiHeader from '@/components/ElimiHeader';
 import GoogleLocationMap from '@/components/GoogleLocationMap';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
@@ -334,7 +335,10 @@ function HousesContent() {
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                     <a
-                      href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hello ELIMI Real Estate, I am interested in property: ${house.title}`)}`}
+                      href={formatWhatsAppUrl(
+                        whatsappNumber,
+                        `Hello ELIMI Real Estate! 👋\n\nI am interested in the property: ${house.title} (${house.rent ? 'Lease / Rent' : 'Purchase'}).\nPlease provide pricing and tour availability.`
+                      )}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 bg-white border border-[#1D4ED8] text-[#0F172A] text-center py-2.5 px-4 rounded-full text-xs sm:text-sm font-semibold hover:bg-slate-50 transition-colors flex items-center justify-center"
@@ -448,17 +452,27 @@ function HousesContent() {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 max-w-md mx-auto sm:max-w-none">
             <a
-              href="tel:+25769992984"
-              className="bg-[#0B57FF] text-white px-8 py-3.5 rounded-full text-sm font-semibold hover:bg-[#0948D9] transition-colors shadow-xs"
+              href={formatWhatsAppUrl(
+                whatsappNumber,
+                'Hello ELIMI Real Estate! 👋\n\nI would like to schedule a private consultation / property tour.'
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#0B57FF] text-white px-8 py-3.5 rounded-full text-sm font-semibold hover:bg-[#0948D9] transition-colors shadow-xs cursor-pointer"
             >
-              Schedule a Consultation
+              Schedule a Consultation via WhatsApp
             </a>
             <a
-              href="tel:+25769992984"
-              className="border border-[#1D4ED8] bg-transparent text-[#0F172A] px-8 py-3.5 rounded-full text-sm font-semibold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+              href={formatWhatsAppUrl(
+                whatsappNumber,
+                'Hello ELIMI Real Estate! 👋\n\nI would like to connect with your Real Estate Concierge regarding property investments and leases.'
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="border border-[#1D4ED8] bg-transparent text-[#0F172A] px-8 py-3.5 rounded-full text-sm font-semibold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               <Phone className="w-4 h-4 text-[#0B57FF]" />
-              <span>Call Real Estate Concierge</span>
+              <span>Connect on WhatsApp</span>
             </a>
           </div>
         </div>

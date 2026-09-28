@@ -213,17 +213,17 @@ const MARKET_PRODUCTS: Record<string, FeaturedProduct> = {
   },
 };
 
-// Mock YouTube Video Database with real shoppable hooks - mapped from screenshot & channel
+// Mock YouTube Video Database with real shoppable hooks - mapped from channel
 const MOCK_VIDEOS: MediaVideo[] = [
   {
     id: "vid_sebarundi",
-    youtubeId: "dQw4w9WgXcQ",
-    title: "RABA UKO SEBARUNDI YASHITSE MURI INKEREBUTSI DAY AHEREKEJWE ...",
+    youtubeId: "cVSTKKrqKI8",
+    title: "RABA UKO SEBARUNDI YASHITSE MURI INKEREBUTSI DAY AHEREKEJWE N'UMUTAMBUKANYI WIWE",
     description:
-      "Sebarundi arrival at Inkerebutsi Day VIP ceremonial event with full diplomatic security motorcade and cultural celebrations.",
+      "ELIMI MEDIA: Coverage ya Inkerebutsi Day hamwe na Sebarundi n'umutambukanyi wiwe mu modoka za VIP.",
     category: "VIP Lifestyle",
     duration: "3:13",
-    views: "408",
+    views: "417 views",
     uploadedAt: "5d ago",
     thumbnail:
       "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80",
@@ -235,14 +235,14 @@ const MOCK_VIDEOS: MediaVideo[] = [
   },
   {
     id: "vid_mama_mugira",
-    youtubeId: "kJQP7kiw5Fk",
+    youtubeId: "Fghrq6SgrWo",
     title:
       "Mama Mugira neza avuze amajambo akomeye ku bakenyezi hamwe n'urwaruka",
     description:
       "Amagambo akomeye y'impanuro no gushigikira iterambere ry'abakenyezi n'urwaruka rwo mu Burundi mu nama nkuru.",
     category: "Cultural Heritage",
     duration: "7:18",
-    views: "122",
+    views: "130 views",
     uploadedAt: "6d ago",
     thumbnail:
       "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80",
@@ -254,13 +254,13 @@ const MOCK_VIDEOS: MediaVideo[] = [
   },
   {
     id: "vid_muvuto_police",
-    youtubeId: "L_LUpnjgPso",
+    youtubeId: "Hbsmm_9qbOM",
     title: "Muvuto afashe azira gukorakora abagore babandi",
     description:
       "POLICE ELIMI: Igice gishya cya filime yerekana ibikorwa bya Polisi no gukumira ibyaha mu mujyi wa Bujumbura.",
     category: "Comedy & Drama",
     duration: "38:35",
-    views: "77",
+    views: "79 views",
     uploadedAt: "9d ago",
     thumbnail: "/assets/media/burundi-skit-cover.jpg",
     channelName: "POLICE ELIMI Series",
@@ -271,13 +271,13 @@ const MOCK_VIDEOS: MediaVideo[] = [
   },
   {
     id: "vid_cadeau_lavelle",
-    youtubeId: "3JZ_D3ELwOQ",
-    title: "CADEAU LAVELLE - IGISUPU NYAMUKURU CYO KWA MAMA RWAGASORE",
+    youtubeId: "fA_z8gWrLxE",
+    title: "Cadeau Lavelle ntaco asigarije Mimi Mireille/ Ivyo nkina Mimi ntavyo yokina... Arvella n'a Mimi nti",
     description:
-      "Ikinamico nsekeje kandi ifite ubutumwa bukomeye ku muryango no gusigasira umuco nyarwanda n'uw'Uburundi.",
+      "ELIMI MEDIA: Ikiganiro cyihariye n'abakinnyi ba cinema ku bijyanye n'iterambere rya filime.",
     category: "Comedy & Drama",
-    duration: "12:45",
-    views: "612",
+    duration: "37:46",
+    views: "422 views",
     uploadedAt: "2w ago",
     thumbnail:
       "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80",
@@ -285,18 +285,18 @@ const MOCK_VIDEOS: MediaVideo[] = [
     isVerified: true,
     likes: 720,
     featuredProducts: [MARKET_PRODUCTS.p_suit, MARKET_PRODUCTS.p_watch],
-    tags: ["CadeauLavelle", "Igisupu", "MamaRwagasore", "Comedy"],
+    tags: ["CadeauLavelle", "Igisupu", "MimiMireille", "Comedy"],
   },
   {
     id: "vid_umusore_gitega",
-    youtubeId: "fJ9rUzIMcZQ",
+    youtubeId: "drYpBXq0B_k",
     title:
-      "UMUSORE W'I GITEGA YATURITSE ARARIRA NYUMA YO GUHABWA IMPANO N'URUBYIRUKO",
+      "INAMA NKURU Y'URWARUKA N'ABACURUZI BATO: KWITEZA IMBERE MURI 2026",
     description:
-      "Ibyishimo n'amarira y'urukundo mu muhango wo guhemba urubyiruko rwiteje imbere mu buhanzi n'ubukorikori i Gitega.",
+      "Ikiganiro ku iterambere ry'ubucuruzi, imari n'imishinga y'urubyiruko mu gihugu c'Uburundi.",
     category: "Event Masterclass",
-    duration: "18:20",
-    views: "940",
+    duration: "31:40",
+    views: "5.2K views",
     uploadedAt: "3w ago",
     thumbnail:
       "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80",
@@ -308,14 +308,14 @@ const MOCK_VIDEOS: MediaVideo[] = [
   },
   {
     id: "vid_talkshow_police",
-    youtubeId: "RgKAFK5djSk",
+    youtubeId: "Ux0bcECgaUo",
     title:
-      "TALK SHOW: POLICE ELIMI IKIGANIRO CYIHARIYE KURI PROTOCOLE N'UMUTEKANO",
+      "POLICE: Mr Sammy atawe muriyompi kubera 72h",
     description:
-      "Ikiganiro cyihariye hamwe n'abapolisi bo mu mutwe ushinzwe umutekano w'abanyacyubahiro (VIP Protocol & Escort).",
+      "POLICE ELIMI: Igice cy'umutekano n'amategeko mu mujyi hamwe n'ingabo z'umutekano.",
     category: "VIP Lifestyle",
-    duration: "24:10",
-    views: "1.2K",
+    duration: "26:50",
+    views: "228 views",
     uploadedAt: "1mo ago",
     thumbnail:
       "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
@@ -327,14 +327,14 @@ const MOCK_VIDEOS: MediaVideo[] = [
   },
   {
     id: "vid_hero",
-    youtubeId: "dQw4w9WgXcQ",
+    youtubeId: "k_48FojR9TQ",
     title:
-      "Bujumbura Gala Runway: The 2026 African Elegance & Luxury Motors Showcase",
+      "Ndiyizi ko ndi mwiza😍 ivyo kuba queen video narabihevye ntavyo nkishaka",
     description:
-      "Experience the stunning fusion of bespoke African tailoring and VIP motorcade arrivals at the annual Lake Tanganyika Gala. Discover how fashion meets modern prestige in Burundi.",
+      "ELIMI MEDIA VIP Lifestyle & Fashion Talk Show: Ibyamamare mu myambarire n'imideri mishya.",
     category: "Fashion & Style",
-    duration: "14:28",
-    views: "248K",
+    duration: "16:05",
+    views: "2.9K views",
     uploadedAt: "2d ago",
     thumbnail:
       "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80",
@@ -351,13 +351,13 @@ const MOCK_VIDEOS: MediaVideo[] = [
   },
   {
     id: "vid_drone",
-    youtubeId: "3JZ_D3ELwOQ",
-    title: "Cinematic Burundi: Gitega Royal Highlands 4K Drone Tour",
+    youtubeId: "iwnMv0v7-iI",
+    title: "Arvella Muhimbare niryambere ngiye Gukorera Imiriyoni ku kwezi/ Reco ihinduka ry'Isuku Mu Burundi",
     description:
-      "Soar across the breathtaking hills of Muramvya and the sacred drums of Gitega captured with the high-performance DJI Mini 3 Pro gear available in the ELIMI Shop.",
+      "ELIMI MEDIA: Iterambere ry'ubucuruzi, ikoranabuhanga n'isuku mu mujyi wa Bujumbura.",
     category: "Tech & Gear",
-    duration: "11:15",
-    views: "92K",
+    duration: "19:40",
+    views: "156 views",
     uploadedAt: "1w ago",
     thumbnail:
       "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=800&q=80",
@@ -369,13 +369,13 @@ const MOCK_VIDEOS: MediaVideo[] = [
   },
   {
     id: "vid_vip",
-    youtubeId: "L_LUpnjgPso",
-    title: "VIP Chauffeur Experience: Mercedes V-Class Diplomatic Escort",
+    youtubeId: "8vTdHAZyYx0",
+    title: "RABA UKO PROTOCOLE YA ELIMI YAKIRIYE ABADIPOROMATE MURI MERCEDES V-CLASS",
     description:
-      "Step inside our flagship Mercedes V-Class with full leather lounge seating, refreshments bar, and private security escort protocol for dignitaries visiting Bujumbura.",
+      "Umutekano n'urugendo rwo kwakira abanyacyubahiro mu modoka za VIP chauffeur i Bujumbura.",
     category: "VIP Lifestyle",
-    duration: "06:50",
-    views: "114K",
+    duration: "15:20",
+    views: "4.1K views",
     uploadedAt: "2w ago",
     thumbnail:
       "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=800&q=80",
@@ -1241,13 +1241,13 @@ export default function MediaPage() {
               )}
             </div>
 
-            {/* Category dropdown & Refresh Button */}
-            <div className="flex items-center gap-2 text-xs text-[#64748B]">
-              <span>Category:</span>
+            {/* Category dropdown & Filter control */}
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm text-[#64748B]">
+              <span className="font-medium text-[#0F172A]">Category:</span>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-white text-[#0F172A] text-xs px-3 py-1.5 rounded-lg border border-[#0F172A]/15 focus:outline-none focus:border-[#0B57FF] shadow-xs"
+                className="bg-white text-[#0F172A] font-medium text-xs sm:text-sm px-3.5 py-2 rounded-full border border-[#0F172A]/15 hover:border-[#0B57FF]/50 focus:outline-none focus:ring-2 focus:ring-[#0B57FF]/20 focus:border-[#0B57FF] shadow-xs transition-all cursor-pointer"
               >
                 {categories.map((c) => (
                   <option key={c} value={c} className="bg-white text-[#0F172A]">

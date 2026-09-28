@@ -6,6 +6,7 @@ import {
 import { db } from './firebase';
 import { Product } from './products';
 import { WHATSAPP_NUMBER } from './utils';
+import { sanitizeWhatsAppNumber } from './firestore-settings';
 import { getStoredItems, saveStoredItems, runFirestoreTaskSafe } from './firestore-sync';
 
 export interface OrderItem {
@@ -154,8 +155,7 @@ export function generateClientWhatsAppGreetingUrl(
         totalBIF?: number;
       }
 ): string {
-  const cleanPhone = customPhone ? customPhone.replace(/[^0-9]/g, '') : WHATSAPP_NUMBER;
-  const phone = cleanPhone || WHATSAPP_NUMBER;
+  const phone = sanitizeWhatsAppNumber(customPhone);
 
   let detailsBlock = '';
   if (details) {

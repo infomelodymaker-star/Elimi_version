@@ -8,6 +8,7 @@ import GoogleLocationMap from '@/components/GoogleLocationMap';
 import ImageLightboxModal from '@/components/ImageLightboxModal';
 import { useRealtimeHouse, useRealtimeHouses } from '@/lib/firestore-houses';
 import { useSettings } from '@/components/SettingsProvider';
+import { formatWhatsAppUrl } from '@/lib/firestore-settings';
 import {
   Bed,
   Bath,
@@ -20,7 +21,8 @@ import {
   Building2,
   ChevronRight,
   Home as HomeIcon,
-  Images
+  Images,
+  MessageCircle
 } from 'lucide-react';
 
 export default function HouseDetailPage() {
@@ -146,10 +148,15 @@ export default function HouseDetailPage() {
                     {house.rent ? 'Monthly Lease Rate' : 'Outright Purchase Price'}
                   </div>
                   <a
-                    href="tel:+25769992984"
-                    className="bg-[#0D52FF] text-white px-6 py-3 rounded-xl text-xs sm:text-sm font-medium hover:bg-[#0b45d6] transition-colors shadow-sm text-center flex items-center justify-center gap-1.5"
+                    href={formatWhatsAppUrl(
+                      whatsappNumber,
+                      `Hello ELIMI Real Estate! 👋\n\nI would like to inquire / schedule a private tour for the property:\n• Property: ${house.title}\n• Address: ${house.address || 'Bujumbura, Burundi'}\n• Listing Type: ${house.rent ? 'Lease / Long-term Rent' : 'Outright Purchase'}\n• Pricing: ${house.rentPrice ? `$${Number(house.rentPrice || 0).toLocaleString()}/mo` : `$${Number(house.price || 0).toLocaleString()}`}\n• Bedrooms / Baths: ${house.bedrooms || 0} Beds / ${house.bathrooms || 0} Baths\n\nPlease let me know the tour schedule and application procedure.`
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-[#0D52FF] text-white px-6 py-3 rounded-xl text-xs sm:text-sm font-medium hover:bg-[#0b45d6] transition-colors shadow-sm text-center flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <Phone className="w-3.5 h-3.5" />
+                    <MessageCircle className="w-4 h-4" />
                     <span>Inquire / Schedule Tour</span>
                   </a>
                 </div>
@@ -183,9 +190,15 @@ export default function HouseDetailPage() {
                     </div>
                     <div className="w-full sm:w-1/4 sm:text-right">
                       <a
-                        href="tel:+25769992984"
-                        className="bg-[#0D52FF] text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#0b45d6] transition-colors w-full sm:auto inline-flex items-center justify-center gap-1"
+                        href={formatWhatsAppUrl(
+                          whatsappNumber,
+                          `Hello ELIMI Real Estate! 👋\n\nI would like to make a ${house.rent ? 'lease application' : 'purchase inquiry'} for:\n• Property: ${house.title}\n• Option/Unit ID: ${unit.unitId}\n• Availability: ${unit.availableDate}\n• Rate/Price: $${Number(unit.price || 0).toLocaleString()}${house.rent ? '/mo' : ''}\n\nPlease share the lease/purchase requirements and next steps.`
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-[#0D52FF] text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#0b45d6] transition-colors w-full sm:w-auto inline-flex items-center justify-center gap-1.5 cursor-pointer"
                       >
+                        <MessageCircle className="w-3.5 h-3.5" />
                         <span>{house.rent ? 'Apply to Lease' : 'Purchase Inquire'}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </a>
@@ -346,16 +359,20 @@ export default function HouseDetailPage() {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 max-w-md mx-auto sm:max-w-none">
             <a
-              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hello ELIMI Real Estate, I would like to schedule a tour for property: ${house.title}`)}`}
+              href={formatWhatsAppUrl(
+                whatsappNumber,
+                `Hello ELIMI Real Estate! 👋\n\nI am interested in the property: ${house.title}.\nI would like to schedule a private walkthrough, request the title deed dossier, or speak directly with an ELIMI Real Estate advisor.\n\nThank you!`
+              )}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-[#0D52FF] text-white px-7 py-3 rounded-xl text-sm font-semibold hover:bg-[#0b45d6] transition-colors shadow-sm flex items-center justify-center gap-2"
+              className="bg-[#0D52FF] text-white px-7 py-3 rounded-xl text-sm font-semibold hover:bg-[#0b45d6] transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Schedule a Tour</span>
+              <MessageCircle className="w-4 h-4" />
+              <span>Schedule a Tour via WhatsApp</span>
             </a>
             <a
               href={`tel:${phoneNumber}`}
-              className="bg-white border border-gray-300 text-gray-800 px-7 py-3 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
+              className="bg-white border border-gray-300 text-gray-800 px-7 py-3 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Phone className="w-4 h-4 text-[#0D52FF]" />
               <span>Call ({phoneNumber})</span>

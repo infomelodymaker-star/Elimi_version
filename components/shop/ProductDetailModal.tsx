@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { EMIL_SPRINGS, EMIL_EASINGS } from '@/lib/motion-constants';
-import { X, Star, ShieldCheck, Truck, ShoppingCart, Check, Plus, Minus, AlertCircle } from 'lucide-react';
+import { X, Star, ShieldCheck, Truck, ShoppingCart, Check, Plus, Minus } from 'lucide-react';
 import { Product } from './ProductGrid';
 import { createCheckoutOrder, generateClientWhatsAppGreetingUrl } from '@/lib/firestore-orders';
 import { WHATSAPP_NUMBER } from '@/lib/utils';
+import { useSettings } from '@/components/SettingsProvider';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -21,27 +22,20 @@ export default function ProductDetailModal({
   onAddToCart,
 }: ProductDetailModalProps) {
   const shouldReduceMotion = useReducedMotion();
+  const { whatsappNumber } = useSettings();
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<{ name: string; hex: string } | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [showStockBubble, setShowStockBubble] = useState<boolean>(false);
+  const [prevProductId, setPrevProductId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (product) {
-      if (product.sizes && product.sizes.length > 0) {
-        setSelectedSize(product.sizes[0]);
-      } else {
-        setSelectedSize('');
-      }
-      if (product.colors && product.colors.length > 0) {
-        setSelectedColor(product.colors[0]);
-      } else {
-        setSelectedColor(null);
-      }
-      setQuantity(1);
-      setShowStockBubble(false);
-    }
-  }, [product]);
+  if (product && product.id !== prevProductId) {
+    setPrevProductId(product.id);
+    setSelectedSize(product.sizes && product.sizes.length > 0 ? product.sizes[0] : '');
+    setSelectedColor(product.colors && product.colors.length > 0 ? product.colors[0] : null);
+    setQuantity(1);
+    setShowStockBubble(false);
+  }
 
   const maxStock = product?.stockQuantity ? Math.max(1, product.stockQuantity) : 99;
   const isAtStockLimit = quantity >= maxStock;
@@ -350,16 +344,18 @@ export default function ProductDetailModal({
                           totalBIF: product.priceBIF * quantity,
                           customerNotes: `Direct modal checkout for ${product.name} (Qty: ${quantity}${selectedSize ? `, Size: ${selectedSize}` : ''}${selectedColor ? `, Color: ${selectedColor.name}` : ''})`,
                         };
+                        const activeWa = (whatsappNumber || WHATSAPP_NUMBER).replace(/\D/g, '');
                         const result = await createCheckoutOrder(orderPayload);
                         const url = result.success && result.orderId
-                          ? generateClientWhatsAppGreetingUrl(result.orderId, undefined, result.order)
-                          : `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
+                          ? generateClientWhatsAppGreetingUrl(result.orderId, activeWa, result.order)
+                          : `https://wa.me/${activeWa}?text=${encodeURIComponent(whatsappMessage)}`;
                         if (typeof window !== 'undefined') {
                           window.open(url, '_blank', 'noopener,noreferrer');
                         }
                       } catch {
+                        const activeWa = (whatsappNumber || WHATSAPP_NUMBER).replace(/\D/g, '');
                         if (typeof window !== 'undefined') {
-                          window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`, '_blank', 'noopener,noreferrer');
+                          window.open(`https://wa.me/${activeWa}?text=${encodeURIComponent(whatsappMessage)}`, '_blank', 'noopener,noreferrer');
                         }
                       }
                       onClose();

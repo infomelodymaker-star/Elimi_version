@@ -44,19 +44,19 @@ export default function RentalDetailModal({
   const [rentalDays, setRentalDays] = useState<number>(3);
   const [booked, setBooked] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'conditions' | 'avis'>('details');
+  const [prevItemId, setPrevItemId] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (item) {
-      if (item.sizes && item.sizes.length > 0) {
-        setSelectedSize(item.sizes[0]);
-      }
-      if (item.colors && item.colors.length > 0) {
-        setSelectedColor(item.colors[0]);
-      } else {
-        setSelectedColor(null);
-      }
+  if (item && item.id !== prevItemId) {
+    setPrevItemId(item.id);
+    if (item.sizes && item.sizes.length > 0) {
+      setSelectedSize(item.sizes[0]);
     }
-  }, [item?.id]);
+    if (item.colors && item.colors.length > 0) {
+      setSelectedColor(item.colors[0]);
+    } else {
+      setSelectedColor(null);
+    }
+  }
 
   if (!item) return null;
 
