@@ -12,9 +12,9 @@ export const dynamic = 'force-dynamic';
 
 // Valid Flash models ordered for fallback on quota exhaustion or temporary unavailability
 const GEMINI_MODELS_CASCADE = [
-  'gemini-3.8-flash',
-  'gemini-flash-latest',
-  'gemini-3.1-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
 ];
 
 export async function POST(req: NextRequest) {
