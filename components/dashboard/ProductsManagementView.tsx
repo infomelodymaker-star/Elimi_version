@@ -21,6 +21,7 @@ import {
   ProductCategory
 } from '@/lib/firestore-products';
 import { uploadImageSafely } from '@/lib/image-upload';
+import { useCurrency } from '@/components/SettingsProvider';
 
 interface ToastInfo {
   message: string;
@@ -141,6 +142,7 @@ export default function ProductsManagementView() {
 
   // Toast notifications
   const [toast, setToast] = useState<ToastInfo | null>(null);
+  const { toBIF, usdToBifRate } = useCurrency();
 
   const showToast = (message: string, type: ToastInfo['type'] = 'success') => {
     setToast({ message, type });
@@ -268,6 +270,7 @@ export default function ProductsManagementView() {
   // Open Create Form
   const handleOpenCreate = () => {
     setEditingProductId(null);
+    const initialUsd = 25;
     setFormData({
       id: `prod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       name: '',
@@ -275,8 +278,8 @@ export default function ProductsManagementView() {
       subCategory: "Men's Clothing",
       badgeTag: 'Man Fashion',
       badge: 'New Arrival',
-      priceUSD: 25,
-      priceBIF: 75000,
+      priceUSD: initialUsd,
+      priceBIF: toBIF(initialUsd),
       originalPriceUSD: 50,
       discountPercentage: 50,
       stockQuantity: 15,
@@ -318,7 +321,7 @@ export default function ProductsManagementView() {
       badgeTag: p.badgeTag || '',
       badge: p.badge || '',
       priceUSD: p.priceUSD,
-      priceBIF: p.priceBIF,
+      priceBIF: toBIF(p.priceUSD),
       originalPriceUSD: p.originalPriceUSD,
       discountPercentage: p.discountPercentage,
       stockQuantity: p.stockQuantity ?? 10,
@@ -547,6 +550,9 @@ export default function ProductsManagementView() {
           ? formData.gallery
           : [formData.image];
 
+      const priceUSDNum = Number(formData.priceUSD) || 0;
+      const computedPriceBIF = toBIF(priceUSDNum);
+
       const productPayload: Product = {
         id: formData.id || `prod-${Date.now()}`,
         name: formData.name.trim(),
@@ -554,8 +560,8 @@ export default function ProductsManagementView() {
         subCategory: formData.subCategory.trim() || undefined,
         badgeTag: formData.badgeTag.trim() || undefined,
         badge: formData.badge.trim() || undefined,
-        priceUSD: Number(formData.priceUSD) || 0,
-        priceBIF: Number(formData.priceBIF) || (Number(formData.priceUSD) * 3000),
+        priceUSD: priceUSDNum,
+        priceBIF: computedPriceBIF,
         originalPriceUSD: formData.originalPriceUSD ? Number(formData.originalPriceUSD) : undefined,
         discountPercentage: formData.discountPercentage ? Number(formData.discountPercentage) : undefined,
         rating: 4.8,
@@ -1150,7 +1156,7 @@ export default function ProductsManagementView() {
                             ${p.priceUSD?.toFixed(2)}
                           </span>
                           <span className="font-mono text-[11px] text-zinc-500">
-                            {p.priceBIF?.toLocaleString()} BIF
+                            {toBIF(p.priceUSD || 0).toLocaleString()} BIF
                           </span>
                         </div>
                       </td>
@@ -1378,28 +1384,35 @@ export default function ProductsManagementView() {
                     required
                     type="number"
                     step="0.01"
+                    min="0"
                     value={formData.priceUSD}
                     onChange={(e) => {
                       const usd = Number(e.target.value);
                       setFormData({
                         ...formData,
                         priceUSD: usd,
-                        priceBIF: Math.round(usd * 3000),
+                        priceBIF: toBIF(usd),
                       });
                     }}
-                    className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-white font-mono text-xs text-zinc-900 focus:outline-none focus:border-blue-500"
+                    className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-white font-mono text-xs text-zinc-900 focus:outline-none focus:border-blue-500 shadow-2xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-800 mb-1">
-                    Price BIF (Francs) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-zinc-800">
+                      Price BIF (Calculated)
+                    </label>
+                    <span className="text-[10px] text-blue-600 font-medium font-mono" title={`Currency Rate: 1 USD = ${usdToBifRate.toLocaleString()} BIF`}>
+                      @{usdToBifRate.toLocaleString()} BIF/$
+                    </span>
+                  </div>
                   <input
-                    required
-                    type="number"
-                    value={formData.priceBIF}
-                    onChange={(e) => setFormData({ ...formData, priceBIF: Number(e.target.value) })}
-                    className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-white font-mono text-xs text-zinc-900 focus:outline-none focus:border-blue-500"
+                    readOnly
+                    type="text"
+                    value={`${toBIF(Number(formData.priceUSD) || 0).toLocaleString()} BIF`}
+                    tabIndex={-1}
+                    className="w-full h-9 px-3 rounded-lg border border-blue-200 bg-blue-50/70 font-mono text-xs font-bold text-blue-700 cursor-not-allowed select-none focus:outline-none"
+                    title="Calculated automatically using global settings currency rate"
                   />
                 </div>
                 <div>

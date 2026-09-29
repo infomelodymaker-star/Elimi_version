@@ -198,17 +198,12 @@ export default function FourPillarsSection() {
   );
 
   // Pillar 3 & Pillar 4: Products from Firestore, randomized among the 20 latest uploaded ones on each refresh
-  const [shuffledProducts, setShuffledProducts] = useState<Product[]>(() =>
-    BOUTIQUE_PRODUCTS.slice(0, 5),
-  );
+  const [shuffledProducts, setShuffledProducts] = useState<Product[]>([]);
   const [isShufflingShop, setIsShufflingShop] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const productsPool =
-        allFirestoreProducts && allFirestoreProducts.length > 0
-          ? allFirestoreProducts
-          : BOUTIQUE_PRODUCTS;
+      const productsPool = allFirestoreProducts || [];
       const latest20 = getLatest20Products(productsPool);
       const shuffled = [...latest20].sort(() => Math.random() - 0.5);
       setShuffledProducts(shuffled.slice(0, 5));
@@ -224,10 +219,7 @@ export default function FourPillarsSection() {
 
   const shuffleShopProducts = () => {
     setIsShufflingShop(true);
-    const productsPool =
-      allFirestoreProducts && allFirestoreProducts.length > 0
-        ? allFirestoreProducts
-        : BOUTIQUE_PRODUCTS;
+    const productsPool = allFirestoreProducts || [];
     const latest20 = getLatest20Products(productsPool);
     const shuffled = [...latest20].sort(() => Math.random() - 0.5);
     setShuffledProducts(shuffled.slice(0, 5));

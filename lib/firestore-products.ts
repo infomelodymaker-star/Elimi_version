@@ -17,6 +17,7 @@ import {
 import { db } from './firebase';
 import { Product, ProductReview, BOUTIQUE_PRODUCTS } from './products';
 import { getStoredItems, saveStoredItems, runFirestoreTaskSafe, syncItemToServerCatalog, fetchServerCatalog } from './firestore-sync';
+import { getGlobalSettings } from './firestore-settings';
 
 export interface ProductCategory {
   id: string;
@@ -142,13 +143,12 @@ export async function seedInitialProductsIfEmpty(): Promise<boolean> {
       }
     }
 
-    // Seed products
+    // Seed products only if missing from collection
     const snap = await getDocs(collection(db, PRODUCTS_COLLECTION));
     const existingIds = new Set(snap.docs.map((d) => d.id));
     const missingProducts = BOUTIQUE_PRODUCTS.filter((p) => !existingIds.has(p.id));
 
     if (missingProducts.length > 0 || seededCategories) {
-      console.log(`Seeding shop data into Firestore...`);
       for (const product of missingProducts) {
         const docRef = doc(db, PRODUCTS_COLLECTION, product.id);
         batch.set(docRef, {
@@ -158,7 +158,6 @@ export async function seedInitialProductsIfEmpty(): Promise<boolean> {
         });
       }
       await batch.commit();
-      console.log('Successfully synced boutique data into Firestore');
       isSeedingInProgress = false;
       return true;
     }
@@ -180,32 +179,45 @@ export const PRODUCTS_SYNC_EVENT = 'elimi_sync_products';
 
 /**
  * Hook to subscribe to real-time products collection from Firestore.
+ * No static fallback: Products are strictly fetched from Firestore database.
  */
 export function useRealtimeProducts() {
-  const [products, setProducts] = useState<Product[]>(BOUTIQUE_PRODUCTS);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
+  const isLiveRef = useRef<boolean>(false);
 
   useEffect(() => {
+    isLiveRef.current = false;
+
     // 1. Initial stored items loaded after mount to prevent SSR mismatch
     queueMicrotask(() => {
-      const initialStored = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
-      setProducts(initialStored);
+      const initialStored = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, []);
+      if (initialStored && initialStored.length > 0 && !isLiveRef.current) {
+        setProducts(initialStored);
+        setLoading(false);
+      }
       
-      // Also fetch latest items from the server-side catalog
+      // Also fetch latest items from the server-side catalog only if not yet live from Firestore
       fetchServerCatalog<Product>('products').then((serverItems) => {
-        if (serverItems && serverItems.length > 0) {
+        if (!isLiveRef.current && serverItems && serverItems.length > 0) {
           saveStoredItems(PRODUCTS_STORAGE_KEY, serverItems);
           setProducts(serverItems);
+          setLoading(false);
         }
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn('Server catalog fetch note:', err);
+      });
     });
 
     // 2. Listen to custom sync events and storage
     const handleSync = () => {
-      const updated = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
-      setProducts(updated);
+      const updated = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, []);
+      if (updated && updated.length > 0) {
+        setProducts(updated);
+        setLoading(false);
+      }
     };
 
     window.addEventListener(PRODUCTS_SYNC_EVENT, handleSync);
@@ -217,7 +229,11 @@ export function useRealtimeProducts() {
       const q = collection(db, PRODUCTS_COLLECTION);
       unsubscribe = onSnapshot(
         q,
-        async (snapshot) => {
+        (snapshot) => {
+          isLiveRef.current = true;
+          setIsLive(true);
+          setError(null);
+          
           if (!snapshot.empty) {
             const liveProducts: Product[] = [];
             snapshot.forEach((docSnap) => {
@@ -230,22 +246,25 @@ export function useRealtimeProducts() {
 
             saveStoredItems(PRODUCTS_STORAGE_KEY, liveProducts);
             setProducts(liveProducts);
-            setIsLive(true);
           } else {
-            // Firestore collection is empty; use local cache or boutique sample products without writing
-            const cached = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
-            setProducts(cached);
+            // Firestore collection returned 0 items
+            saveStoredItems(PRODUCTS_STORAGE_KEY, []);
+            setProducts([]);
           }
           setLoading(false);
         },
         (err) => {
           console.warn('Firestore onSnapshot note (using cache):', err?.message || err);
-          setProducts(getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS));
+          setError(err instanceof Error ? err : new Error(String(err)));
+          const cached = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, []);
+          setProducts(cached);
           setLoading(false);
         }
       );
     } catch (err: any) {
       console.warn('Firestore products listener setup note:', err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+      setLoading(false);
     }
 
     return () => {
@@ -267,13 +286,12 @@ export function useRealtimeProducts() {
 
 /**
  * Hook to subscribe in real-time to a single product document by ID.
+ * Strictly from database - no static fallback.
  */
 export function useRealtimeProduct(productId: string) {
-  const [product, setProduct] = useState<Product | null>(() => {
-    if (!productId) return null;
-    return BOUTIQUE_PRODUCTS.find((p) => p.id === productId) || null;
-  });
+  const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
@@ -287,17 +305,21 @@ export function useRealtimeProduct(productId: string) {
 
     // Check stored items on mount
     queueMicrotask(() => {
-      const stored = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
-      const foundStored = stored.find((p) => p.id === productId) || BOUTIQUE_PRODUCTS.find((p) => p.id === productId);
+      const stored = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, []);
+      const foundStored = stored.find((p) => p.id === productId);
       if (foundStored) {
         setProduct(foundStored);
+        setLoading(false);
       }
     });
 
     const handleSync = () => {
-      const latestStored = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
+      const latestStored = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, []);
       const matched = latestStored.find((p) => p.id === productId);
-      if (matched) setProduct(matched);
+      if (matched) {
+        setProduct(matched);
+        setLoading(false);
+      }
     };
 
     window.addEventListener(PRODUCTS_SYNC_EVENT, handleSync);
@@ -316,9 +338,9 @@ export function useRealtimeProduct(productId: string) {
             };
             setProduct(liveDoc);
             setIsLive(true);
+            setError(null);
           } else {
-            // Check stored or default fallback
-            const latest = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
+            const latest = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, []);
             const found = latest.find((p) => p.id === productId) || null;
             setProduct(found);
           }
@@ -326,10 +348,12 @@ export function useRealtimeProduct(productId: string) {
         },
         (err) => {
           console.warn('Firestore single product listener note:', err);
+          setError(err instanceof Error ? err : new Error(String(err)));
           setLoading(false);
         }
       );
-    } catch {
+    } catch (err: any) {
+      setError(err instanceof Error ? err : new Error(String(err)));
       queueMicrotask(() => {
         setLoading(false);
       });
@@ -342,7 +366,7 @@ export function useRealtimeProduct(productId: string) {
     };
   }, [productId]);
 
-  return { product, loading, isLive };
+  return { product, loading, error, isLive };
 }
 
 function removeUndefinedFields<T extends Record<string, any>>(obj: T): T {
@@ -363,8 +387,13 @@ function removeUndefinedFields<T extends Record<string, any>>(obj: T): T {
  * Add or save a product directly to Firestore
  */
 export async function addProductToFirestore(product: Product): Promise<void> {
+  const globalSettings = await getGlobalSettings();
+  const rate = globalSettings.usdToBifRate || 2850;
+  const calculatedPriceBIF = Math.round((product.priceUSD || 0) * rate);
+
   const cleaned: Product = removeUndefinedFields({
     ...product,
+    priceBIF: calculatedPriceBIF,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
@@ -391,12 +420,20 @@ export async function updateProductInFirestore(
   productId: string,
   updates: Partial<Product>
 ): Promise<void> {
+  const globalSettings = await getGlobalSettings();
+  const rate = globalSettings.usdToBifRate || 2850;
+
   // 1. Immediately update local storage
   const current = getStoredItems<Product>(PRODUCTS_STORAGE_KEY, BOUTIQUE_PRODUCTS);
   const existing = current.find((p) => p.id === productId) || BOUTIQUE_PRODUCTS.find((p) => p.id === productId) || { id: productId, name: '', description: '', price: 0, category: 'All', images: [] } as unknown as Product;
+
+  const targetPriceUSD = updates.priceUSD !== undefined ? updates.priceUSD : existing.priceUSD;
+  const calculatedPriceBIF = Math.round((targetPriceUSD || 0) * rate);
+
   const cleanedUpdates: Product = removeUndefinedFields({
     ...existing,
     ...updates,
+    priceBIF: calculatedPriceBIF,
     id: productId,
     updatedAt: new Date().toISOString(),
   });

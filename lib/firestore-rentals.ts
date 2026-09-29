@@ -192,7 +192,11 @@ export const INITIAL_RENTAL_CATEGORIES: RentalCategory[] = [
   },
 ];
 
-export const INITIAL_RENTAL_ITEMS: RentalItem[] = [
+export const INITIAL_RENTAL_ITEMS: RentalItem[] = [];
+
+/*
+// STATIC RENTAL ITEMS COMMENTED OUT - Loaded strictly from Firestore database
+export const STATIC_INITIAL_RENTAL_ITEMS: RentalItem[] = [
   {
     id: 'item-dianne',
     name: 'Chemise Dianne',
@@ -656,6 +660,7 @@ export const INITIAL_RENTAL_ITEMS: RentalItem[] = [
     createdAt: new Date().toISOString(),
   },
 ];
+*/
 
 export const RENTAL_CATEGORIES_STORAGE_KEY = 'elimi_rental_categories_storage';
 export const RENTAL_CATEGORIES_SYNC_EVENT = 'elimi_sync_rental_categories';
@@ -727,21 +732,26 @@ export function useRealtimeRentalCategories() {
 }
 
 export function useRealtimeRentalItems() {
-  const [items, setItems] = useState<RentalItem[]>(INITIAL_RENTAL_ITEMS);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [items, setItems] = useState<RentalItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
     // 1. Hydrate storage on mount
     queueMicrotask(() => {
-      const stored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
-      setItems(stored);
+      const stored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, []);
+      if (stored && stored.length > 0) {
+        setItems(stored);
+        setLoading(false);
+      }
     });
 
     // 2. Custom sync event listener
     const handleSync = () => {
-      const updated = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
+      const updated = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, []);
       setItems(updated);
+      setLoading(false);
     };
 
     window.addEventListener(RENTAL_ITEMS_SYNC_EVENT, handleSync);
@@ -763,20 +773,24 @@ export function useRealtimeRentalItems() {
             saveStoredItems(RENTAL_ITEMS_STORAGE_KEY, list);
             setItems(list);
             setIsLive(true);
+            setError(null);
           } else {
-            const stored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
+            const stored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, []);
             setItems(stored);
           }
           setLoading(false);
         },
-        (error) => {
-          console.warn('Rental items snapshot note (using cache):', error?.message || error);
-          setItems(getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS));
+        (err) => {
+          console.warn('Rental items snapshot note (using cache):', err?.message || err);
+          setError(err instanceof Error ? err : new Error(String(err)));
+          setItems(getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, []));
           setLoading(false);
         }
       );
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Firestore subscription note:', err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+      setLoading(false);
     }
 
     return () => {
@@ -786,18 +800,17 @@ export function useRealtimeRentalItems() {
     };
   }, []);
 
-  return { items, loading, isLive };
+  return { items, loading, error, isLive };
 }
 
 /**
  * Hook to subscribe in real-time to a single rental item document by ID.
+ * Strictly from database - no static fallback.
  */
 export function useRealtimeRentalItem(itemId: string) {
-  const [item, setItem] = useState<RentalItem | null>(() => {
-    if (!itemId) return null;
-    return INITIAL_RENTAL_ITEMS.find((i) => i.id === itemId) || null;
-  });
+  const [item, setItem] = useState<RentalItem | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
@@ -811,17 +824,21 @@ export function useRealtimeRentalItem(itemId: string) {
 
     // Check stored items on mount
     queueMicrotask(() => {
-      const stored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
-      const foundStored = stored.find((i) => i.id === itemId) || INITIAL_RENTAL_ITEMS.find((i) => i.id === itemId);
+      const stored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, []);
+      const foundStored = stored.find((i) => i.id === itemId);
       if (foundStored) {
         setItem(foundStored);
+        setLoading(false);
       }
     });
 
     const handleSync = () => {
-      const latestStored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
+      const latestStored = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, []);
       const matched = latestStored.find((i) => i.id === itemId);
-      if (matched) setItem(matched);
+      if (matched) {
+        setItem(matched);
+        setLoading(false);
+      }
     };
 
     window.addEventListener(RENTAL_ITEMS_SYNC_EVENT, handleSync);
@@ -840,8 +857,9 @@ export function useRealtimeRentalItem(itemId: string) {
             };
             setItem(liveDoc);
             setIsLive(true);
+            setError(null);
           } else {
-            const latest = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, INITIAL_RENTAL_ITEMS);
+            const latest = getStoredItems<RentalItem>(RENTAL_ITEMS_STORAGE_KEY, []);
             const found = latest.find((i) => i.id === itemId) || null;
             setItem(found);
           }
@@ -849,10 +867,12 @@ export function useRealtimeRentalItem(itemId: string) {
         },
         (err) => {
           console.warn('Firestore single rental item listener note:', err);
+          setError(err instanceof Error ? err : new Error(String(err)));
           setLoading(false);
         }
       );
-    } catch {
+    } catch (err: any) {
+      setError(err instanceof Error ? err : new Error(String(err)));
       queueMicrotask(() => {
         setLoading(false);
       });
@@ -865,7 +885,7 @@ export function useRealtimeRentalItem(itemId: string) {
     };
   }, [itemId]);
 
-  return { item, loading, isLive };
+  return { item, loading, error, isLive };
 }
 
 function removeUndefinedFields<T extends Record<string, any>>(obj: T): T {

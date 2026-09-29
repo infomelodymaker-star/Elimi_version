@@ -63,7 +63,11 @@ const DEFAULT_PHOTOS = [
   'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800'
 ];
 
-export const SAMPLE_HOUSES: House[] = [
+export const SAMPLE_HOUSES: House[] = [];
+
+/*
+// STATIC HOUSES COMMENTED OUT - Loaded strictly from Firestore database
+export const STATIC_SAMPLE_HOUSES: House[] = [
   {
     id: 'house-1',
     title: 'Luxury Villa in Kiriri Hills',
@@ -240,67 +244,51 @@ export const SAMPLE_HOUSES: House[] = [
     imageUrl: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=800',
   }
 ];
+*/
 
 export const HOUSES_COLLECTION = 'houses';
 
 let isSeedingInProgress = false;
 
 export async function forceUpdateHousesSchema(): Promise<boolean> {
-  if (isSeedingInProgress) return false;
-  try {
-    isSeedingInProgress = true;
-    console.log('Syncing houses schema in Firestore...');
-    const batch = writeBatch(db);
-    for (const house of SAMPLE_HOUSES) {
-      const docRef = doc(db, HOUSES_COLLECTION, house.id);
-      batch.set(docRef, {
-        ...house,
-        updatedAt: new Date().toISOString(),
-      }, { merge: true });
-    }
-    await batch.commit();
-    console.log('Successfully updated houses schema in Firestore');
-    isSeedingInProgress = false;
-    return true;
-  } catch (err: any) {
-    if (err?.code === 'permission-denied' || err?.message?.includes('Missing or insufficient permissions')) {
-      console.warn('[Firestore] Houses schema write requires authenticated admin privileges.');
-    } else {
-      console.warn('[Firestore] Note updating houses schema:', err?.message || err);
-    }
-    isSeedingInProgress = false;
-    return false;
-  }
+  return true;
 }
 
 export const HOUSES_STORAGE_KEY = 'elimi_houses_storage';
 export const HOUSES_SYNC_EVENT = 'elimi_sync_houses';
 
 export function useRealtimeHouses() {
-  const [houses, setHouses] = useState<House[]>(SAMPLE_HOUSES);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [houses, setHouses] = useState<House[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
     // 1. Initial stored items loaded on mount to prevent SSR mismatch
     queueMicrotask(() => {
-      const initialStored = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
-      setHouses(initialStored);
+      const initialStored = getStoredItems<House>(HOUSES_STORAGE_KEY, []);
+      if (initialStored && initialStored.length > 0) {
+        setHouses(initialStored);
+        setLoading(false);
+      }
 
       // Fetch from server catalog to sync across browsers/devices
       fetchServerCatalog<House>('houses').then((serverHouses) => {
         if (serverHouses && serverHouses.length > 0) {
           saveStoredItems(HOUSES_STORAGE_KEY, serverHouses);
           setHouses(serverHouses);
+          setLoading(false);
         }
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn('Server houses fetch error:', err);
+      });
     });
 
     // 2. Listen to custom sync events and storage
     const handleSync = () => {
-      const updated = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
+      const updated = getStoredItems<House>(HOUSES_STORAGE_KEY, []);
       setHouses(updated);
+      setLoading(false);
     };
 
     window.addEventListener(HOUSES_SYNC_EVENT, handleSync);
@@ -326,21 +314,25 @@ export function useRealtimeHouses() {
             saveStoredItems(HOUSES_STORAGE_KEY, liveHouses);
             setHouses(liveHouses);
             setIsLive(true);
+            setError(null);
           } else {
-            // Firestore collection is currently empty; keep stored or default houses without writing
-            const stored = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
+            // Firestore collection is currently empty; no fallback static houses
+            const stored = getStoredItems<House>(HOUSES_STORAGE_KEY, []);
             setHouses(stored);
           }
           setLoading(false);
         },
         (err) => {
           console.warn('Firestore onSnapshot note (using cache):', err?.message || err);
-          setHouses(getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES));
+          setError(err instanceof Error ? err : new Error(String(err)));
+          setHouses(getStoredItems<House>(HOUSES_STORAGE_KEY, []));
           setLoading(false);
         }
       );
     } catch (err: any) {
       console.warn('Firestore houses listener setup note:', err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+      setLoading(false);
     }
 
     return () => {
@@ -355,13 +347,12 @@ export function useRealtimeHouses() {
 
 /**
  * Hook to subscribe in real-time to a single house document by ID.
+ * Strictly from database - no static fallback.
  */
 export function useRealtimeHouse(houseId: string) {
-  const [house, setHouse] = useState<House | null>(() => {
-    if (!houseId) return null;
-    return SAMPLE_HOUSES.find((h) => h.id === houseId) || null;
-  });
+  const [house, setHouse] = useState<House | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
@@ -375,17 +366,21 @@ export function useRealtimeHouse(houseId: string) {
 
     // Check stored items on mount
     queueMicrotask(() => {
-      const stored = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
-      const foundStored = stored.find((h) => h.id === houseId) || SAMPLE_HOUSES.find((h) => h.id === houseId);
+      const stored = getStoredItems<House>(HOUSES_STORAGE_KEY, []);
+      const foundStored = stored.find((h) => h.id === houseId);
       if (foundStored) {
         setHouse(foundStored);
+        setLoading(false);
       }
     });
 
     const handleSync = () => {
-      const latestStored = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
+      const latestStored = getStoredItems<House>(HOUSES_STORAGE_KEY, []);
       const matched = latestStored.find((h) => h.id === houseId);
-      if (matched) setHouse(matched);
+      if (matched) {
+        setHouse(matched);
+        setLoading(false);
+      }
     };
 
     window.addEventListener(HOUSES_SYNC_EVENT, handleSync);
@@ -404,8 +399,9 @@ export function useRealtimeHouse(houseId: string) {
             };
             setHouse(liveDoc);
             setIsLive(true);
+            setError(null);
           } else {
-            const latest = getStoredItems<House>(HOUSES_STORAGE_KEY, SAMPLE_HOUSES);
+            const latest = getStoredItems<House>(HOUSES_STORAGE_KEY, []);
             const found = latest.find((h) => h.id === houseId) || null;
             setHouse(found);
           }
@@ -413,10 +409,12 @@ export function useRealtimeHouse(houseId: string) {
         },
         (err) => {
           console.warn('Firestore single house listener note:', err);
+          setError(err instanceof Error ? err : new Error(String(err)));
           setLoading(false);
         }
       );
-    } catch {
+    } catch (err: any) {
+      setError(err instanceof Error ? err : new Error(String(err)));
       queueMicrotask(() => {
         setLoading(false);
       });
@@ -429,7 +427,7 @@ export function useRealtimeHouse(houseId: string) {
     };
   }, [houseId]);
 
-  return { house, loading, isLive };
+  return { house, loading, error, isLive };
 }
 
 function removeUndefinedFields<T extends Record<string, any>>(obj: T): T {

@@ -66,7 +66,11 @@ const DEFAULT_CAR_PHOTOS = [
   'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=800'
 ];
 
-export const SAMPLE_CARS: Car[] = [
+export const SAMPLE_CARS: Car[] = [];
+
+/*
+// STATIC CARS COMMENTED OUT - Loaded strictly from Firestore database
+export const STATIC_SAMPLE_CARS: Car[] = [
   {
     id: 'car-1',
     title: 'Mercedes-Benz V-Class VIP Edition',
@@ -244,67 +248,51 @@ export const SAMPLE_CARS: Car[] = [
     imageUrl: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=800',
   }
 ];
+*/
 
 export const CARS_COLLECTION = 'cars';
 
 let isCarSeedingInProgress = false;
 
 export async function forceUpdateCarsSchema(): Promise<boolean> {
-  if (isCarSeedingInProgress) return false;
-  try {
-    isCarSeedingInProgress = true;
-    console.log('Syncing cars schema in Firestore...');
-    const batch = writeBatch(db);
-    for (const car of SAMPLE_CARS) {
-      const docRef = doc(db, CARS_COLLECTION, car.id);
-      batch.set(docRef, {
-        ...car,
-        updatedAt: new Date().toISOString(),
-      }, { merge: true });
-    }
-    await batch.commit();
-    console.log('Successfully updated cars schema in Firestore');
-    isCarSeedingInProgress = false;
-    return true;
-  } catch (err: any) {
-    if (err?.code === 'permission-denied' || err?.message?.includes('Missing or insufficient permissions')) {
-      console.warn('[Firestore] Cars schema write requires authenticated admin privileges.');
-    } else {
-      console.warn('[Firestore] Note updating cars schema:', err?.message || err);
-    }
-    isCarSeedingInProgress = false;
-    return false;
-  }
+  return true;
 }
 
 export const CARS_STORAGE_KEY = 'elimi_cars_storage';
 export const CARS_SYNC_EVENT = 'elimi_sync_cars';
 
 export function useRealtimeCars() {
-  const [cars, setCars] = useState<Car[]>(SAMPLE_CARS);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [cars, setCars] = useState<Car[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
     // 1. Initial stored items loaded on mount to prevent SSR mismatch
     queueMicrotask(() => {
-      const initialStored = getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS);
-      setCars(initialStored);
+      const initialStored = getStoredItems<Car>(CARS_STORAGE_KEY, []);
+      if (initialStored && initialStored.length > 0) {
+        setCars(initialStored);
+        setLoading(false);
+      }
 
       // Fetch from server catalog to sync across browsers/devices
       fetchServerCatalog<Car>('cars').then((serverCars) => {
         if (serverCars && serverCars.length > 0) {
           saveStoredItems(CARS_STORAGE_KEY, serverCars);
           setCars(serverCars);
+          setLoading(false);
         }
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn('Server cars fetch error:', err);
+      });
     });
 
     // 2. Listen to custom sync events and storage
     const handleSync = () => {
-      const updated = getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS);
+      const updated = getStoredItems<Car>(CARS_STORAGE_KEY, []);
       setCars(updated);
+      setLoading(false);
     };
 
     window.addEventListener(CARS_SYNC_EVENT, handleSync);
@@ -330,21 +318,25 @@ export function useRealtimeCars() {
             saveStoredItems(CARS_STORAGE_KEY, liveCars);
             setCars(liveCars);
             setIsLive(true);
+            setError(null);
           } else {
-            // Firestore collection is currently empty; keep stored or default cars without writing
-            const stored = getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS);
+            // Firestore collection is currently empty; no fallback static cars
+            const stored = getStoredItems<Car>(CARS_STORAGE_KEY, []);
             setCars(stored);
           }
           setLoading(false);
         },
         (err) => {
           console.warn('Firestore onSnapshot note (using cache):', err?.message || err);
-          setCars(getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS));
+          setError(err instanceof Error ? err : new Error(String(err)));
+          setCars(getStoredItems<Car>(CARS_STORAGE_KEY, []));
           setLoading(false);
         }
       );
     } catch (err: any) {
       console.warn('Firestore cars listener setup note:', err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+      setLoading(false);
     }
 
     return () => {
@@ -359,13 +351,12 @@ export function useRealtimeCars() {
 
 /**
  * Hook to subscribe in real-time to a single car document by ID.
+ * Strictly from database - no static fallback.
  */
 export function useRealtimeCar(carId: string) {
-  const [car, setCar] = useState<Car | null>(() => {
-    if (!carId) return null;
-    return SAMPLE_CARS.find((c) => c.id === carId) || null;
-  });
+  const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
 
   useEffect(() => {
@@ -379,17 +370,21 @@ export function useRealtimeCar(carId: string) {
 
     // Check stored items on mount
     queueMicrotask(() => {
-      const stored = getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS);
-      const foundStored = stored.find((c) => c.id === carId) || SAMPLE_CARS.find((c) => c.id === carId);
+      const stored = getStoredItems<Car>(CARS_STORAGE_KEY, []);
+      const foundStored = stored.find((c) => c.id === carId);
       if (foundStored) {
         setCar(foundStored);
+        setLoading(false);
       }
     });
 
     const handleSync = () => {
-      const latestStored = getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS);
+      const latestStored = getStoredItems<Car>(CARS_STORAGE_KEY, []);
       const matched = latestStored.find((c) => c.id === carId);
-      if (matched) setCar(matched);
+      if (matched) {
+        setCar(matched);
+        setLoading(false);
+      }
     };
 
     window.addEventListener(CARS_SYNC_EVENT, handleSync);
@@ -408,8 +403,9 @@ export function useRealtimeCar(carId: string) {
             };
             setCar(liveDoc);
             setIsLive(true);
+            setError(null);
           } else {
-            const latest = getStoredItems<Car>(CARS_STORAGE_KEY, SAMPLE_CARS);
+            const latest = getStoredItems<Car>(CARS_STORAGE_KEY, []);
             const found = latest.find((c) => c.id === carId) || null;
             setCar(found);
           }
@@ -417,10 +413,12 @@ export function useRealtimeCar(carId: string) {
         },
         (err) => {
           console.warn('Firestore single car listener note:', err);
+          setError(err instanceof Error ? err : new Error(String(err)));
           setLoading(false);
         }
       );
-    } catch {
+    } catch (err: any) {
+      setError(err instanceof Error ? err : new Error(String(err)));
       queueMicrotask(() => {
         setLoading(false);
       });
@@ -433,7 +431,7 @@ export function useRealtimeCar(carId: string) {
     };
   }, [carId]);
 
-  return { car, loading, isLive };
+  return { car, loading, error, isLive };
 }
 
 function removeUndefinedFields<T extends Record<string, any>>(obj: T): T {

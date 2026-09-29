@@ -105,10 +105,10 @@ export default function AllocationItemDetailPage() {
   const { items } = useRealtimeRentalItems();
   const { whatsappNumber } = useSettings();
 
-  // Find requested item with fallback if needed
+  // Find requested item strictly without fallback
   const item: RentalItem | undefined = useMemo(() => {
     if (liveItem) return liveItem;
-    return items.find((i) => i.id === itemId) || (items.length > 0 ? items[0] : undefined);
+    return items.find((i) => i.id === itemId);
   }, [liveItem, items, itemId]);
 
   // Gallery Photos (2x2 grid matching image.png)
@@ -291,35 +291,38 @@ export default function AllocationItemDetailPage() {
   if (loadingItems && !item) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center">
-        <div className="w-8 h-8 border-2 border-neutral-300 border-t-[#0D52FF] rounded-full animate-spin"></div>
-        <p className="mt-3 text-xs text-neutral-500 font-serif">Chargement...</p>
+        <ElimiHeader />
+        <div className="flex-1 flex flex-col items-center justify-center py-20 space-y-3">
+          <div className="w-8 h-8 border-2 border-neutral-300 border-t-[#0D52FF] rounded-full animate-spin"></div>
+          <p className="text-xs text-neutral-500 font-serif">Chargement de l&apos;article...</p>
+        </div>
       </div>
     );
   }
 
-  // Fallback Item if database is empty
-  const currentItem: RentalItem = item || {
-    id: 'item-dianne',
-    name: 'Chemise Dianne',
-    brand: 'Musy Muse',
-    categoryId: 'cat-bureau',
-    categoryName: 'Tenues de bureau',
-    pricePerDay: 69,
-    priceBIF: 207000,
-    originalPrice: 280,
-    originalPriceBIF: 840000,
-    badge: 'Populaire',
-    reviewsCount: 72,
-    rating: 5,
-    sizes: ['S/M', 'M/L', 'L/XL'],
-    description:
-      'Portez cette chemise avec un jean taille haute et des bottines pour un look cosy et tendance cet...',
-    details:
-      'Composition : 100% Coton biologique. Coupe décontractée avec broderies contrastées en fil de coton rouge. Nettoyage à sec écoresponsable certifié.',
-    imageUrl: photos[0],
-    gallery: photos,
-    available: true,
-  };
+  // Not Found State when database has no matching item
+  if (!item) {
+    return (
+      <div className="min-h-screen bg-white text-neutral-900 font-sans">
+        <ElimiHeader />
+        <main className="max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
+          <h2 className="text-2xl font-bold text-neutral-900">Article de location introuvable</h2>
+          <p className="text-sm text-neutral-500 max-w-md mx-auto">
+            Cet article n&apos;est plus disponible ou a été retiré du catalogue.
+          </p>
+          <Link
+            href="/allocations"
+            className="inline-flex items-center gap-2 bg-[#0D52FF] hover:bg-blue-700 text-white font-bold text-xs py-3 px-6 rounded-full transition-all"
+          >
+            <span>Voir tout le catalogue de location</span>
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </main>
+      </div>
+    );
+  }
+
+  const currentItem: RentalItem = item;
 
   return (
     <div className="min-h-screen bg-white text-neutral-900 font-sans antialiased selection:bg-[#0D52FF] selection:text-white">

@@ -48,7 +48,7 @@ export default function ProductGrid({
   onSelectProduct,
 }: ProductGridProps) {
   const router = useRouter();
-  const { products: realtimeProducts, loading: isLoadingFirestore, isLive } = useRealtimeProducts();
+  const { products: realtimeProducts, loading: isLoadingFirestore, error: firestoreError, isLive } = useRealtimeProducts();
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('All');
 
   const [sortBy, setSortBy] = useState<'featured' | 'price-low' | 'price-high' | 'rating'>('featured');
@@ -56,7 +56,8 @@ export default function ProductGrid({
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   
   // Sidebar Filter States matching reference picture
-  const [maxPrice, setMaxPrice] = useState<number>(2500000);
+  const DEFAULT_MAX_PRICE = 10000000;
+  const [maxPrice, setMaxPrice] = useState<number>(DEFAULT_MAX_PRICE);
   const [currency, setCurrency] = useState<'BIF' | 'USD'>('BIF');
   const [stockLocation, setStockLocation] = useState<string>('All Locations');
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
@@ -92,6 +93,8 @@ export default function ProductGrid({
   }, [showMobileFilters]);
 
   // Infinite Scroll pagination states
+  const INITIAL_PAGE_SIZE = 8;
+  const BATCH_SIZE = 8;
   const [extraItemsLoaded, setExtraItemsLoaded] = useState<number>(0);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -104,12 +107,13 @@ export default function ProductGrid({
     setExtraItemsLoaded(0);
   }
 
-  const visibleCount = 8 + extraItemsLoaded;
+  // Display initial batch + dynamically loaded batches
+  const visibleCount = INITIAL_PAGE_SIZE + extraItemsLoaded;
 
   const handleResetFilters = () => {
     setSelectedCategory('All');
     setSelectedSubCategory('All');
-    setMaxPrice(2500000);
+    setMaxPrice(DEFAULT_MAX_PRICE);
     setCurrency('BIF');
     setStockLocation('All Locations');
     setExtraItemsLoaded(0);
@@ -122,39 +126,47 @@ export default function ProductGrid({
 
   const { toBIF, formatBIF } = useCurrency();
 
-  // Filter & Sort real-time products from Firestore
+  // Filter & Sort real-time products strictly from Firestore database (no static fallback)
+  // All BIF prices are consistently computed using toBIF(priceUSD) via currency rate settings
   const filteredProducts = useMemo(() => {
-    const rawProducts = realtimeProducts && realtimeProducts.length > 0 ? realtimeProducts : BOUTIQUE_PRODUCTS;
-    const sourceProducts = rawProducts.map(p => ({ ...p, priceBIF: toBIF(p.priceUSD) }));
+    const rawProducts = realtimeProducts || [];
+    const sourceProducts = rawProducts.map(p => ({
+      ...p,
+      priceBIF: toBIF(p.priceUSD || 0),
+    }));
     return sourceProducts.filter((product) => {
+      const pCat = (product.category || '').toLowerCase().trim();
+      const sCat = (selectedCategory || '').toLowerCase().trim();
       const matchesCategory =
-        selectedCategory === 'All' || product.category === selectedCategory;
+        sCat === 'all' || sCat === '' || pCat === sCat;
 
+      const pSub = (product.subCategory || '').toLowerCase().trim();
+      const sSub = (selectedSubCategory || '').toLowerCase().trim();
       const matchesSubCategory =
-        !selectedSubCategory ||
-        selectedSubCategory === 'All' ||
-        product.subCategory === selectedSubCategory;
+        !sSub ||
+        sSub === 'all' ||
+        pSub === sSub;
 
       const query = searchQuery.toLowerCase().trim();
       const matchesSearch =
         !query ||
-        product.name.toLowerCase().includes(query) ||
-        product.description.toLowerCase().includes(query) ||
-        product.seller.toLowerCase().includes(query);
+        (product.name && product.name.toLowerCase().includes(query)) ||
+        (product.description && product.description.toLowerCase().includes(query)) ||
+        (product.seller && product.seller.toLowerCase().includes(query));
       
-      const matchesPrice = product.priceBIF <= maxPrice;
+      const matchesPrice = maxPrice >= DEFAULT_MAX_PRICE || product.priceBIF <= maxPrice;
 
       const matchesLocation =
         stockLocation === 'All Locations' ||
-        (stockLocation === 'Bujumbura' && product.seller.toLowerCase().includes('bujumbura')) ||
-        (stockLocation === 'Gitega' && product.seller.toLowerCase().includes('gitega')) ||
-        (stockLocation === 'Diaspora Direct' && !product.seller.toLowerCase().includes('bujumbura') && !product.seller.toLowerCase().includes('gitega'));
+        (stockLocation === 'Bujumbura' && product.seller && product.seller.toLowerCase().includes('bujumbura')) ||
+        (stockLocation === 'Gitega' && product.seller && product.seller.toLowerCase().includes('gitega')) ||
+        (stockLocation === 'Diaspora Direct' && product.seller && !product.seller.toLowerCase().includes('bujumbura') && !product.seller.toLowerCase().includes('gitega'));
 
       return (product.active !== false) && matchesCategory && matchesSubCategory && matchesSearch && matchesPrice && matchesLocation;
     }).sort((a, b) => {
       if (sortBy === 'price-low') return a.priceBIF - b.priceBIF;
       if (sortBy === 'price-high') return b.priceBIF - a.priceBIF;
-      if (sortBy === 'rating') return b.rating - a.rating;
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
       return 0; // default featured
     });
   }, [realtimeProducts, searchQuery, selectedCategory, selectedSubCategory, maxPrice, stockLocation, sortBy, toBIF]);
@@ -170,12 +182,12 @@ export default function ProductGrid({
         if (first.isIntersecting && !isLoadingMore && visibleCount < filteredProducts.length) {
           setIsLoadingMore(true);
           setTimeout(() => {
-            setExtraItemsLoaded((prev) => prev + 4);
+            setExtraItemsLoaded((prev) => prev + BATCH_SIZE);
             setIsLoadingMore(false);
-          }, 500);
+          }, 350);
         }
       },
-      { threshold: 0.1, rootMargin: '200px' }
+      { threshold: 0.1, rootMargin: '300px' }
     );
 
     observer.observe(observerElement);
@@ -183,6 +195,15 @@ export default function ProductGrid({
       observer.unobserve(observerElement);
     };
   }, [visibleCount, filteredProducts.length, isLoadingMore]);
+
+  const handleManualLoadMore = () => {
+    if (isLoadingMore || visibleCount >= filteredProducts.length) return;
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setExtraItemsLoaded((prev) => prev + BATCH_SIZE);
+      setIsLoadingMore(false);
+    }, 300);
+  };
 
   const displayedProducts = useMemo(() => {
     return filteredProducts.slice(0, visibleCount);
@@ -328,21 +349,56 @@ export default function ProductGrid({
 
         {/* Right Panel: Products Catalog */}
         <div className="flex-1 min-w-0 w-full">
-          {filteredProducts.length === 0 ? (
+          {isLoadingFirestore && filteredProducts.length === 0 ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#0D52FF] bg-[#F0F4FF] px-4 py-2 rounded-xl w-fit">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Chargement des produits depuis Firestore...</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-4 border border-slate-200/80 animate-pulse space-y-3">
+                    <div className="w-full h-40 bg-slate-100 rounded-xl" />
+                    <div className="h-3 w-1/3 bg-slate-200 rounded" />
+                    <div className="h-4 w-4/5 bg-slate-200 rounded" />
+                    <div className="h-4 w-1/2 bg-slate-200 rounded" />
+                    <div className="h-8 w-full bg-slate-100 rounded-xl mt-2" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : firestoreError && filteredProducts.length === 0 ? (
+            <div className="bg-white rounded-3xl p-12 text-center border border-red-200 space-y-3 font-sans">
+              <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 mx-auto flex items-center justify-center">
+                <RotateCcw className="w-6 h-6" />
+              </div>
+              <h3 className="font-serif text-lg font-bold text-[#181B25]">Erreur de chargement des produits</h3>
+              <p className="text-xs text-[#525866] max-w-md mx-auto">
+                Impossible de récupérer les articles depuis la base de données. Veuillez rafraîchir la page ou réessayer.
+              </p>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="mt-2 bg-[#0D52FF] text-white text-xs font-bold py-2.5 px-6 rounded-full shadow-xs hover:bg-[#0B44D8] transition-all cursor-pointer"
+              >
+                Réessayer
+              </button>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="bg-white rounded-3xl p-12 text-center border border-slate-200/60 space-y-3 font-sans">
               <div className="w-12 h-12 rounded-full bg-[#0D52FF]/10 text-[#0D52FF] mx-auto flex items-center justify-center">
                 <Filter className="w-6 h-6" />
               </div>
-              <h3 className="font-serif text-lg font-bold text-[#181B25]">No matching products found</h3>
+              <h3 className="font-serif text-lg font-bold text-[#181B25]">Aucun produit disponible</h3>
               <p className="text-xs text-[#525866] max-w-md mx-auto">
-                Try expanding your price range, clearing location filter, or choosing another category.
+                Aucun produit ne correspond à vos filtres actuels ou aucun article n&apos;a été ajouté dans la boutique.
               </p>
               <button
                 type="button"
                 onClick={handleResetFilters}
                 className="mt-2 bg-[#0D52FF] text-white text-xs font-bold py-2.5 px-6 rounded-full shadow-xs hover:bg-[#0B44D8] transition-all cursor-pointer"
               >
-                Reset All Filters
+                Réinitialiser les filtres
               </button>
             </div>
           ) : (
@@ -472,11 +528,20 @@ export default function ProductGrid({
 
               {/* Infinite Scroll Sentinel & Loader */}
               {visibleCount < filteredProducts.length && (
-                <div ref={observerRef} className="py-8 flex flex-col items-center justify-center space-y-2 font-sans">
+                <div ref={observerRef} className="py-8 flex flex-col items-center justify-center space-y-3 font-sans">
                   <div className="flex items-center gap-2 text-xs font-bold text-[#0D52FF] bg-[#F0F4FF] px-4 py-2.5 rounded-full border border-blue-200/80 shadow-2xs">
                     <Loader2 className="w-4 h-4 animate-spin text-[#0D52FF]" />
-                    <span>Loading more boutique products...</span>
+                    <span>Loading more boutique products ({displayedProducts.length} of {filteredProducts.length})...</span>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={handleManualLoadMore}
+                    disabled={isLoadingMore}
+                    className="text-xs font-semibold text-slate-500 hover:text-[#0D52FF] underline cursor-pointer"
+                  >
+                    Click here if products don&apos;t load automatically
+                  </button>
                 </div>
               )}
 

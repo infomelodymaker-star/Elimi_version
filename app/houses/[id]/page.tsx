@@ -9,6 +9,7 @@ import ImageLightboxModal from '@/components/ImageLightboxModal';
 import { useRealtimeHouse, useRealtimeHouses } from '@/lib/firestore-houses';
 import { useSettings } from '@/components/SettingsProvider';
 import { formatWhatsAppUrl } from '@/lib/firestore-settings';
+import { createCheckoutOrder, generateClientWhatsAppGreetingUrl } from '@/lib/firestore-orders';
 import {
   Bed,
   Bath,
@@ -22,7 +23,8 @@ import {
   ChevronRight,
   Home as HomeIcon,
   Images,
-  MessageCircle
+  MessageCircle,
+  Loader2,
 } from 'lucide-react';
 
 export default function HouseDetailPage() {
@@ -34,6 +36,54 @@ export default function HouseDetailPage() {
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
+
+  const handleHouseInquiry = async (unitId?: string, isRent?: boolean) => {
+    if (!house || isSubmittingInquiry) return;
+    setIsSubmittingInquiry(true);
+    try {
+      const priceUSD = isRent ? (house.rentPrice || 1500) : (house.price || 150000);
+      const priceBIF = isRent ? (house.rentPriceBIF ?? priceUSD * 3000) : (house.priceBIF ?? priceUSD * 3000);
+      const orderPayload = {
+        items: [
+          {
+            productId: house.id,
+            name: `${house.title}${unitId ? ` (Unité: ${unitId})` : ''}`,
+            image: house.imageUrl || '',
+            priceUSD: priceUSD,
+            priceBIF: priceBIF,
+            quantity: 1,
+            selectedSize: unitId || (isRent ? 'Location' : 'Achat'),
+            shippingCostUSD: 0,
+            shippingCostBIF: 0,
+          },
+        ],
+        deliveryMethod: 'pickup' as const,
+        deliveryCostUSD: 0,
+        deliveryCostBIF: 0,
+        subtotalUSD: priceUSD,
+        subtotalBIF: priceBIF,
+        discountUSD: 0,
+        discountBIF: 0,
+        totalUSD: priceUSD,
+        totalBIF: priceBIF,
+        customerNotes: `Demande immobilier: ${house.title} | Type: ${isRent ? 'Location' : 'Achat'}${unitId ? ` | Unité: ${unitId}` : ''}`,
+      };
+
+      const result = await createCheckoutOrder(orderPayload);
+      const url = result.success && result.orderId
+        ? generateClientWhatsAppGreetingUrl(result.orderId, whatsappNumber, result.order)
+        : formatWhatsAppUrl(whatsappNumber, 'Bonjour ELIMI ! Je souhaite visiter une propriété.');
+
+      if (typeof window !== 'undefined') {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err) {
+      console.error('House inquiry error:', err);
+    } finally {
+      setIsSubmittingInquiry(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -147,18 +197,19 @@ export default function HouseDetailPage() {
                   <div className="text-xs uppercase tracking-wider text-gray-500 mb-4 font-semibold">
                     {house.rent ? 'Monthly Lease Rate' : 'Outright Purchase Price'}
                   </div>
-                  <a
-                    href={formatWhatsAppUrl(
-                      whatsappNumber,
-                      `Hello ELIMI Real Estate! 👋\n\nI would like to inquire / schedule a private tour for the property:\n• Property: ${house.title}\n• Address: ${house.address || 'Bujumbura, Burundi'}\n• Listing Type: ${house.rent ? 'Lease / Long-term Rent' : 'Outright Purchase'}\n• Pricing: ${house.rentPrice ? `$${Number(house.rentPrice || 0).toLocaleString()}/mo` : `$${Number(house.price || 0).toLocaleString()}`}\n• Bedrooms / Baths: ${house.bedrooms || 0} Beds / ${house.bathrooms || 0} Baths\n\nPlease let me know the tour schedule and application procedure.`
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-[#0D52FF] text-white px-6 py-3 rounded-xl text-xs sm:text-sm font-medium hover:bg-[#0b45d6] transition-colors shadow-sm text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                  <button
+                    type="button"
+                    onClick={() => handleHouseInquiry(undefined, house.rent)}
+                    disabled={isSubmittingInquiry}
+                    className="bg-[#0D52FF] text-white px-6 py-3 rounded-xl text-xs sm:text-sm font-medium hover:bg-[#0b45d6] transition-colors shadow-sm text-center flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-75"
                   >
-                    <MessageCircle className="w-4 h-4" />
+                    {isSubmittingInquiry ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <MessageCircle className="w-4 h-4" />
+                    )}
                     <span>Inquire / Schedule Tour</span>
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -189,19 +240,16 @@ export default function HouseDetailPage() {
                       </div>
                     </div>
                     <div className="w-full sm:w-1/4 sm:text-right">
-                      <a
-                        href={formatWhatsAppUrl(
-                          whatsappNumber,
-                          `Hello ELIMI Real Estate! 👋\n\nI would like to make a ${house.rent ? 'lease application' : 'purchase inquiry'} for:\n• Property: ${house.title}\n• Option/Unit ID: ${unit.unitId}\n• Availability: ${unit.availableDate}\n• Rate/Price: $${Number(unit.price || 0).toLocaleString()}${house.rent ? '/mo' : ''}\n\nPlease share the lease/purchase requirements and next steps.`
-                        )}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-[#0D52FF] text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#0b45d6] transition-colors w-full sm:w-auto inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                      <button
+                        type="button"
+                        onClick={() => handleHouseInquiry(unit.unitId, house.rent)}
+                        disabled={isSubmittingInquiry}
+                        className="bg-[#0D52FF] text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#0b45d6] transition-colors w-full sm:w-auto inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-75"
                       >
                         <MessageCircle className="w-3.5 h-3.5" />
                         <span>{house.rent ? 'Apply to Lease' : 'Purchase Inquire'}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
-                      </a>
+                      </button>
                     </div>
                   </div>
                 ))}

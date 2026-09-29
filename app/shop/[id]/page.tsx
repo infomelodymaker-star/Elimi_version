@@ -97,23 +97,25 @@ export default function ProductDetailPage({ params }: PageProps) {
   const { product: liveProduct, loading: isProductLoading, isLive } = useRealtimeProduct(productId);
   const { products: allRealtimeProducts } = useRealtimeProducts();
   
-  const product: Product = liveProduct || getProductById(productId) || BOUTIQUE_PRODUCTS[0];
+  const product: Product | null = liveProduct;
   
   // Related products calculated from real-time catalog
-  const relatedProducts = (allRealtimeProducts && allRealtimeProducts.length > 0 ? allRealtimeProducts : BOUTIQUE_PRODUCTS)
-    .filter((p) => p.id !== product.id && p.category === product.category)
+  const relatedProducts = (allRealtimeProducts || [])
+    .filter((p) => product && p.id !== product.id && p.category === product.category)
     .slice(0, 4);
 
   // Gallery Active Image
-  const galleryImages = product.gallery && product.gallery.length > 0
+  const galleryImages = (product?.gallery && product.gallery.length > 0)
     ? product.gallery
-    : [product.image, product.image, product.image];
+    : product?.image
+    ? [product.image, product.image, product.image]
+    : [];
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Size & Color Selector
-  const availableSizes = product.sizes || ['S', 'M', 'L', 'XL', 'XXL'];
+  const availableSizes = product?.sizes && product.sizes.length > 0 ? product.sizes : ['S', 'M', 'L', 'XL', 'XXL'];
   const [selectedSize, setSelectedSize] = useState(availableSizes[0] || 'M');
-  const availableColors = product.colors || [];
+  const availableColors = product?.colors || [];
   const [selectedColor, setSelectedColor] = useState<{ name: string; hex: string } | null>(
     availableColors.length > 0 ? availableColors[0] : null
   );
@@ -121,17 +123,17 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // Sync size/color on product change
   useEffect(() => {
-    if (product.sizes && product.sizes.length > 0) {
+    if (product?.sizes && product.sizes.length > 0) {
       setSelectedSize(product.sizes[0]);
     }
-    if (product.colors && product.colors.length > 0) {
+    if (product?.colors && product.colors.length > 0) {
       setSelectedColor(product.colors[0]);
     } else {
       setSelectedColor(null);
     }
-  }, [product.id]);
+  }, [product?.id]);
 
-  const maxStock = product.stockQuantity !== undefined ? Math.max(1, product.stockQuantity) : 99;
+  const maxStock = product?.stockQuantity !== undefined ? Math.max(1, product.stockQuantity) : 99;
   const isAtStockLimit = selectedQuantity >= maxStock;
   const [showStockBubble, setShowStockBubble] = useState(false);
 
@@ -159,7 +161,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // Reviews Carousel & Real-time Reviews State
   const initialProductReviews =
-    product.reviews && product.reviews.length > 0 ? product.reviews : DEFAULT_FALLBACK_REVIEWS;
+    product?.reviews && product.reviews.length > 0 ? product.reviews : DEFAULT_FALLBACK_REVIEWS;
 
   const {
     reviews: liveReviews,
@@ -168,7 +170,7 @@ export default function ProductDetailPage({ params }: PageProps) {
     ratingFormatted: calculatedRatingFormatted,
     ratingBars: dynamicRatingBars,
     saveReview,
-  } = useRealtimeProductReviews(product.id, initialProductReviews);
+  } = useRealtimeProductReviews(product?.id || productId, initialProductReviews);
 
   const [activeReviewIndex, setActiveReviewIndex] = useState(0);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -188,7 +190,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   const { toBIF, formatBIF, formatUSD } = useCurrency();
   const { whatsappNumber } = useSettings();
-  const productPriceBIF = toBIF(product.priceUSD);
+  const productPriceBIF = toBIF(product?.priceUSD || 0);
 
   // Direct checkout state (triggers loading skeleton)
   const [isDirectCheckingOut, setIsDirectCheckingOut] = useState(false);
@@ -204,9 +206,23 @@ export default function ProductDetailPage({ params }: PageProps) {
     }
   };
 
+  // Delivery option toggle: add delivery cost or pick up at bureau
+  const shippingSummary = product ? getEffectiveShippingCost(product) : { costUSD: 0, costBIF: 0 };
+  const shippingCostUSD = shippingSummary.costUSD;
+  const shippingCostBIF = shippingSummary.costBIF;
+  const [addDeliveryCost, setAddDeliveryCost] = useState(true);
+
+  // Subtotal & Total calculations
+  const itemSubtotalUSD = (product?.priceUSD || 0) * selectedQuantity;
+  const itemSubtotalBIF = productPriceBIF * selectedQuantity;
+  const deliveryCostUSD = addDeliveryCost ? shippingCostUSD : 0;
+  const deliveryCostBIF = addDeliveryCost ? shippingCostBIF : 0;
+  const totalCostUSD = Number((itemSubtotalUSD + deliveryCostUSD).toFixed(2));
+  const totalCostBIF = itemSubtotalBIF + deliveryCostBIF;
+
   // Direct single-product checkout handler via Backend API
   const handleDirectProductCheckout = async () => {
-    if (isDirectCheckingOut) return;
+    if (!product || isDirectCheckingOut) return;
     setIsDirectCheckingOut(true);
 
     try {
@@ -291,20 +307,9 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   const formatTwoDigits = (num: number) => String(num).padStart(2, '0');
 
-  // Delivery option toggle: add delivery cost or pick up at bureau
-  const { costUSD: shippingCostUSD, costBIF: shippingCostBIF } = getEffectiveShippingCost(product);
-  const [addDeliveryCost, setAddDeliveryCost] = useState(true);
-
-  // Subtotal & Total calculations
-  const itemSubtotalUSD = product.priceUSD * selectedQuantity;
-  const itemSubtotalBIF = productPriceBIF * selectedQuantity;
-  const deliveryCostUSD = addDeliveryCost ? shippingCostUSD : 0;
-  const deliveryCostBIF = addDeliveryCost ? shippingCostBIF : 0;
-  const totalCostUSD = Number((itemSubtotalUSD + deliveryCostUSD).toFixed(2));
-  const totalCostBIF = itemSubtotalBIF + deliveryCostBIF;
-
   // Handle Add to Cart using central cart service
   const handleAddToCart = () => {
+    if (!product) return;
     addToCartHelper(product, selectedQuantity, selectedSize, selectedColor?.name);
 
     setAddedAnimation(true);
@@ -330,7 +335,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   // Handle Review submission with Firestore sync
   const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newReviewAuthor.trim() || !newReviewComment.trim() || reviewSaving) return;
+    if (!product || !newReviewAuthor.trim() || !newReviewComment.trim() || reviewSaving) return;
 
     setReviewSaving(true);
     const newRev: ProductReview = {
@@ -359,13 +364,54 @@ export default function ProductDetailPage({ params }: PageProps) {
   };
 
   const currentReview = customReviews[activeReviewIndex] || customReviews[0];
-
   const ratingBars = dynamicRatingBars;
 
-  const colorPart = selectedColor ? `, Color: ${selectedColor.name}` : '';
-  const whatsappMessage = addDeliveryCost
-    ? `Hello ELIMI Boutique, I am interested in purchasing "${product.name}" (Qty: ${selectedQuantity}, Size: ${selectedSize}${colorPart}).\n• Delivery: Home Delivery (+${shippingCostUSD.toFixed(2)} USD / ${shippingCostBIF.toLocaleString()} BIF)\n• Total to pay: $${totalCostUSD.toFixed(2)} USD (${totalCostBIF.toLocaleString()} BIF).\nPlease confirm availability and delivery location!`
-    : `Hello ELIMI Boutique, I am interested in purchasing "${product.name}" (Qty: ${selectedQuantity}, Size: ${selectedSize}${colorPart}).\n• Delivery: Personal Pick Up at Bureau (Free / 0 BIF)\n• Total to pay: $${itemSubtotalUSD.toFixed(2)} USD (${itemSubtotalBIF.toLocaleString()} BIF).\nPlease prepare my order for pick up at Rohero I Central Bureau!`;
+  // Render Loading Skeleton State
+  if (isProductLoading && !product) {
+    return (
+      <div className="min-h-screen bg-[#FDFDFD] text-[#191919] font-sans antialiased flex flex-col">
+        <ElimiHeader cartCount={totalCartCount} showCart={true} />
+        <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20 w-full flex-1">
+          <div className="h-4 bg-slate-200/80 rounded w-48 mb-8 animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+            <div className="lg:col-span-6 aspect-[4/4.7] bg-slate-200/70 rounded-[28px] animate-pulse" />
+            <div className="lg:col-span-6 space-y-4">
+              <div className="h-6 bg-slate-200/70 rounded-full w-32 animate-pulse" />
+              <div className="h-10 bg-slate-200/80 rounded-xl w-3/4 animate-pulse" />
+              <div className="h-8 bg-slate-200/70 rounded-xl w-1/3 animate-pulse" />
+              <div className="h-24 bg-slate-100 rounded-2xl animate-pulse" />
+              <div className="h-14 bg-slate-200/80 rounded-2xl animate-pulse" />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Render Not Found State
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-[#FDFDFD] text-[#191919] font-sans antialiased flex flex-col">
+        <ElimiHeader cartCount={totalCartCount} showCart={true} />
+        <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 text-center flex-1 flex flex-col items-center justify-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+            <ShoppingBag className="w-8 h-8" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">Produit introuvable</h1>
+          <p className="text-sm text-neutral-500 max-w-md">
+            Ce produit n&apos;est plus disponible ou a été déplacé dans notre catalogue en ligne.
+          </p>
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-2 bg-[#0D52FF] text-white px-6 py-3 rounded-full text-sm font-bold shadow-md hover:bg-blue-700 transition"
+          >
+            <span>Retour à la boutique</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] text-[#191919] font-sans antialiased selection:bg-[#0D52FF] selection:text-white">
@@ -510,18 +556,18 @@ export default function ProductDetailPage({ params }: PageProps) {
             </h1>
 
             {/* Price Display */}
-            <div className="flex items-baseline gap-3">
-              <span className="text-2xl sm:text-3xl font-extrabold text-neutral-900">
-                ${product.priceUSD.toFixed(2)}
+            <div className="flex flex-wrap items-baseline gap-2.5 sm:gap-3">
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#0D52FF]">
+                {productPriceBIF.toLocaleString()} BIF
+              </span>
+              <span className="text-base sm:text-lg text-neutral-800 font-bold">
+                / ${product.priceUSD.toFixed(2)} USD
               </span>
               {product.originalPriceUSD && (
-                <span className="text-base text-neutral-400 line-through font-medium">
-                  ${product.originalPriceUSD.toFixed(2)}
+                <span className="text-xs sm:text-sm text-neutral-400 line-through font-medium">
+                  ${product.originalPriceUSD.toFixed(2)} USD
                 </span>
               )}
-              <span className="text-xs sm:text-sm text-neutral-500 font-medium">
-                ({productPriceBIF.toLocaleString()} BIF)
-              </span>
             </div>
 
             {/* Delivery Countdown Banner */}
@@ -1143,15 +1189,13 @@ export default function ProductDetailPage({ params }: PageProps) {
                   </div>
 
                   {/* Price */}
-                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <div className="flex flex-col xs:flex-row xs:items-baseline gap-0.5 xs:gap-1 text-xs">
                     <span className="font-bold text-[#0D52FF]">
-                      ${item.priceUSD.toFixed(0)}
+                      {toBIF(item.priceUSD || 0).toLocaleString()} BIF
                     </span>
-                    {item.originalPriceUSD && (
-                      <span className="text-xs text-neutral-400 line-through">
-                        ${item.originalPriceUSD.toFixed(0)}
-                      </span>
-                    )}
+                    <span className="text-[10px] text-neutral-400">
+                      / ${item.priceUSD.toFixed(0)}
+                    </span>
                     {item.discountPercentage && (
                       <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded-sm">
                         -{item.discountPercentage}%

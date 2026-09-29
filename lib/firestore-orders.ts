@@ -134,113 +134,14 @@ export async function updateOrderStatus(orderId: string, status: 'pending' | 'fi
 export function generateClientWhatsAppGreetingUrl(
   orderId: string,
   customPhone?: string,
-  details?:
-    | BoutiqueOrder
-    | {
-        itemName?: string;
-        size?: string;
-        color?: string;
-        quantity?: number;
-        items?: Array<{
-          name: string;
-          quantity?: number;
-          selectedSize?: string;
-          size?: string;
-          selectedColor?: string;
-          color?: string;
-          priceUSD?: number;
-          priceBIF?: number;
-        }>;
-        totalUSD?: number;
-        totalBIF?: number;
-      }
+  _details?: unknown
 ): string {
   const phone = sanitizeWhatsAppNumber(customPhone);
-
-  let detailsBlock = '';
-  if (details) {
-    if ('items' in details && Array.isArray(details.items) && details.items.length > 0) {
-      const itemsList = details.items
-        .map((item, idx) => {
-          const sz = item.selectedSize || (item as any).size;
-          const col = item.selectedColor || (item as any).color;
-          const sizePart = sz ? ` | Taille/Size: *${sz}*` : '';
-          const colorPart = col ? ` | Couleur/Color: *${col}*` : '';
-          return `  ${idx + 1}. *${item.name}* (x${item.quantity || 1})${sizePart}${colorPart}`;
-        })
-        .join('\n');
-
-      const totalPart =
-        details.totalUSD !== undefined
-          ? `\n💰 *Total:* $${details.totalUSD.toFixed(2)} USD (${details.totalBIF ? details.totalBIF.toLocaleString() : Math.round(details.totalUSD * 3000).toLocaleString()} BIF)`
-          : '';
-
-      detailsBlock = `\n\n🛍️ *Détails de la réservation / commande :*\n${itemsList}${totalPart}`;
-    } else if ('itemName' in details && details.itemName) {
-      const sizePart = details.size ? `\n📏 *Taille / Size:* *${details.size}*` : '';
-      const colorPart = details.color ? `\n🎨 *Couleur / Color:* *${details.color}*` : '';
-      const qtyPart = details.quantity && details.quantity > 1 ? `\n🔢 *Quantité / Qty:* x${details.quantity}` : '';
-      const totalPart =
-        details.totalUSD !== undefined
-          ? `\n💰 *Total:* $${details.totalUSD.toFixed(2)} USD (${details.totalBIF ? details.totalBIF.toLocaleString() : Math.round(details.totalUSD * 3000).toLocaleString()} BIF)`
-          : '';
-
-      detailsBlock = `\n\n🛍️ *Article :* *${details.itemName}*${qtyPart}${sizePart}${colorPart}${totalPart}`;
-    }
-  }
-
-  const message = `Bonjour ELIMI ! Je souhaite confirmer ma réservation / commande ID: *${orderId}*.${detailsBlock}\n\nMerci de bien vouloir vérifier la disponibilité et confirmer les détails !`;
+  const message = `Bonjour ELIMI ! Je souhaite confirmer ma commande / réservation avec l'identifiant : *${orderId}*.\n\nMerci !`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 
 export function generateWhatsAppOrderConfirmationText(order: BoutiqueOrder): string {
-  const itemsText = order.items
-    .map(
-      (item, idx) => {
-        const size = item.selectedSize || (item as any).size;
-        const color = item.selectedColor || (item as any).color;
-        const sizeStr = size ? ` | Taille/Size: *${size}*` : '';
-        const colorStr = color ? ` | Couleur/Color: *${color}*` : '';
-        return `${idx + 1}. *${item.name}* (x${item.quantity}${sizeStr}${colorStr})\n   ↳ $${(item.priceUSD * item.quantity).toFixed(2)} USD (${(item.priceBIF * item.quantity).toLocaleString()} BIF) [Livraison/Delivery: $${(item.shippingCostUSD || 0).toFixed(2)}]`;
-      }
-    )
-    .join('\n');
-
-  const formattedDate = new Date(order.createdAt).toLocaleString('fr-FR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-  const discountText =
-    order.discountUSD > 0
-      ? `\n🏷️ *Réduction / Discount (${order.discountCode || 'Promo'}):* -$${order.discountUSD.toFixed(2)} USD (-${order.discountBIF.toLocaleString()} BIF)`
-      : '';
-
-  const deliveryDetail =
-    order.deliveryMethod === 'home_delivery'
-      ? `🏠 *Livraison à domicile (Bujumbura):* $${order.deliveryCostUSD.toFixed(2)} USD (${order.deliveryCostBIF.toLocaleString()} BIF)`
-      : `🏢 *Retrait au Bureau:* Gratuit (0 BIF) - ${order.pickupBureau || 'Rohero I Central Bureau'}`;
-
-  const notesText = order.customerNotes ? `\n📝 *Notes:* ${order.customerNotes}` : '';
-
-  return `📋 *ELIMI - CONFIRMATION DE COMMANDE / ORDER CONFIRMATION*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🆔 *ID Commande:* ${order.id}
-📅 *Date:* ${formattedDate}
-📌 *Statut:* ${order.status.toUpperCase()}
-
-🛍️ *Articles / Products (${order.items.length}):*
-${itemsText}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💰 *Sous-total:* $${order.subtotalUSD.toFixed(2)} USD (${order.subtotalBIF.toLocaleString()} BIF)
-${deliveryDetail}${discountText}${notesText}
-
-💵 *TOTAL À PAYER:* *$${order.totalUSD.toFixed(2)} USD (${order.totalBIF.toLocaleString()} BIF)*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💳 *Moyens de paiement:* Lumicash, Ecocash & Cash à la livraison.
-Merci pour votre confiance avec ELIMI ! ✨`;
+  return `Bonjour ELIMI ! Confirmation de commande / réservation avec l'identifiant : *${order.id}*`;
 }
 

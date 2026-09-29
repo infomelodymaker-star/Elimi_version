@@ -24,7 +24,7 @@ import { Product, BOUTIQUE_PRODUCTS } from './ProductGrid';
 import { useRealtimeProducts } from '@/lib/firestore-products';
 import { createCheckoutOrder, generateClientWhatsAppGreetingUrl } from '@/lib/firestore-orders';
 import { getEffectiveShippingCost } from '@/lib/products';
-import { useSettings } from '@/components/SettingsProvider';
+import { useSettings, useCurrency } from '@/components/SettingsProvider';
 
 interface RandomStoreProductsProps {
   count?: number;
@@ -56,10 +56,11 @@ export default function RandomStoreProducts({
   className = '',
 }: RandomStoreProductsProps) {
   const router = useRouter();
-  const { products: realtimeProducts } = useRealtimeProducts();
+  const { products: realtimeProducts, loading: isLoadingProducts } = useRealtimeProducts();
   const { whatsappNumber } = useSettings();
+  const { toBIF } = useCurrency();
   const [isMounted, setIsMounted] = useState(false);
-  const [products, setProducts] = useState<Product[]>(() => BOUTIQUE_PRODUCTS.slice(0, count));
+  const [products, setProducts] = useState<Product[]>([]);
   const [isShuffling, setIsShuffling] = useState(false);
   const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
   const [showOrderToast, setShowOrderToast] = useState<string | null>(null);
@@ -67,11 +68,12 @@ export default function RandomStoreProducts({
   useEffect(() => {
     queueMicrotask(() => {
       setIsMounted(true);
-      const source = (realtimeProducts && realtimeProducts.length > 0 ? realtimeProducts : BOUTIQUE_PRODUCTS)
-        .filter((p) => p.active !== false);
+      const source = (realtimeProducts || [])
+        .filter((p) => p.active !== false)
+        .map((p) => ({ ...p, priceBIF: toBIF(p.priceUSD || 0) }));
       setProducts([...source].sort(() => Math.random() - 0.5).slice(0, count));
     });
-  }, [count, realtimeProducts]);
+  }, [count, realtimeProducts, toBIF]);
 
   const handleRefresh = (e?: React.MouseEvent) => {
     if (e) {
@@ -80,8 +82,9 @@ export default function RandomStoreProducts({
     }
     setIsShuffling(true);
     setTimeout(() => {
-      const source = (realtimeProducts && realtimeProducts.length > 0 ? realtimeProducts : BOUTIQUE_PRODUCTS)
-        .filter((p) => p.active !== false);
+      const source = (realtimeProducts || [])
+        .filter((p) => p.active !== false)
+        .map((p) => ({ ...p, priceBIF: toBIF(p.priceUSD || 0) }));
       setProducts([...source].sort(() => Math.random() - 0.5).slice(0, count));
       setIsShuffling(false);
     }, 250);
@@ -132,7 +135,7 @@ export default function RandomStoreProducts({
       setSelectedProductForModal(null);
     } else {
       window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-        `Hello ELIMI Concierge, I would like to order: ${product.name} (${product.priceBIF.toLocaleString()} BIF)`
+        `Bonjour ELIMI ! Je souhaite commander un article de la boutique.`
       )}`, '_blank');
       setSelectedProductForModal(null);
     }
@@ -227,39 +230,54 @@ export default function RandomStoreProducts({
       </div>
 
       {/* Product Cards Container: Single horizontally scrollable row on mobile & tablet, standard grid on desktop (lg+) */}
-      <div
-        className={`flex overflow-x-auto no-scrollbar pb-3 pt-4 sm:pt-5 gap-3 sm:gap-4 snap-x snap-mandatory lg:grid lg:overflow-visible lg:pb-0 ${
-          count >= 4 ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-3'
-        } lg:gap-4`}
-      >
-        {products.map((product) => (
-          <div
-            key={product.id}
-            onClick={() => {
-              router.push(`/shop/${product.id}`);
-            }}
-            className={`shrink-0 w-[210px] sm:w-[240px] lg:w-auto snap-start rounded-[18px] sm:rounded-[22px] p-3 sm:p-4 border transition-all flex flex-col justify-between space-y-2.5 sm:space-y-3.5 h-full group/card cursor-pointer relative ${
-              isDark
-                ? 'bg-[#212121] border-white/10 hover:border-[#3EA6FF]/50 shadow-md hover:shadow-xl'
-                : 'bg-white border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-slate-200'
-            }`}
-          >
-            {/* Category / Badge pill */}
-            <div className="flex items-center justify-between gap-1 text-[9px] sm:text-[10px] font-bold">
-              <span
-                className={`px-1.5 sm:px-2 py-0.5 rounded-full truncate max-w-[90px] sm:max-w-none ${
-                  isDark
-                    ? 'bg-white/10 text-[#AAAAAA]'
-                    : 'bg-slate-100 text-[#525866]'
-                }`}
-              >
-                {product.category}
-              </span>
-              <span className="text-amber-500 flex items-center gap-0.5 sm:gap-1 shrink-0">
-                <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-amber-500" />
-                <span>{product.rating}</span>
-              </span>
+      {isLoadingProducts && products.length === 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white/80 rounded-2xl p-4 animate-pulse space-y-3 border border-slate-100">
+              <div className="w-full aspect-[4/3] bg-slate-200/70 rounded-xl" />
+              <div className="h-4 bg-slate-200/70 rounded w-3/4" />
+              <div className="h-3 bg-slate-200/50 rounded w-1/2" />
             </div>
+          ))}
+        </div>
+      ) : products.length === 0 ? (
+        <div className="py-8 text-center text-sm text-slate-500">
+          Aucun produit disponible pour le moment.
+        </div>
+      ) : (
+        <div
+          className={`flex overflow-x-auto no-scrollbar pb-3 pt-4 sm:pt-5 gap-3 sm:gap-4 snap-x snap-mandatory lg:grid lg:overflow-visible lg:pb-0 ${
+            count >= 4 ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-3'
+          } lg:gap-4`}
+        >
+          {products.map((product) => (
+            <div
+              key={product.id}
+              onClick={() => {
+                router.push(`/shop/${product.id}`);
+              }}
+              className={`shrink-0 w-[210px] sm:w-[240px] lg:w-auto snap-start rounded-[18px] sm:rounded-[22px] p-3 sm:p-4 border transition-all flex flex-col justify-between space-y-2.5 sm:space-y-3.5 h-full group/card cursor-pointer relative ${
+                isDark
+                  ? 'bg-[#212121] border-white/10 hover:border-[#3EA6FF]/50 shadow-md hover:shadow-xl'
+                  : 'bg-white border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-slate-200'
+              }`}
+            >
+              {/* Category / Badge pill */}
+              <div className="flex items-center justify-between gap-1 text-[9px] sm:text-[10px] font-bold">
+                <span
+                  className={`px-1.5 sm:px-2 py-0.5 rounded-full truncate max-w-[90px] sm:max-w-none ${
+                    isDark
+                      ? 'bg-white/10 text-[#AAAAAA]'
+                      : 'bg-slate-100 text-[#525866]'
+                  }`}
+                >
+                  {product.category}
+                </span>
+                <span className="text-amber-500 flex items-center gap-0.5 sm:gap-1 shrink-0">
+                  <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-amber-500" />
+                  <span>{product.rating}</span>
+                </span>
+              </div>
 
             {/* Product Image Box */}
             <div
@@ -353,6 +371,7 @@ export default function RandomStoreProducts({
           </div>
         ))}
       </div>
+      )}
 
       {/* Trust & Guarantee Banner */}
       {showTrustBanner && (

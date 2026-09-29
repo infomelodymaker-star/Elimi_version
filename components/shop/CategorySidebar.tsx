@@ -318,23 +318,25 @@ export default function CategorySidebar({
           <div className="flex items-center justify-between text-xs">
             <span className="font-extrabold text-[#181B25]">Price Range</span>
             <span className="font-bold text-[#0D52FF] text-[11px]">
-              Up to {currency === 'BIF' ? `${maxPrice.toLocaleString()} BIF` : `$${Math.round(maxPrice / 2800)} USD`}
+              {maxPrice >= 10000000
+                ? 'All Prices'
+                : `Up to ${currency === 'BIF' ? `${maxPrice.toLocaleString()} BIF` : `$${Math.round(maxPrice / 3000)} USD`}`}
             </span>
           </div>
 
           <input
             type="range"
-            min={5000}
-            max={2500000}
-            step={25000}
+            min={10000}
+            max={10000000}
+            step={50000}
             value={maxPrice}
             onChange={(e) => setMaxPrice(Number(e.target.value))}
             className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0D52FF]"
           />
 
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 pt-0.5">
-            <span>5,000 BIF</span>
-            <span>500,000+ BIF</span>
+            <span>10,000 BIF</span>
+            <span>10,000,000+ BIF</span>
           </div>
         </div>
 

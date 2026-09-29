@@ -14,6 +14,7 @@ import {
   updateCartItemQuantityByIndex,
   removeCartItemByIndex,
 } from '@/lib/cart';
+import { useCurrency } from '@/components/SettingsProvider';
 
 export interface CartItem {
   product: Product;
@@ -40,9 +41,10 @@ export default function ShoppingCartDrawer({
   onClearCart,
 }: ShoppingCartDrawerProps) {
   const shouldReduceMotion = useReducedMotion();
+  const { toBIF } = useCurrency();
 
   const totalBIF = cartItems.reduce(
-    (sum, item) => sum + item.product.priceBIF * item.quantity,
+    (sum, item) => sum + toBIF(item.product.priceUSD) * item.quantity,
     0
   );
   const totalUSD = cartItems.reduce(
@@ -68,23 +70,10 @@ export default function ShoppingCartDrawer({
     updateCartItemAttributes(index, undefined, newColor);
   };
 
-  const formatCartSummaryForWhatsApp = () => {
-    if (cartItems.length === 0) return '';
-    const itemLines = cartItems
-      .map((item) => {
-        const sizeStr = item.selectedSize ? ` [Taille: ${item.selectedSize}]` : '';
-        const colorStr = item.selectedColor ? ` [Couleur: ${item.selectedColor}]` : '';
-        return `• ${item.product.name}${sizeStr}${colorStr} (x${item.quantity}) - ${(
-          item.product.priceBIF * item.quantity
-        ).toLocaleString()} BIF`;
-      })
-      .join('\n');
-
-    return `Hello ELIMI Boutique team! I would like to place an order for:\n\n${itemLines}\n\nTotal: ${totalBIF.toLocaleString()} BIF (~$${totalUSD} USD).\n\nPlease confirm availability and delivery location.`;
-  };
+  const defaultCartGreeting = `Bonjour ELIMI ! Je souhaite confirmer ma commande.`;
 
   const whatsappCheckoutUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-    formatCartSummaryForWhatsApp()
+    defaultCartGreeting
   )}`;
 
   return (
@@ -234,7 +223,7 @@ export default function ShoppingCartDrawer({
                             ${(product.priceUSD * quantity).toFixed(2)}
                           </div>
                           <div className="text-[10px] text-neutral-400 font-mono">
-                            {(product.priceBIF * quantity).toLocaleString()} BIF
+                            {(toBIF(product.priceUSD) * quantity).toLocaleString()} BIF
                           </div>
                         </div>
 
@@ -329,7 +318,7 @@ export default function ShoppingCartDrawer({
                         name: item.product.name,
                         image: item.product.image || '/assets/shop/african-suit.jpg',
                         priceUSD: item.product.priceUSD,
-                        priceBIF: item.product.priceBIF,
+                        priceBIF: toBIF(item.product.priceUSD),
                         quantity: item.quantity,
                         selectedSize: item.selectedSize || (item.product.sizes?.[0] || 'Standard'),
                         selectedColor: item.selectedColor || (item.product.colors?.[0]?.name || undefined),

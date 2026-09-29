@@ -549,7 +549,24 @@ export default function AllocationsPage() {
         {/* =========================================================================
             3. ITEMS GRID WITH PRICE ASIDE NAME & INFINITE SCROLLING
            ========================================================================= */}
-        {displayedItems.length === 0 ? (
+        {loadingItems && displayedItems.length === 0 ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#0D52FF] bg-[#F0F4FF] px-4 py-2 rounded-xl w-fit">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              <span>Chargement des articles de location...</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl p-4 border border-slate-200/80 animate-pulse space-y-3">
+                  <div className="w-full aspect-[3/4] bg-slate-100 rounded-xl" />
+                  <div className="h-4 w-3/4 bg-slate-200 rounded" />
+                  <div className="h-4 w-1/2 bg-slate-200 rounded" />
+                  <div className="h-3 w-1/3 bg-slate-100 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : displayedItems.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-sm space-y-4">
             <Layers className="w-12 h-12 text-slate-300 mx-auto" />
             <h3 className="text-lg font-bold text-slate-800">Aucun article ne correspond à votre recherche</h3>
@@ -564,7 +581,7 @@ export default function AllocationsPage() {
                 setOnlyAvailable(false);
                 setSearchQuery('');
               }}
-              className="px-5 py-2.5 bg-[#0D52FF] hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-blue-500/20"
+              className="px-5 py-2.5 bg-[#0D52FF] hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-blue-500/20 cursor-pointer"
             >
               Voir tout le catalogue
             </button>

@@ -145,7 +145,15 @@ export default function CartPage() {
     (acc, item) => acc + item.product.priceUSD * item.quantity,
     0
   );
-  const subtotalBIF = toBIF(subtotalUSD);
+  const subtotalBIF = cartItems.reduce(
+    (acc, item) => {
+      const itemPriceBIF = (item.product.priceBIF && item.product.priceBIF > 0)
+        ? item.product.priceBIF
+        : toBIF(item.product.priceUSD || 0);
+      return acc + itemPriceBIF * item.quantity;
+    },
+    0
+  );
 
   // Delivery fee calculation:
   // Each distinct product has its delivery fee. Multiple items of the same product (e.g. 2 or 3)
@@ -206,7 +214,9 @@ export default function CartPage() {
           name: item.product.name,
           image: item.product.image || '/assets/shop/african-suit.jpg',
           priceUSD: item.product.priceUSD,
-          priceBIF: toBIF(item.product.priceUSD),
+          priceBIF: (item.product.priceBIF && item.product.priceBIF > 0)
+            ? item.product.priceBIF
+            : toBIF(item.product.priceUSD || 0),
           quantity: item.quantity,
           shippingCostUSD: ship.costUSD,
           shippingCostBIF: ship.costBIF,
@@ -360,8 +370,11 @@ export default function CartPage() {
                 <div className="divide-y divide-slate-100">
                   {cartItems.map((item, index) => {
                     const { product, quantity, selectedSize, selectedColor } = item;
+                    const itemPriceBIF = (product.priceBIF && product.priceBIF > 0)
+                      ? product.priceBIF
+                      : toBIF(product.priceUSD || 0);
                     const itemTotalUSD = (product.priceUSD * quantity).toFixed(2);
-                    const itemTotalBIF = (toBIF(product.priceUSD) * quantity).toLocaleString();
+                    const itemTotalBIF = (itemPriceBIF * quantity).toLocaleString();
 
                     const availableSizes = product.sizes && product.sizes.length > 0 ? product.sizes : ['Standard', 'S', 'M', 'L', 'XL', 'XXL'];
                     const availableColors = product.colors && product.colors.length > 0 ? product.colors : [];

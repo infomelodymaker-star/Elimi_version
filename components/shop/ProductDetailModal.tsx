@@ -8,7 +8,7 @@ import { X, Star, ShieldCheck, Truck, ShoppingCart, Check, Plus, Minus } from 'l
 import { Product } from './ProductGrid';
 import { createCheckoutOrder, generateClientWhatsAppGreetingUrl } from '@/lib/firestore-orders';
 import { WHATSAPP_NUMBER } from '@/lib/utils';
-import { useSettings } from '@/components/SettingsProvider';
+import { useSettings, useCurrency } from '@/components/SettingsProvider';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -23,6 +23,7 @@ export default function ProductDetailModal({
 }: ProductDetailModalProps) {
   const shouldReduceMotion = useReducedMotion();
   const { whatsappNumber } = useSettings();
+  const { toBIF } = useCurrency();
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<{ name: string; hex: string } | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
@@ -57,9 +58,7 @@ export default function ProductDetailModal({
 
   const colorText = selectedColor ? ` | Color: ${selectedColor.name}` : '';
   const sizeText = selectedSize ? ` | Size: ${selectedSize}` : '';
-  const whatsappMessage = product
-    ? `Hello ELIMI Boutique, I am interested in purchasing ${quantity}x "${product.name}"${sizeText}${colorText} (${(product.priceBIF * quantity).toLocaleString()} BIF / $${product.priceUSD * quantity} USD). Please let me know availability and delivery details.`
-    : '';
+  const defaultGreetingMessage = `Bonjour ELIMI ! Je souhaite commander un article de la boutique.`;
 
   return (
     <AnimatePresence>
@@ -158,7 +157,7 @@ export default function ProductDetailModal({
                 {/* Price Block */}
                 <div className="bg-[#F2F4F8] p-3.5 rounded-2xl border border-slate-200/70">
                   <div className="text-[#0D52FF] text-2xl font-black">
-                    {(product.priceBIF * quantity).toLocaleString()} BIF
+                    {(toBIF(product.priceUSD) * quantity).toLocaleString()} BIF
                   </div>
                   <div className="text-xs text-[#525866] font-medium">
                     Approx. ${(product.priceUSD * quantity).toFixed(2)} USD {quantity > 1 ? `(${quantity} items)` : ''}
@@ -319,12 +318,13 @@ export default function ProductDetailModal({
                     onClick={async () => {
                       if (!product) return;
                       try {
+                        const itemPriceBIF = toBIF(product.priceUSD);
                         const singleItem = {
                           productId: product.id,
                           name: `${product.name}${selectedSize ? ` (${selectedSize})` : ''}${selectedColor ? ` [${selectedColor.name}]` : ''}`,
                           image: product.image || '/assets/shop/african-suit.jpg',
                           priceUSD: product.priceUSD,
-                          priceBIF: product.priceBIF,
+                          priceBIF: itemPriceBIF,
                           quantity: quantity,
                           selectedSize: selectedSize || undefined,
                           selectedColor: selectedColor?.name || undefined,
@@ -337,25 +337,25 @@ export default function ProductDetailModal({
                           deliveryCostUSD: 0,
                           deliveryCostBIF: 0,
                           subtotalUSD: product.priceUSD * quantity,
-                          subtotalBIF: product.priceBIF * quantity,
+                          subtotalBIF: itemPriceBIF * quantity,
                           discountUSD: 0,
                           discountBIF: 0,
                           totalUSD: product.priceUSD * quantity,
-                          totalBIF: product.priceBIF * quantity,
+                          totalBIF: itemPriceBIF * quantity,
                           customerNotes: `Direct modal checkout for ${product.name} (Qty: ${quantity}${selectedSize ? `, Size: ${selectedSize}` : ''}${selectedColor ? `, Color: ${selectedColor.name}` : ''})`,
                         };
                         const activeWa = (whatsappNumber || WHATSAPP_NUMBER).replace(/\D/g, '');
                         const result = await createCheckoutOrder(orderPayload);
                         const url = result.success && result.orderId
                           ? generateClientWhatsAppGreetingUrl(result.orderId, activeWa, result.order)
-                          : `https://wa.me/${activeWa}?text=${encodeURIComponent(whatsappMessage)}`;
+                          : `https://wa.me/${activeWa}?text=${encodeURIComponent(defaultGreetingMessage)}`;
                         if (typeof window !== 'undefined') {
                           window.open(url, '_blank', 'noopener,noreferrer');
                         }
                       } catch {
                         const activeWa = (whatsappNumber || WHATSAPP_NUMBER).replace(/\D/g, '');
                         if (typeof window !== 'undefined') {
-                          window.open(`https://wa.me/${activeWa}?text=${encodeURIComponent(whatsappMessage)}`, '_blank', 'noopener,noreferrer');
+                          window.open(`https://wa.me/${activeWa}?text=${encodeURIComponent(defaultGreetingMessage)}`, '_blank', 'noopener,noreferrer');
                         }
                       }
                       onClose();
