@@ -1,1 +1,399 @@
-[]
+[
+  {
+    "id": "car-1",
+    "updatedAt": "2026-09-25T16:52:25.377Z",
+    "rent": true,
+    "amenities": [
+      "Professional Chauffeur Available",
+      "Executive Leather Interior",
+      "4WD / All-Terrain Capability",
+      "Advanced GPS & Navigation",
+      "Surround Sound Audio System",
+      "Full Comprehensive Insurance Included",
+      "Chauffeur Protocol Partition",
+      "Armored Level B6 Protection",
+      "Burmester 4D Surround Sound"
+    ],
+    "imageUrl": "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=800",
+    "transmission": "Automatic",
+    "modelTrim": "V300d Extra Long Luxury",
+    "fuelType": "Diesel / Hybrid",
+    "price": 115000,
+    "seats": 7,
+    "mileage": "12,500 km",
+    "availableUnits": [
+      {
+        "price": 350,
+        "availableDate": "Available Today",
+        "unitId": "VC-01",
+        "isRent": false
+      },
+      {
+        "unitId": "VC-02",
+        "isRent": false,
+        "price": 115000,
+        "availableDate": "Available Now"
+      }
+    ],
+    "description": "Ultra-luxurious 7-seater executive van with recliner massage seats, ambient lighting, and high-speed onboard Wi-Fi.",
+    "photos": [
+      "/assets/shop/mercedes-vclass.jpg",
+      "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800"
+    ],
+    "title": "Mercedes-Benz V-Class VIP Edition",
+    "location": {
+      "lat": -3.3845,
+      "lng": 29.3635
+    },
+    "mapsLink": "https://maps.app.goo.gl/BujumburaRohero",
+    "rentPrice": 350,
+    "year": 2024,
+    "sales": false,
+    "address": "Rohero VIP Showroom, Boulevard du 28 Novembre, Bujumbura"
+  },
+  {
+    "id": "car-1790161614860",
+    "price": 1000,
+    "photos": [
+      "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800"
+    ],
+    "rent": true,
+    "rentPriceBIF": 240000,
+    "fuelType": "Petrol / Gasoline",
+    "modelTrim": "Executive",
+    "updatedAt": "2026-09-27T11:22:52.865Z",
+    "imageUrl": "https://i.ibb.co/rGghD0Wq/car-cover.jpg",
+    "amenities": [
+      "VIP Leather Executive Seating",
+      "Panoramic Sunroof",
+      "Burmester 4D Surround Sound",
+      "All-Wheel Drive (AWD)"
+    ],
+    "rentPrice": 40,
+    "sales": true,
+    "title": "BMW",
+    "createdAt": "2026-09-23T11:08:20.296Z",
+    "address": "ELIMI VIP Mobility Hub, Bujumbura",
+    "location": {
+      "lat": -5.3822,
+      "lng": 20.3644
+    },
+    "priceBIF": 6500000,
+    "year": 2026,
+    "description": "Meticulously inspected executive luxury vehicle equipped with premier comfort and safety suites.",
+    "mileage": "New (0 km)",
+    "seats": 5,
+    "transmission": "8-Speed Automatic",
+    "availableUnits": [
+      {
+        "priceBIF": 330000000,
+        "availableDate": "Available Now",
+        "price": 110000,
+        "unitId": "CAR-444",
+        "isRent": false
+      }
+    ]
+  },
+  {
+    "id": "car-1790341794351",
+    "sales": true,
+    "year": 2024,
+    "title": "Toyota Allion",
+    "createdAt": "2026-09-25T13:10:08.478Z",
+    "imageUrl": "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=1200",
+    "seats": 4,
+    "rentPrice": 399,
+    "fuelType": "Diesel",
+    "price": 70000,
+    "mapsLink": "https://maps.app.goo.gl/nxp7g8cJu4RPuks6A",
+    "location": {
+      "lat": -3.382367005004299,
+      "lng": 29.366578922432325
+    },
+    "mileage": "1200",
+    "updatedAt": "2026-09-25T13:24:05.994Z",
+    "photos": [
+      "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800"
+    ],
+    "amenities": [
+      "Apple CarPlay & Android Auto",
+      "Wireless Charging & Wi-Fi Hotspot"
+    ],
+    "transmission": "Automatic",
+    "availableUnits": [
+      {
+        "availableDate": "Available Now",
+        "price": 110000,
+        "isRent": false,
+        "unitId": "CAR-351"
+      }
+    ],
+    "description": "Meticulously inspected executive luxury vehicle equipped with premier comfort and safety suites.",
+    "modelTrim": "Executive VIP Edition",
+    "rent": true,
+    "address": "ELIMI VIP Mobility Hub, Bujumbura"
+  },
+  {
+    "id": "car-2",
+    "year": 2024,
+    "availableUnits": [
+      {
+        "unitId": "PR-10",
+        "isRent": true,
+        "availableDate": "Available Now",
+        "price": 200
+      },
+      {
+        "availableDate": "Available Now",
+        "price": 85000,
+        "isRent": false,
+        "unitId": "PR-11"
+      }
+    ],
+    "mapsLink": "https://maps.app.goo.gl/BujumburaKiriri",
+    "price": 85000,
+    "location": {
+      "lat": -3.3768,
+      "lng": 29.3812
+    },
+    "description": "Iconic heavy-duty luxury SUV built for commanding road presence, diplomatic protocol, and rough terrains.",
+    "photos": [
+      "/assets/elimi-images/4-pillar-section/PRADO.webp",
+      "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800"
+    ],
+    "rentPrice": 200,
+    "sales": true,
+    "modelTrim": "TX-L Premium Package",
+    "mileage": "8,200 km",
+    "updatedAt": "2026-09-25T13:21:11.675Z",
+    "amenities": [
+      "Full-Time 4WD with Multi-Terrain Select",
+      "Rear Seat Entertainment",
+      "Cool Box Refrigerator",
+      "Roof Railing System",
+      "360 Panoramic View Monitor",
+      "Chauffeur Service Optional"
+    ],
+    "title": "Toyota Land Cruiser Prado TX-L",
+    "address": "Kiriri Diplomatic Station, Avenue Belvédère, Bujumbura",
+    "transmission": "Automatic 4WD",
+    "imageUrl": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800",
+    "fuelType": "Turbo Diesel",
+    "rent": true,
+    "seats": 7
+  },
+  {
+    "id": "car-3",
+    "amenities": [
+      "Professional Chauffeur Available",
+      "Executive Leather Interior",
+      "4WD / All-Terrain Capability",
+      "Advanced GPS & Navigation",
+      "Apple CarPlay & Android Auto",
+      "Panoramic Sunroof",
+      "Surround Sound Audio System",
+      "Full Comprehensive Insurance Included"
+    ],
+    "updatedAt": "2026-09-25T13:21:11.675Z",
+    "title": "Range Rover Autobiography LWB",
+    "modelTrim": "Autobiography Long Wheelbase",
+    "rent": true,
+    "sales": true,
+    "photos": [
+      "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=800"
+    ],
+    "mapsLink": "https://maps.app.goo.gl/BujumburaKinindo",
+    "seats": 5,
+    "description": "The pinnacle of refined British engineering, offering unmatched comfort, serene ride quality, and executive presence.",
+    "location": {
+      "lng": 29.354,
+      "lat": -3.3985
+    },
+    "imageUrl": "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&q=80&w=800",
+    "mileage": "5,100 km",
+    "fuelType": "Twin-Turbo V8",
+    "availableUnits": [
+      {
+        "availableDate": "Available Now",
+        "isRent": true,
+        "unitId": "RR-01",
+        "price": 650
+      },
+      {
+        "isRent": false,
+        "unitId": "RR-02",
+        "availableDate": "Ready for delivery",
+        "price": 185000
+      }
+    ],
+    "transmission": "Automatic",
+    "price": 185000,
+    "address": "Kinindo Executive Hub, Avenue du Large, Bujumbura",
+    "year": 2024,
+    "rentPrice": 650
+  },
+  {
+    "id": "car-4",
+    "photos": [
+      "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=800"
+    ],
+    "mileage": "3,400 km",
+    "description": "Iconic sports car delivering adrenaline-fueled handling, timeless design, and precision performance.",
+    "transmission": "PDK Automatic",
+    "price": 160000,
+    "modelTrim": "Carrera GTS Coupe",
+    "year": 2024,
+    "imageUrl": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800",
+    "updatedAt": "2026-09-25T13:21:11.675Z",
+    "address": "Boulevard de l'Uprona, Rohero I, Bujumbura",
+    "amenities": [
+      "Professional Chauffeur Available",
+      "Executive Leather Interior",
+      "4WD / All-Terrain Capability",
+      "Advanced GPS & Navigation",
+      "Apple CarPlay & Android Auto",
+      "Panoramic Sunroof",
+      "Surround Sound Audio System",
+      "Full Comprehensive Insurance Included"
+    ],
+    "fuelType": "Twin-Turbo Flat-6",
+    "rentPrice": 500,
+    "mapsLink": "https://maps.app.goo.gl/BujumburaCentre",
+    "location": {
+      "lat": -3.3812,
+      "lng": 29.3668
+    },
+    "title": "Porsche 911 Carrera GTS",
+    "sales": true,
+    "rent": false,
+    "seats": 4,
+    "availableUnits": [
+      {
+        "price": 160000,
+        "isRent": false,
+        "unitId": "911-01",
+        "availableDate": "Available Now"
+      }
+    ]
+  },
+  {
+    "id": "car-5",
+    "modelTrim": "LC300 GR-Sport VIP Armor Ready",
+    "fuelType": "3.3L Twin-Turbo Diesel",
+    "seats": 7,
+    "year": 2024,
+    "updatedAt": "2026-09-25T13:21:11.675Z",
+    "address": "Gihosha Diplomatic Route, Bujumbura",
+    "imageUrl": "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&q=80&w=800",
+    "amenities": [
+      "Professional Chauffeur Available",
+      "Executive Leather Interior",
+      "4WD / All-Terrain Capability",
+      "Advanced GPS & Navigation",
+      "Apple CarPlay & Android Auto",
+      "Panoramic Sunroof",
+      "Surround Sound Audio System",
+      "Full Comprehensive Insurance Included"
+    ],
+    "photos": [
+      "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=800"
+    ],
+    "sales": true,
+    "mileage": "6,800 km",
+    "title": "Toyota Land Cruiser 300 GR Sport",
+    "transmission": "10-Speed Automatic",
+    "description": "The master of all terrains, featuring twin-turbo diesel power and Gazoo Racing suspension tuning for VIP protocol.",
+    "availableUnits": [
+      {
+        "price": 300,
+        "isRent": true,
+        "availableDate": "Available Now",
+        "unitId": "LC-301"
+      },
+      {
+        "availableDate": "Ready for delivery",
+        "isRent": false,
+        "unitId": "LC-302",
+        "price": 135000
+      }
+    ],
+    "price": 135000,
+    "rent": true,
+    "rentPrice": 300,
+    "location": {
+      "lat": -3.3615,
+      "lng": 29.3885
+    },
+    "mapsLink": "https://maps.app.goo.gl/BujumburaGihosha"
+  },
+  {
+    "id": "car-6",
+    "description": "Presidential comfort with extended legroom, reclining first-class airline style seats, and noise-cancelling cabin.",
+    "rent": true,
+    "availableUnits": [
+      {
+        "availableDate": "Available Today",
+        "price": 800,
+        "unitId": "MB-580",
+        "isRent": true
+      },
+      {
+        "price": 230000,
+        "availableDate": "Available Now",
+        "unitId": "MB-581",
+        "isRent": false
+      }
+    ],
+    "amenities": [
+      "Professional Chauffeur Available",
+      "Executive Leather Interior",
+      "4WD / All-Terrain Capability",
+      "Advanced GPS & Navigation",
+      "Apple CarPlay & Android Auto",
+      "Panoramic Sunroof",
+      "Surround Sound Audio System",
+      "Full Comprehensive Insurance Included"
+    ],
+    "updatedAt": "2026-09-25T13:21:11.676Z",
+    "price": 230000,
+    "photos": [
+      "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=800"
+    ],
+    "location": {
+      "lng": 29.359,
+      "lat": -3.383
+    },
+    "modelTrim": "Maybach S 580 Executive",
+    "mapsLink": "https://maps.app.goo.gl/BujumburaMutanga",
+    "fuelType": "V8 Biturbo Mild Hybrid",
+    "seats": 4,
+    "transmission": "Automatic 9G-TRONIC",
+    "address": "Mutanga Nord Executive Hub, Bujumbura",
+    "imageUrl": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=800",
+    "rentPrice": 800,
+    "title": "Mercedes-Maybach S 580 4MATIC",
+    "year": 2024,
+    "sales": true,
+    "mileage": "2,900 km"
+  }
+]

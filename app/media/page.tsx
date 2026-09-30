@@ -3,8 +3,11 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import ElimiHeader from "@/components/ElimiHeader";
 import { motion, AnimatePresence } from "motion/react";
+import { useRealtimeProducts } from "@/lib/firestore-products";
+import { useRealtimeCars } from "@/lib/firestore-cars";
 import {
   Search,
   Play,
@@ -452,6 +455,12 @@ const MOCK_PUBLICATIONS: MediaPublication[] = [
 ];
 
 export default function MediaPage() {
+  const router = useRouter();
+
+  // Live Firestore database feeds for products and cars
+  const { products: dbProducts } = useRealtimeProducts();
+  const { cars: dbCars } = useRealtimeCars();
+
   // Real YouTube Live Videos State
   const [videoList, setVideoList] = useState<MediaVideo[]>(MOCK_VIDEOS);
   const [isLoadingLiveFeed, setIsLoadingLiveFeed] = useState(false);
@@ -485,6 +494,151 @@ export default function MediaPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [quickProductModal, setQuickProductModal] =
     useState<FeaturedProduct | null>(null);
+
+  // Spotlight items in "#whats-up-now" strictly fetched from Firestore database
+  const spotlightItems = useMemo(() => {
+    const items: Array<{
+      id: string;
+      type: "product" | "car";
+      name: string;
+      category: string;
+      price: string;
+      currency: string;
+      image: string;
+      fallbackImage: string;
+      spec: string;
+      detailUrl: string;
+    }> = [];
+
+    // 1. First item: A product from Firestore database
+    if (dbProducts && dbProducts.length > 0) {
+      const prod =
+        dbProducts.find((p) => p.category === "Fashion" || p.inStock) ||
+        dbProducts[0];
+      if (prod) {
+        const priceStr = prod.priceBIF
+          ? Number(prod.priceBIF).toLocaleString()
+          : prod.priceUSD
+          ? `$${prod.priceUSD}`
+          : String(prod.price || "0");
+        const currStr = prod.priceBIF ? "BIF" : "";
+        const specStr =
+          prod.descriptionFit ||
+          prod.badgeTag ||
+          (prod.sizes && prod.sizes.length > 0
+            ? `Sizes: ${prod.sizes.join(", ")}`
+            : prod.category) ||
+          "Premium Quality";
+
+        items.push({
+          id: prod.id,
+          type: "product",
+          name: prod.name,
+          category: prod.category || "Fashion",
+          price: priceStr,
+          currency: currStr,
+          image:
+            prod.image ||
+            (prod.gallery && prod.gallery[0]) ||
+            "/assets/shop/african-suit.jpg",
+          fallbackImage: "/assets/shop/african-suit.jpg",
+          spec: specStr,
+          detailUrl: `/shop/${prod.id}`,
+        });
+      }
+    }
+
+    // 2. Second item: A car from Firestore database
+    if (dbCars && dbCars.length > 0) {
+      const car =
+        dbCars.find((c) => c.id === "car-1" || c.rent) || dbCars[0];
+      if (car) {
+        let priceStr = "";
+        let currStr = "";
+        if (car.rentPriceBIF) {
+          priceStr = Number(car.rentPriceBIF).toLocaleString() + " BIF";
+          currStr = "/ day";
+        } else if (car.rentPrice) {
+          priceStr = `$${car.rentPrice}`;
+          currStr = "/ day";
+        } else if (car.priceBIF) {
+          priceStr = Number(car.priceBIF).toLocaleString() + " BIF";
+          currStr = "";
+        } else if (car.price) {
+          priceStr = `$${Number(car.price).toLocaleString()}`;
+          currStr = "";
+        } else {
+          priceStr = "On Request";
+          currStr = "";
+        }
+
+        const specParts: string[] = [];
+        if (car.seats) specParts.push(`${car.seats} Seats`);
+        if (car.transmission) specParts.push(car.transmission);
+        if (car.modelTrim) specParts.push(car.modelTrim);
+        const specStr =
+          specParts.join(" • ") || "VIP Chauffeur & Escort";
+
+        items.push({
+          id: car.id,
+          type: "car",
+          name: car.title,
+          category: "VIP Mobility",
+          price: priceStr,
+          currency: currStr,
+          image:
+            car.imageUrl ||
+            (car.photos && car.photos[0]) ||
+            "/assets/shop/mercedes-vclass.jpg",
+          fallbackImage: "/assets/shop/mercedes-vclass.jpg",
+          spec: specStr,
+          detailUrl: `/cars/${car.id}`,
+        });
+      }
+    }
+
+    // Fallback if one collection has items and the other doesn't
+    if (items.length < 2 && dbProducts && dbProducts.length > 1) {
+      const secondProd = dbProducts.find((p) => !items.some((it) => it.id === p.id));
+      if (secondProd) {
+        items.push({
+          id: secondProd.id,
+          type: "product",
+          name: secondProd.name,
+          category: secondProd.category || "Fashion",
+          price: secondProd.priceBIF
+            ? Number(secondProd.priceBIF).toLocaleString()
+            : `$${secondProd.priceUSD || 0}`,
+          currency: secondProd.priceBIF ? "BIF" : "",
+          image: secondProd.image || "/assets/shop/african-suit.jpg",
+          fallbackImage: "/assets/shop/african-suit.jpg",
+          spec: secondProd.descriptionFit || secondProd.category || "In stock",
+          detailUrl: `/shop/${secondProd.id}`,
+        });
+      }
+    }
+    if (items.length < 2 && dbCars && dbCars.length > 1) {
+      const secondCar = dbCars.find((c) => !items.some((it) => it.id === c.id));
+      if (secondCar) {
+        items.push({
+          id: secondCar.id,
+          type: "car",
+          name: secondCar.title,
+          category: "VIP Mobility",
+          price: secondCar.rentPrice
+            ? `$${secondCar.rentPrice}`
+            : `$${secondCar.price}`,
+          currency: secondCar.rentPrice ? "/ day" : "",
+          image: secondCar.imageUrl || "/assets/shop/mercedes-vclass.jpg",
+          fallbackImage: "/assets/shop/mercedes-vclass.jpg",
+          spec: `${secondCar.seats || 5} Seats • ${secondCar.transmission || "Automatic"}`,
+          detailUrl: `/cars/${secondCar.id}`,
+        });
+      }
+    }
+
+    return items.slice(0, 2);
+  }, [dbProducts, dbCars]);
 
   // Infinite Scroll Pagination State
   const [visibleCount, setVisibleCount] = useState(9);
@@ -1000,22 +1154,22 @@ export default function MediaPage() {
                     </p>
                   </div>
 
-                  {/* Product Cards: Single horizontal row on mobile & tablet, vertical stack on desktop (lg+) */}
+                  {/* Product Cards: Single horizontal row on mobile & tablet, vertical stack on desktop (lg+) - strictly from Firestore database */}
                   <div className="flex overflow-x-auto no-scrollbar gap-2.5 sm:gap-3 pb-1 snap-x snap-mandatory lg:flex-col lg:overflow-visible lg:gap-3 lg:pb-0">
-                    {(heroVideo.featuredProducts || []).map((prod) => (
+                    {spotlightItems.map((item) => (
                       <div
-                        key={prod.id}
-                        onClick={() => setQuickProductModal(prod)}
+                        key={item.id}
+                        onClick={() => router.push(item.detailUrl)}
                         className="shrink-0 w-[240px] sm:w-[270px] lg:w-full snap-start bg-[#F8F9FA] hover:bg-[#E0EBFF]/30 p-3 rounded-xl border border-[#0F172A]/8 hover:border-[#0B57FF]/40 transition flex items-center justify-between gap-2.5 sm:gap-3 group cursor-pointer"
                       >
                         <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden bg-white shrink-0 border border-[#0F172A]/8">
                           <Image
                             src={
-                              prod?.image ||
-                              prod?.fallbackImage ||
+                              item.image ||
+                              item.fallbackImage ||
                               "/assets/shop/african-suit.jpg"
                             }
-                            alt={prod?.name || "Product"}
+                            alt={item.name}
                             fill
                             unoptimized
                             referrerPolicy="no-referrer"
@@ -1023,7 +1177,7 @@ export default function MediaPage() {
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.src =
-                                prod?.fallbackImage ||
+                                item.fallbackImage ||
                                 "/assets/shop/african-suit.jpg";
                             }}
                           />
@@ -1032,28 +1186,61 @@ export default function MediaPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <h4 className="font-semibold text-xs sm:text-sm text-[#0F172A] truncate group-hover:text-[#0B57FF] transition-colors">
-                              {prod?.name}
+                              {item.name}
                             </h4>
                           </div>
                           <p className="text-[10px] sm:text-[11px] text-[#64748B] truncate">
-                            {prod?.spec}
+                            {item.spec}
                           </p>
                           <p className="text-xs font-bold text-[#0B57FF] mt-0.5">
-                            {prod?.price}{" "}
-                            <span className="text-[10px] text-[#64748B] font-normal">
-                              {prod?.currency}
-                            </span>
+                            {item.price}{" "}
+                            {item.currency && (
+                              <span className="text-[10px] text-[#64748B] font-normal">
+                                {item.currency}
+                              </span>
+                            )}
                           </p>
                         </div>
 
                         <div className="shrink-0 flex items-center gap-1.5">
-                          <button
-                            onClick={(e) => handleAddToCart(prod, e)}
-                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white hover:bg-[#0B57FF] text-[#0B57FF] hover:text-white border border-[#0F172A]/10 hover:border-[#0B57FF] flex items-center justify-center transition shadow-xs cursor-pointer"
-                            title="Add to bag"
-                          >
-                            <ShoppingCart className="w-3.5 h-3.5" />
-                          </button>
+                          {item.type === "car" ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(item.detailUrl);
+                              }}
+                              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white group-hover:bg-[#0B57FF] text-[#64748B] group-hover:text-white border border-[#0F172A]/10 group-hover:border-[#0B57FF] flex items-center justify-center transition shadow-xs cursor-pointer"
+                              title="View car details"
+                              aria-label="View car details"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddToCart(
+                                  {
+                                    id: item.id,
+                                    name: item.name,
+                                    category: item.category,
+                                    price: item.price,
+                                    currency: item.currency,
+                                    image: item.image,
+                                    fallbackImage: item.fallbackImage,
+                                    spec: item.spec,
+                                    shopUrl: item.detailUrl,
+                                  },
+                                  e
+                                );
+                              }}
+                              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white hover:bg-[#0B57FF] text-[#0B57FF] hover:text-white border border-[#0F172A]/10 hover:border-[#0B57FF] flex items-center justify-center transition shadow-xs cursor-pointer"
+                              title="Add to bag"
+                              aria-label="Add to bag"
+                            >
+                              <ShoppingCart className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1577,98 +1764,6 @@ export default function MediaPage() {
           </div>
         </section>
       </main>
-
-      {/* ====================================================================
-          7. FOOTER (Matching ELIMI Platform standard)
-         ==================================================================== */}
-      <footer className="bg-[#0F172A] text-white py-14 px-4 sm:px-6 lg:px-8 border-t border-[#0F172A]/10">
-        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#0B57FF] text-white font-black flex items-center justify-center text-sm shadow-xs">
-                E
-              </div>
-              <span className="font-semibold text-xl tracking-tight">
-                ELIMI Média
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Watch and discover what matters. Burundi&apos;s leading media and
-              shoppable entertainment hub.
-            </p>
-          </div>
-
-          <div>
-            <h5 className="font-semibold text-xs uppercase tracking-wider text-[#0B57FF] mb-3">
-              Media Channels
-            </h5>
-            <ul className="space-y-2 text-xs text-slate-400">
-              <li>Fashion &amp; Style Runway</li>
-              <li>VIP Chauffeur &amp; Living Films</li>
-              <li>Tech &amp; Drone Reviews</li>
-              <li>Burundi Comedy &amp; Drama Skits</li>
-              <li>Cultural Heritage Series</li>
-            </ul>
-          </div>
-
-          <div>
-            <h5 className="font-semibold text-xs uppercase tracking-wider text-[#0B57FF] mb-3">
-              ELIMI Ecosystem
-            </h5>
-            <ul className="space-y-2 text-xs text-slate-400">
-              <li>
-                <Link href="/" className="hover:text-white transition">
-                  Protocol &amp; Hospitality Services
-                </Link>
-              </li>
-              <li>
-                <Link href="/shop" className="hover:text-white transition">
-                  ELIMI Market &amp; Boutique
-                </Link>
-              </li>
-              <li>
-                <Link href="/printbe" className="hover:text-white transition">
-                  PrintBe Digital Press
-                </Link>
-              </li>
-              <li>
-                <Link href="/allocations" className="hover:text-white transition">
-                  Other Occasional Rentals
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h5 className="font-semibold text-xs uppercase tracking-wider text-[#0B57FF] mb-3">
-              Studio &amp; Contact
-            </h5>
-            <div className="space-y-2 text-xs text-slate-400">
-              <p>📍 Boulevard Mwezi Gisabo, Bujumbura</p>
-              <p>📞 Media Desk: +257 69 99 29 84</p>
-              <p>✉️ elimiofficiel@gmail.com</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-[1200px] mx-auto mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-4">
-          <p>
-            © {new Date().getFullYear()} ELIMI Platform &amp; Média. All rights
-            reserved.
-          </p>
-          <div className="flex gap-4">
-            <Link href="/" className="hover:text-white transition">
-              Home
-            </Link>
-            <Link href="/shop" className="hover:text-white transition">
-              Market
-            </Link>
-            <Link href="/media" className="hover:text-white transition">
-              Média
-            </Link>
-          </div>
-        </div>
-      </footer>
 
       {/* ====================================================================
           8. INTERACTIVE MODAL: YOUTUBE MOCK VIDEO PLAYER & SHOPPING DRAWER
