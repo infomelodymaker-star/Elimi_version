@@ -520,7 +520,7 @@ export default function MediaPage() {
           ? Number(prod.priceBIF).toLocaleString()
           : prod.priceUSD
           ? `$${prod.priceUSD}`
-          : String(prod.price || "0");
+          : "0";
         const currStr = prod.priceBIF ? "BIF" : "";
         const specStr =
           prod.descriptionFit ||

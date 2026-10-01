@@ -34,6 +34,7 @@ import {
   Sparkles,
   Loader2,
   Copy,
+  ShoppingBag,
 } from 'lucide-react';
 import {
   getProductById,
