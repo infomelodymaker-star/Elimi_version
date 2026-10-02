@@ -66,29 +66,22 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallbackValue: T
   });
 }
 
+let inMemoryAccounts: RegisteredAccount[] = [];
+
 function getLocalCachedAccounts(): RegisteredAccount[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(LOCAL_CACHE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (e) {
-    console.warn('Failed to read local cache:', e);
-  }
-  return [];
+  return inMemoryAccounts;
 }
 
 export const USERS_SYNC_EVENT = 'elimi_sync_users';
 
 function saveLocalCachedAccounts(accounts: RegisteredAccount[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(accounts));
-    window.dispatchEvent(new Event(USERS_SYNC_EVENT));
-  } catch (e) {
-    console.warn('Failed to save local cache:', e);
+  inMemoryAccounts = accounts;
+  if (typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(new Event(USERS_SYNC_EVENT));
+    } catch (e) {
+      console.warn('Sync dispatch error:', e);
+    }
   }
 }
 
@@ -119,7 +112,7 @@ export async function getRegisteredAccounts(): Promise<RegisteredAccount[]> {
           if (Array.isArray(regData.registeredEmails)) {
             // If registry has more accounts recorded, ensure count consistency
             for (const email of regData.registeredEmails) {
-              if (!users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
+              if (!users.some((u) => u.email?.toLowerCase() === email.toLowerCase())) {
                 users.push({
                   uid: `reg-${email}`,
                   email: email,
@@ -165,7 +158,7 @@ export async function checkUserRegistration(uid: string, email?: string | null):
 
     if (email) {
       const foundByEmail = existingAccounts.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase()
+        (u) => u.email?.toLowerCase() === email.toLowerCase()
       );
       if (foundByEmail) {
         return { isRegistered: true, account: foundByEmail, totalRegistered: existingAccounts.length };
@@ -176,7 +169,7 @@ export async function checkUserRegistration(uid: string, email?: string | null):
   } catch (err) {
     console.warn('Error checking user registration:', err);
     const cached = getLocalCachedAccounts();
-    const found = cached.find((u) => u.uid === uid || (email && u.email.toLowerCase() === email.toLowerCase()));
+    const found = cached.find((u) => u.uid === uid || (email && u.email?.toLowerCase() === email.toLowerCase()));
     return {
       isRegistered: !!found,
       account: found,
@@ -191,7 +184,7 @@ export async function checkUserRegistration(uid: string, email?: string | null):
 async function syncRegistry(accounts: RegisteredAccount[]): Promise<void> {
   try {
     const regDocRef = doc(db, 'system_metadata', 'auth_registry');
-    const emails = Array.from(new Set(accounts.map((a) => a.email.toLowerCase()).filter(Boolean)));
+    const emails = Array.from(new Set(accounts.map((a) => a.email?.toLowerCase()).filter(Boolean)));
     const uids = Array.from(new Set(accounts.map((a) => a.uid).filter(Boolean)));
     await withTimeout(
       setDoc(
@@ -254,7 +247,7 @@ export async function registerUserWithQuotaCheck(
     // Check if user matches an existing slot by email (e.g. authorized email using Google login)
     if (user.email) {
       const byEmail = allAccounts.find(
-        (a) => a.email.toLowerCase() === user.email?.toLowerCase()
+        (a) => a.email?.toLowerCase() === user.email?.toLowerCase()
       );
       if (byEmail) {
         const updatedAccount: RegisteredAccount = {
@@ -356,59 +349,102 @@ export async function registerUserWithQuotaCheck(
 }
 
 /**
- * React hook to listen to registered accounts in real-time.
+ * React hook to listen to registered accounts securely via server route.
  */
 export function useRegisteredAccounts() {
   const [accounts, setAccounts] = ReactState<RegisteredAccount[]>([]);
-  const [loading, setLoading] = ReactState<boolean>(false);
+  const [loading, setLoading] = ReactState<boolean>(true);
   const [error, setError] = ReactState<string | null>(null);
 
   ReactEffect(() => {
+    let active = true;
+
     // 1. Initial stored items loaded on mount to prevent SSR hydration mismatch
     queueMicrotask(() => {
       setAccounts(getLocalCachedAccounts());
+    });
+
+    async function fetchAccounts() {
+      try {
+        setLoading(true);
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          if (active) {
+            setAccounts([]);
+            setLoading(false);
+          }
+          return;
+        }
+
+        // 1. First fetch directly from client Firestore SDK (fast, resilient, authenticates with user token)
+        try {
+          const directAccounts = await getRegisteredAccounts();
+          if (active && Array.isArray(directAccounts) && directAccounts.length > 0) {
+            setAccounts(directAccounts);
+            setError(null);
+          }
+        } catch (directErr) {
+          console.warn('Direct Firestore accounts fetch note:', directErr);
+        }
+
+        // 2. Also query server API route if available
+        try {
+          const token = await currentUser.getIdToken();
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          const res = await fetch('/api/admin/users', {
+            method: 'GET',
+            headers,
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (active && data.success && Array.isArray(data.users) && data.users.length > 0) {
+              setAccounts(data.users);
+              saveLocalCachedAccounts(data.users);
+              setError(null);
+            }
+          }
+        } catch (apiErr) {
+          // Non-fatal, direct Firestore accounts already loaded
+        }
+      } catch (err: any) {
+        console.warn('Notice loading admin users:', err);
+        if (active) {
+          setAccounts(getLocalCachedAccounts());
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    // Run fetch after Auth is initialized
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (user) {
+        fetchAccounts();
+      } else {
+        setAccounts([]);
+        setLoading(false);
+      }
     });
 
     const handleSync = () => {
       setAccounts(getLocalCachedAccounts());
     };
 
-    window.addEventListener(USERS_SYNC_EVENT, handleSync);
-    window.addEventListener('storage', handleSync);
+    const handleActionRefetch = () => {
+      fetchAccounts();
+    };
 
-    let unsubscribe: (() => void) | undefined;
-    try {
-      const usersRef = collection(db, USERS_COLLECTION);
-      unsubscribe = onSnapshot(
-        usersRef,
-        (snap) => {
-          const list: RegisteredAccount[] = [];
-          snap.forEach((docSnap) => {
-            list.push({
-              ...(docSnap.data() as RegisteredAccount),
-              uid: docSnap.id,
-            });
-          });
-          list.sort((a, b) => (a.slotNumber || 0) - (b.slotNumber || 0));
-          if (list.length > 0) {
-            setAccounts(list);
-            saveLocalCachedAccounts(list);
-          }
-          setLoading(false);
-        },
-        (err) => {
-          console.warn('Realtime accounts listener fallback:', err);
-          setLoading(false);
-        }
-      );
-    } catch (err: unknown) {
-      console.warn('Hook initialization fallback:', err);
-    }
+    window.addEventListener(USERS_SYNC_EVENT, handleSync);
+    window.addEventListener('elimi_refetch_users_action', handleActionRefetch);
 
     return () => {
+      active = false;
+      unsubscribeAuth();
       window.removeEventListener(USERS_SYNC_EVENT, handleSync);
-      window.removeEventListener('storage', handleSync);
-      if (unsubscribe) unsubscribe();
+      window.removeEventListener('elimi_refetch_users_action', handleActionRefetch);
     };
   }, []);
 
@@ -464,6 +500,9 @@ export async function approveAdminUser(uid: string): Promise<boolean> {
     const updated = cached.map((u) => (u.uid === uid ? { ...u, status: 'approved' as const } : u));
     saveLocalCachedAccounts(updated);
     await syncRegistry(updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('elimi_refetch_users_action'));
+    }
     return true;
   } catch (err) {
     console.error('Failed to approve admin user:', err);
@@ -485,6 +524,9 @@ export async function revokeAdminUser(uid: string): Promise<boolean> {
     const updated = cached.map((u) => (u.uid === uid ? { ...u, status: 'pending' as const } : u));
     saveLocalCachedAccounts(updated);
     await syncRegistry(updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('elimi_refetch_users_action'));
+    }
     return true;
   } catch (err) {
     console.error('Failed to revoke admin user:', err);
@@ -506,6 +548,9 @@ export async function deleteAdminUser(uid: string): Promise<boolean> {
     const updated = cached.filter((u) => u.uid !== uid);
     saveLocalCachedAccounts(updated);
     await syncRegistry(updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('elimi_refetch_users_action'));
+    }
     return true;
   } catch (err) {
     console.error('Failed to delete admin user:', err);

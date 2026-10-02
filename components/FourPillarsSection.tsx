@@ -125,13 +125,13 @@ export default function FourPillarsSection() {
     "Rent",
   );
 
-  const rentCars = React.useMemo(() => allCars.filter((c) => c.rent), [allCars]);
-  const saleCars = React.useMemo(() => allCars.filter((c) => c.sales), [allCars]);
-  const rentHouses = React.useMemo(() => allHouses.filter((h) => h.rent), [allHouses]);
+  const rentCars = React.useMemo(() => (allCars || []).filter((c) => c && c.rent), [allCars]);
+  const saleCars = React.useMemo(() => (allCars || []).filter((c) => c && c.sales), [allCars]);
+  const rentHouses = React.useMemo(() => (allHouses || []).filter((h) => h && h.rent), [allHouses]);
 
   const currentPillar1Data = React.useMemo(() => {
     if (pillar1Tab === "Buy") {
-      const topSaleCar = saleCars[0] || allCars.find((c) => c.sales) || allCars[0];
+      const topSaleCar = saleCars?.[0] || (allCars || []).find((c) => c && c.sales) || allCars?.[0];
       const carPrice = topSaleCar?.price || 65000;
       return {
         title: topSaleCar?.title || "Toyota Land Cruiser Prado",
@@ -144,14 +144,14 @@ export default function FourPillarsSection() {
         ctaText: "Explore Vehicles For Sale",
         ctaLink: "/cars?type=sale",
         checklist: [
-          `${saleCars.length > 0 ? saleCars.length : "12+"} Inspected Vehicles in Stock`,
+          `${(saleCars?.length || 0) > 0 ? saleCars.length : "12+"} Inspected Vehicles in Stock`,
           "Direct Import, Cleared & Certified",
           "Guaranteed Ownership Transfer",
         ],
       };
     }
     if (pillar1Tab === "Real Estate") {
-      const topHouse = allHouses[0];
+      const topHouse = allHouses?.[0];
       const isRentHouse = Boolean(topHouse?.rent);
       return {
         title: topHouse?.title || "Executive Residence Villa",
@@ -166,15 +166,15 @@ export default function FourPillarsSection() {
         ctaText: "Explore Real Estate",
         ctaLink: "/houses",
         checklist: [
-          `${allHouses.length > 0 ? allHouses.length : "15+"} Prime Villas & Residences`,
-          `${rentHouses.length > 0 ? rentHouses.length : "8+"} Short & Long-Stay Rentals`,
+          `${(allHouses?.length || 0) > 0 ? allHouses.length : "15+"} Prime Villas & Residences`,
+          `${(rentHouses?.length || 0) > 0 ? rentHouses.length : "8+"} Short & Long-Stay Rentals`,
           "Full Legal Audit & Secure Verification",
         ],
       };
     }
     // Default: Rent
-    const topRentCar = rentCars[0] || allCars.find((c) => c.rent) || allCars[0];
-    const minRentPrice = rentCars.length > 0 ? Math.min(...rentCars.map((c) => c.rentPrice || 60)) : 60;
+    const topRentCar = rentCars?.[0] || (allCars || []).find((c) => c && c.rent) || allCars?.[0];
+    const minRentPrice = (rentCars?.length || 0) > 0 ? Math.min(...(rentCars || []).map((c) => c?.rentPrice || 60)) : 60;
     return {
       title: topRentCar?.title || "Toyota Prado TX-L 2020",
       price: `$${topRentCar?.rentPrice || 60}`,
@@ -186,7 +186,7 @@ export default function FourPillarsSection() {
       ctaText: "Explore Rental Fleet",
       ctaLink: "/cars?type=rent",
       checklist: [
-        `${rentCars.length > 0 ? rentCars.length : "20+"} Verified Fleet Vehicles for Rent`,
+        `${(rentCars?.length || 0) > 0 ? rentCars.length : "20+"} Verified Fleet Vehicles for Rent`,
         `Rates from $${minRentPrice}/day with Chauffeur`,
         "Instant Diplomatic & VIP Booking",
       ],

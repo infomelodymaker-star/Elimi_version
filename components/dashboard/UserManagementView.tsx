@@ -30,8 +30,8 @@ export default function UserManagementView({
   const loggedInUid = currentUserId || activeUser?.uid || "";
 
   // Determine if logged-in user is Super Admin (Slot #1 or matching first registered email)
-  const currentAccount = accounts.find((a) => a.uid === loggedInUid || (loggedInEmail && a.email.toLowerCase() === loggedInEmail.toLowerCase()));
-  const isSuperAdmin = currentAccount ? currentAccount.slotNumber === 1 || currentAccount.isSuperAdmin === true : accounts.length > 0 ? accounts[0]?.uid === loggedInUid || accounts[0]?.email.toLowerCase() === loggedInEmail.toLowerCase() : true;
+  const currentAccount = accounts?.find((a) => a.uid === loggedInUid || (loggedInEmail && a.email?.toLowerCase() === loggedInEmail.toLowerCase()));
+  const isSuperAdmin = currentAccount ? currentAccount.slotNumber === 1 || currentAccount.isSuperAdmin === true : (accounts?.length || 0) > 0 ? accounts[0]?.uid === loggedInUid || accounts[0]?.email?.toLowerCase() === loggedInEmail.toLowerCase() : true;
 
   const handleApprove = async (user: RegisteredAccount) => {
     setProcessingUid(user.uid);
@@ -163,7 +163,7 @@ export default function UserManagementView({
               badge
             </span>
             <h3 className="font-display text-[15px] font-semibold text-[#0F172A]">
-              Registered Admin Accounts ({accounts.length})
+              Registered Admin Accounts ({accounts?.length || 0})
             </h3>
           </div>
           <span className="text-[11px] font-mono text-[#64748B]">
@@ -193,7 +193,7 @@ export default function UserManagementView({
                     </div>
                   </td>
                 </tr>
-              ) : accounts.length === 0 ? (
+              ) : !accounts || accounts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-[#64748B]">
                     No admin users registered yet.
@@ -202,7 +202,7 @@ export default function UserManagementView({
               ) : (
                 accounts.map((user) => {
                   const isAccountSuperAdmin = user.slotNumber === 1 || user.isSuperAdmin === true;
-                  const isCurrentUser = user.uid === loggedInUid || (loggedInEmail && user.email.toLowerCase() === loggedInEmail.toLowerCase());
+                  const isCurrentUser = user.uid === loggedInUid || (loggedInEmail && user.email?.toLowerCase() === loggedInEmail.toLowerCase());
                   const isApproved = user.status === "approved" || isAccountSuperAdmin;
 
                   return (

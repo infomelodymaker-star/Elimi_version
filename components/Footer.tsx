@@ -9,6 +9,7 @@ import { useSettings } from "@/components/SettingsProvider";
 import { db } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { runFirestoreTaskSafe } from "@/lib/firestore-sync";
+import { subscribeToNewsletter } from "@/lib/firestore-newsletter";
 import LegacyPoliciesModal from "@/components/LegacyPoliciesModal";
 
 interface FooterLinkItem {
@@ -115,29 +116,15 @@ export default function Footer() {
     setSubmitting(true);
     setError(null);
 
-    // Store locally
     try {
-      const stored = JSON.parse(localStorage.getItem("elimi_newsletter_subscribers") || "[]");
-      if (!stored.includes(cleanEmail)) {
-        stored.push(cleanEmail);
-        localStorage.setItem("elimi_newsletter_subscribers", JSON.stringify(stored));
-      }
-    } catch {
-      // Ignore local storage error
+      await subscribeToNewsletter(cleanEmail, "footer");
+      setSubscribed(true);
+      setEmail("");
+    } catch (err: any) {
+      setError(err?.message || "An error occurred. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-
-    // Save to Firestore asynchronously
-    runFirestoreTaskSafe(async () => {
-      await addDoc(collection(db, "newsletter_subscribers"), {
-        email: cleanEmail,
-        subscribedAt: new Date().toISOString(),
-        source: "footer",
-      });
-    }, 1500, "Footer Newsletter Subscription");
-
-    setSubmitting(false);
-    setSubscribed(true);
-    setEmail("");
   };
 
   return (

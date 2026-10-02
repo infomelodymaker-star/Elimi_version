@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
-import firebaseConfigData from '../firebase-applet-config.json';
+import { adminAuth } from './firebase-admin';
 
 /**
  * Validates a Firebase Auth JWT token server-side in Next.js route handlers.
- * Verifies issuer, audience (projectId), expiration, and user ID.
+ * Verifies signatures, issuer, audience, and expiration using Firebase Admin SDK.
  */
 export interface AuthUser {
   uid: string;
@@ -22,46 +22,18 @@ export async function verifyServerAuth(req: NextRequest): Promise<{ authenticate
       return { authenticated: false, error: 'Empty token provided' };
     }
 
-    // Split JWT into components
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return { authenticated: false, error: 'Invalid JWT structure' };
-    }
+    // Verify token cryptographically using Firebase Admin SDK
+    const decodedToken = await adminAuth.verifyIdToken(token);
 
-    // Decode header and payload safely
-    const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf-8');
-    const payload = JSON.parse(payloadJson);
-
-    const nowSec = Math.floor(Date.now() / 1000);
-
-    // Validate expiration
-    if (payload.exp && payload.exp < nowSec) {
-      return { authenticated: false, error: 'Token expired' };
-    }
-
-    // Validate audience / projectId
-    const expectedProjectId = firebaseConfigData.projectId;
-    if (payload.aud !== expectedProjectId) {
-      return { authenticated: false, error: `Invalid token audience (${payload.aud} !== ${expectedProjectId})` };
-    }
-
-    // Validate issuer
-    const expectedIss = `https://securetoken.google.com/${expectedProjectId}`;
-    if (payload.iss !== expectedIss) {
-      return { authenticated: false, error: `Invalid token issuer` };
-    }
-
-    // Validate user ID
-    const uid = payload.user_id || payload.sub;
-    if (!uid || typeof uid !== 'string') {
+    if (!decodedToken.uid) {
       return { authenticated: false, error: 'Missing user ID in token claims' };
     }
 
     return {
       authenticated: true,
       user: {
-        uid,
-        email: payload.email || undefined,
+        uid: decodedToken.uid,
+        email: decodedToken.email || undefined,
       },
     };
   } catch (err: any) {

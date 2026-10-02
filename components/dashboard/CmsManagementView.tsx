@@ -2257,7 +2257,7 @@ export default function CmsManagementView() {
                                       id: `vid-${Date.now()}`,
                                       title: 'New Portrait Video Showcase',
                                       description: 'Showcase description...',
-                                      videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-business-people-walking-in-a-modern-office-42861-large.mp4',
+                                      videoUrl: 'https://www.instagram.com/reel/DU56Cquigev/embed/',
                                       posterUrl: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&q=80&w=800',
                                     });
                                     p.sections[idx].content.items = items;
@@ -2314,7 +2314,7 @@ export default function CmsManagementView() {
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <input
                                       type="text"
-                                      placeholder="Video MP4 URL"
+                                      placeholder="Instagram Reel or Video URL"
                                       value={item.videoUrl || ''}
                                       onChange={(e) => {
                                         const newPages = [...pages];

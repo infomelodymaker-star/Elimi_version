@@ -6,12 +6,64 @@
 
 import { auth } from './firebase';
 
-export function getStoredItems<T>(key: string, fallback: T[]): T[] {
-  if (typeof window === 'undefined') return fallback;
+const SECRET_SALT = "ELIMI_SECURE_SALT_2026_!";
+
+function encryptData(text: string): string {
+  if (!text || typeof text !== 'string') return '';
   try {
-    const raw = localStorage.getItem(key);
+    let result = '';
+    for (let i = 0; i < text.length; i++) {
+      const charCode = text.charCodeAt(i) ^ SECRET_SALT.charCodeAt(i % SECRET_SALT.length);
+      result += String.fromCharCode(charCode);
+    }
+    return btoa(unescape(encodeURIComponent(result)));
+  } catch (e) {
+    console.warn('Encryption failed, returning raw text:', e);
+    return text;
+  }
+}
+
+function decryptData(cipherText: string): string {
+  if (!cipherText || typeof cipherText !== 'string') return '';
+  const trimmed = cipherText.trim();
+  // Check if it's already raw JSON (backwards-compatibility with legacy client storage)
+  if (trimmed.startsWith('[') || trimmed.startsWith('{') || trimmed.startsWith('"')) {
+    return cipherText;
+  }
+  try {
+    const decoded = decodeURIComponent(escape(atob(cipherText)));
+    let result = '';
+    for (let i = 0; i < decoded.length; i++) {
+      const charCode = decoded.charCodeAt(i) ^ SECRET_SALT.charCodeAt(i % SECRET_SALT.length);
+      result += String.fromCharCode(charCode);
+    }
+    return result;
+  } catch (e) {
+    return cipherText;
+  }
+}
+
+function getStorage(key: string): Storage | null {
+  if (typeof window === 'undefined') return null;
+  // Use sessionStorage for sensitive data, localStorage for public catalogs
+  if (
+    key === 'elimi_orders_storage' ||
+    key === 'elimi_newsletter_subscribers' ||
+    key === 'elimi_registered_accounts_cache'
+  ) {
+    return sessionStorage;
+  }
+  return localStorage;
+}
+
+export function getStoredItems<T>(key: string, fallback: T[]): T[] {
+  const storage = getStorage(key);
+  if (!storage) return fallback;
+  try {
+    const raw = storage.getItem(key);
     if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
+    const decrypted = decryptData(raw);
+    const parsed = JSON.parse(decrypted);
     return Array.isArray(parsed) ? parsed : fallback;
   } catch (err) {
     console.warn(`Error reading ${key} from storage:`, err);
@@ -20,9 +72,12 @@ export function getStoredItems<T>(key: string, fallback: T[]): T[] {
 }
 
 export function saveStoredItems<T>(key: string, items: T[], eventName?: string): void {
-  if (typeof window === 'undefined') return;
+  const storage = getStorage(key);
+  if (!storage) return;
   try {
-    localStorage.setItem(key, JSON.stringify(items));
+    const serialized = JSON.stringify(items || []);
+    const encrypted = encryptData(serialized);
+    storage.setItem(key, encrypted);
     if (eventName) {
       window.dispatchEvent(new CustomEvent(eventName, { detail: items }));
     }
@@ -32,11 +87,13 @@ export function saveStoredItems<T>(key: string, items: T[], eventName?: string):
 }
 
 export function getStoredObject<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
+  const storage = getStorage(key);
+  if (!storage) return fallback;
   try {
-    const raw = localStorage.getItem(key);
+    const raw = storage.getItem(key);
     if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
+    const decrypted = decryptData(raw);
+    const parsed = JSON.parse(decrypted);
     return parsed && typeof parsed === 'object' ? parsed : fallback;
   } catch (err) {
     console.warn(`Error reading object ${key} from storage:`, err);
@@ -45,9 +102,12 @@ export function getStoredObject<T>(key: string, fallback: T): T {
 }
 
 export function saveStoredObject<T>(key: string, data: T, eventName?: string): void {
-  if (typeof window === 'undefined') return;
+  const storage = getStorage(key);
+  if (!storage) return;
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    const serialized = JSON.stringify(data || {});
+    const encrypted = encryptData(serialized);
+    storage.setItem(key, encrypted);
     if (eventName) {
       window.dispatchEvent(new CustomEvent(eventName, { detail: data }));
     }

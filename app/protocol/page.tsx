@@ -1,112 +1,236 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import ElimiHeader from "@/components/ElimiHeader";
 import { motion } from "motion/react";
 import { useCmsPage } from "@/lib/firestore-cms";
 import { useSettings } from "@/components/SettingsProvider";
-import { Play, Pause, Volume2, VolumeX, Phone, ArrowRight, ChevronRight } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Phone, ArrowRight, ChevronRight, ExternalLink, Video } from "lucide-react";
 
 interface PortraitVideoItem {
   id: string;
   title: string;
   description: string;
   videoUrl: string;
-  posterUrl: string;
+  posterUrl?: string;
+}
+
+function isInstagramUrl(url: string): boolean {
+  if (!url) return false;
+  return url.includes("instagram.com") || url.includes("instagr.am");
+}
+
+function getInstagramEmbedUrl(url: string): string {
+  if (!url) return "";
+  let clean = url.trim();
+  if (!clean.startsWith("http")) {
+    clean = `https://${clean}`;
+  }
+  const match = clean.match(/instagram\.com\/(?:[^\/]+\/)?reel\/([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    return `https://www.instagram.com/reel/${match[1]}/embed/`;
+  }
+  const postMatch = clean.match(/instagram\.com\/(?:[^\/]+\/)?p\/([a-zA-Z0-9_-]+)/);
+  if (postMatch && postMatch[1]) {
+    return `https://www.instagram.com/p/${postMatch[1]}/embed/`;
+  }
+  if (clean.includes("/embed")) {
+    return clean.endsWith("/") ? clean : `${clean}/`;
+  }
+  clean = clean.replace(/\/+$/, "");
+  return `${clean}/embed/`;
+}
+
+function getInstagramDirectUrl(url: string): string {
+  if (!url) return "https://www.instagram.com";
+  let clean = url.trim();
+  if (!clean.startsWith("http")) {
+    clean = `https://${clean}`;
+  }
+  return clean.replace(/\/embed\/?.*$/, "/").replace(/\/+$/, "/");
 }
 
 function PortraitVideoCard({ video }: { video: PortraitVideoItem }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isInView, setIsInView] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  const isInsta = isInstagramUrl(video.videoUrl);
+  const instagramEmbedUrl = isInsta ? getInstagramEmbedUrl(video.videoUrl) : "";
+  const instagramDirectUrl = isInsta ? getInstagramDirectUrl(video.videoUrl) : "";
+
+  // Intersection Observer to detect scroll and autoplay when scrolled into view
+  useEffect(() => {
+    const currentContainer = containerRef.current;
+    if (!currentContainer) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsInView(true);
+            if (!isInsta && videoRef.current) {
+              videoRef.current.muted = true;
+              videoRef.current
+                .play()
+                .then(() => setIsPlaying(true))
+                .catch(() => {
+                  setIsPlaying(false);
+                });
+            }
+          } else {
+            setIsInView(false);
+            if (!isInsta && videoRef.current) {
+              videoRef.current.pause();
+              setIsPlaying(false);
+            }
+          }
+        });
+      },
+      {
+        threshold: 0.35,
+        rootMargin: "0px 0px -40px 0px",
+      }
+    );
+
+    observer.observe(currentContainer);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isInsta]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!videoRef.current) return;
-    if (isPlaying) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      videoRef.current
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch((err) => console.warn("Video play error:", err));
+    setHasInteracted(true);
+    if (!isInsta && videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current
+          .play()
+          .then(() => setIsPlaying(true))
+          .catch((err) => console.warn("Video play error:", err));
+      }
     }
   };
 
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!videoRef.current) return;
-    videoRef.current.muted = !isMuted;
-    setIsMuted(!isMuted);
-  };
-
   return (
-    <div className="group flex flex-col h-full rounded-2xl overflow-hidden border border-[#0F172A]/10 bg-white shadow-[0px_4px_24px_0px_rgba(15,23,42,0.04)] hover:shadow-[0px_8px_32px_0px_rgba(15,23,42,0.08)] transition-all duration-300">
-      {/* Portrait Aspect Ratio (9/16) Video Container */}
-      <div
-        className="relative w-full aspect-[9/16] bg-slate-950 flex items-center justify-center overflow-hidden cursor-pointer"
-        onClick={togglePlay}
-      >
-        <video
-          ref={videoRef}
-          src={video.videoUrl}
-          poster={video.posterUrl}
-          playsInline
-          muted={isMuted}
-          loop
-          preload="metadata"
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onEnded={() => setIsPlaying(false)}
-          className="w-full h-full object-cover"
-        />
-
-        {/* Dark subtle overlay when paused */}
-        {!isPlaying && (
-          <div className="absolute inset-0 bg-slate-950/30 transition-opacity" />
-        )}
-
-        {/* Play/Pause Button Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <button
-            type="button"
-            aria-label={isPlaying ? "Pause" : "Play"}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 pointer-events-auto backdrop-blur-md ${
-              isPlaying
-                ? "bg-slate-900/70 text-white opacity-0 group-hover:opacity-100 hover:bg-[#0B57FF]"
-                : "bg-white text-[#0B57FF] opacity-100 scale-100 hover:scale-110 shadow-lg"
-            }`}
+    <div
+      ref={containerRef}
+      className="group relative flex flex-col h-full w-full max-w-[340px] mx-auto rounded-3xl overflow-hidden border border-[#0F172A]/10 bg-white shadow-[0px_6px_28px_0px_rgba(15,23,42,0.08)] hover:shadow-[0px_12px_36px_0px_rgba(15,23,42,0.14)] transition-all duration-300"
+    >
+      {/* Video Container with Header & Footer Cleanly Hidden */}
+      <div className="relative w-full h-[470px] sm:h-[500px] bg-black flex items-center justify-center overflow-hidden">
+        {isInsta ? (
+          /* Real Instagram Reel Embed Frame with Header & Footer Cropped Out */
+          <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
+            {isInView || hasInteracted ? (
+              /* Offset -top-[56px] and extended height to crop out top IG banner and bottom footer */
+              <div className="absolute inset-x-0 -top-[56px] h-[calc(100%+140px)] w-full overflow-hidden pointer-events-auto">
+                <iframe
+                  src={instagramEmbedUrl}
+                  className="w-full h-full border-0 bg-black scale-[1.01]"
+                  allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                  allowFullScreen
+                  scrolling="no"
+                  title={video.title || "Instagram Reel"}
+                  loading="lazy"
+                />
+              </div>
+            ) : (
+              /* Pre-load placeholder until user scrolls to it */
+              <div
+                className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-slate-900 text-white cursor-pointer group-hover:bg-slate-850 transition-colors"
+                onClick={() => setHasInteracted(true)}
+              >
+                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center shadow-lg mb-3 transform group-hover:scale-110 transition-transform">
+                  <Play className="w-7 h-7 text-white fill-current ml-1" />
+                </div>
+                <p className="text-sm font-semibold text-white">Tap to Load Reel</p>
+                <p className="text-xs text-slate-400 mt-1">Autoplays when scrolled into view</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Direct HTML5 Video Player */
+          <div
+            className="relative w-full h-full bg-slate-950 flex items-center justify-center overflow-hidden cursor-pointer"
             onClick={togglePlay}
           >
-            {isPlaying ? (
-              <Pause className="w-6 h-6 fill-current" />
-            ) : (
-              <Play className="w-6 h-6 ml-0.5 fill-current" />
-            )}
-          </button>
-        </div>
+            <video
+              ref={videoRef}
+              src={video.videoUrl}
+              poster={video.posterUrl}
+              playsInline
+              muted
+              loop
+              preload="metadata"
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onEnded={() => setIsPlaying(false)}
+              className="w-full h-full object-cover"
+            />
 
-        {/* Top Controls Bar */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
-          <span className="text-[10px] font-bold tracking-wider uppercase bg-slate-900/80 backdrop-blur-md text-white px-3 py-1 rounded-full">
-            {isPlaying ? "Live Motion" : "Portrait Video"}
-          </span>
-          <button
-            type="button"
-            onClick={toggleMute}
-            aria-label={isMuted ? "Unmute" : "Mute"}
-            className="w-8 h-8 rounded-full bg-slate-900/80 hover:bg-[#0B57FF] text-white flex items-center justify-center transition-colors pointer-events-auto backdrop-blur-md"
-          >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          </button>
-        </div>
+            {/* Dark overlay when paused */}
+            {!isPlaying && (
+              <div className="absolute inset-0 bg-slate-950/30 transition-opacity" />
+            )}
+
+            {/* Play/Pause Button Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <button
+                type="button"
+                aria-label={isPlaying ? "Pause" : "Play"}
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 pointer-events-auto backdrop-blur-md ${
+                  isPlaying
+                    ? "bg-slate-900/70 text-white opacity-0 group-hover:opacity-100 hover:bg-[#0B57FF]"
+                    : "bg-white text-[#0B57FF] opacity-100 scale-100 hover:scale-110 shadow-lg"
+                }`}
+                onClick={togglePlay}
+              >
+                {isPlaying ? (
+                  <Pause className="w-6 h-6 fill-current" />
+                ) : (
+                  <Play className="w-6 h-6 ml-0.5 fill-current" />
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Floating Instagram Link ONLY on Top-Right */}
+        {isInsta && (
+          <div className="absolute top-3.5 right-3.5 z-30 pointer-events-auto">
+            <a
+              href={instagramDirectUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-white/95 hover:text-white flex items-center gap-1.5 bg-slate-950/80 hover:bg-[#0B57FF] px-3 py-1.5 rounded-full backdrop-blur-md border border-white/15 transition-all shadow-md font-medium group/link"
+              title="Watch Reel on Instagram"
+            >
+              <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center overflow-hidden p-0.5 shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/assets/icons/social/instagram-150x150.png"
+                  alt="Instagram"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <span>Instagram</span>
+              <ExternalLink className="w-3 h-3 transition-transform group-hover/link:translate-x-0.5" />
+            </a>
+          </div>
+        )}
       </div>
 
-      {/* Title & Description */}
-      <div className="p-5 flex flex-col flex-grow bg-white space-y-2">
+      {/* Title & Description - Elevated upward to cleanly cover Instagram bottom buttons */}
+      <div className="-mt-16 sm:-mt-20 relative z-20 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.15)] border-t border-slate-100 p-5 flex flex-col flex-grow space-y-2">
         <h3 className="font-semibold text-base text-[#0F172A] group-hover:text-[#0B57FF] transition-colors">
           {video.title}
         </h3>
@@ -140,30 +264,30 @@ export default function ProtocolPage() {
     items: [
       {
         id: 'sec-1',
-        title: 'Event Coordination & Summit Hosting',
-        description: 'Comprehensive planning and execution of high-profile corporate, governmental, and international summits in Burundi.',
-        image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800',
-        badge: 'Summit',
+        title: 'Event coordination',
+        description: 'Comprehensive planning, execution, and master coordination of high-profile corporate, governmental, and international summits.',
+        image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=1200',
+        badge: 'Coordination',
       },
       {
         id: 'sec-2',
-        title: 'Airport Arrival & Tarmac Hosting',
+        title: 'Airport arrival hosting & assistance',
         description: 'Seamless airport tarmac reception, fast-track VIP customs clearance, and official delegation hosting.',
-        image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=800',
+        image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=1200',
         badge: 'Airport',
       },
       {
         id: 'sec-3',
-        title: 'VIP Close Protection & Convoy',
+        title: 'VIP handling',
         description: 'Specialized protocol security, armored motorcade logistics, discretion, and bespoke care for diplomats.',
-        image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800',
-        badge: 'Security',
+        image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=1200',
+        badge: 'VIP',
       },
       {
         id: 'sec-4',
-        title: 'Logistics Representation & Transport',
-        description: 'Executive ground fleet, multilingual hostesses, and official diplomatic representation across Bujumbura.',
-        image: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=800',
+        title: 'Logistics coordination and representation',
+        description: 'Executive ground fleet, multilingual hostesses, and official diplomatic representation.',
+        image: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=1200',
         badge: 'Logistics',
       },
     ],
@@ -171,27 +295,27 @@ export default function ProtocolPage() {
 
   const videosSection = cmsData?.sections?.find((s: any) => s.type === 'videos')?.content || {
     title: 'Protocol in Motion',
-    subtitle: 'Portrait video showcases from our recent diplomatic motorcades & international summit hosting',
+    subtitle: 'Official Instagram reel showcases from our recent diplomatic motorcades & VIP delegations',
     items: [
       {
         id: 'vid-01',
         title: 'Tarmac VIP Reception & Escort',
         description: 'Presidential motorcade arrival and tarmac escort service at Bujumbura Airport.',
-        videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-business-people-walking-in-a-modern-office-42861-large.mp4',
+        videoUrl: 'https://www.instagram.com/reel/DU56Cquigev/embed/',
         posterUrl: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&q=80&w=800',
       },
       {
         id: 'vid-02',
-        title: 'Summit Hostess & Protocol Unit',
-        description: 'Multilingual hostess protocol team coordinating guests at the international economic summit.',
-        videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-businesswoman-working-at-a-clean-desk-42862-large.mp4',
+        title: 'ELIMI Protocol VIP Delegation',
+        description: 'Official VIP delegation coordination, motorcade security, and summit hosting.',
+        videoUrl: 'https://www.instagram.com/elimi_protocol/reel/DW83Dt2ijVR/embed',
         posterUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800',
       },
       {
         id: 'vid-03',
-        title: 'Executive Motorcade Convoy',
-        description: 'Tactical close protection unit escorting visiting foreign delegation.',
-        videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-man-working-on-a-laptop-42864-large.mp4',
+        title: 'Executive Convoy & VIP Security',
+        description: 'Tactical close protection unit escorting visiting international delegations.',
+        videoUrl: 'https://www.instagram.com/reel/DVO3XF5gJOK/embed',
         posterUrl: 'https://images.unsplash.com/photo-1508847154043-be5407f15ad9?auto=format&fit=crop&q=80&w=800',
       },
     ],
@@ -270,7 +394,7 @@ export default function ProtocolPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 justify-items-center">
               {videosSection.items.map((vid: PortraitVideoItem) => (
                 <PortraitVideoCard key={vid.id} video={vid} />
               ))}
